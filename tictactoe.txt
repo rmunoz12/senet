@@ -22,7 +22,6 @@ setup() {
 }
 
 turn() {
-    while not ok {
     int a = ctoi(read(1)[0]);
     int b = ctoi(read(1)[0]);
     if (Mark.place( b.toarr(a, b) )) {
