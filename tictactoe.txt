@@ -7,6 +7,7 @@ setup() {
                        [6, 7, 8], [0, 4, 7],
                        [1, 5, 8], [2, 6, 9],
                        [0, 4, 8], [2, 4, 6]}) {
+                       // Tests each line
                 if (b.owns(l[0], player) &&
                     b.owns(l[1], player) &&
                     b.owns(l[2], player)) {
@@ -17,15 +18,25 @@ setup() {
         }
     }
     static Piece Mark on b { /* default place move */ };
+    // static means pieces can't be replaced
     // should we bother with multiline comments?
-    N_PLAYERS = 2;
+    N_PLAYERS = 2; // number of players, this is mandatory
+    N_PHASES = 1; // number of distinct game phases, 1 by default
 }
 
-turn() {
-    int a = ctoi(read(1)[0]);
-    int b = ctoi(read(1)[0]);
-    if (Mark.place( b.toarr(a, b) )) {
-        pass()
+turn() { // this is basically just "while True" with only 1 phase
+    // players input moves by typing coordinates, e.g. "33" or "02"
+    int a = stoi(read(1)); // reads one character and converts it to an int
+    int c = stoi(read(1));
+    // I think it's fair to just not bother with files, and only do i/o
+    // on stdin and stdout
+    if (Mark.place( b.toindex(a, c))) {
+        if (b.won(ON_MOVE)) { //ON_MOVE is the index of the player
+            print("Player " + itos(ON_MOVE + 1) + " wins. Congratulations!");
+            exit();
+        }
+        pass(); // if the move was legal, went through successfully,
+        // and the game is not over, pass the turn to the next player
     }
 }
 
