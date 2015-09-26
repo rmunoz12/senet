@@ -8,8 +8,8 @@ setup() {
                        [1, 5, 8], [2, 6, 9],
                        [0, 4, 8], [2, 4, 6]}) {
                        // Tests each line
-                if (b.owns(l[0], player) &&
-                    b.owns(l[1], player) &&
+                if (b.owns(l[0], player) and
+                    b.owns(l[1], player) and
                     b.owns(l[2], player)) {
                     return True;
                 }
