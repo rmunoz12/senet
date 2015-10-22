@@ -42,6 +42,10 @@ rule token = parse
 | "or"     { OR }
 | "not"    { NOT }
 | "assert" { ASSERT }
+| "<<"     { REMOVE }
+| ">>"     { PLACE }
+| "@setup" { SETUP }
+| "@turns" { TURNS }
 | ['0'-'9']+ as lxm { LITERAL(int_of_string lxm) }
 | ['a'-'z' 'A'-'Z' '_']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
