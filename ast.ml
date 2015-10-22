@@ -1,11 +1,15 @@
 type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq
+        | Mod | And | Or
 
 type expr =
-    Literal of int
+    IntLiteral of int
+  | CharLiteral of char
+  | StrLiteral of string
   | Id of string
   | Binop of expr * op * expr
   | Assign of string * expr
   | Call of string * expr list
+  | Field of string * string
   | Noexpr
 
 type stmt =
@@ -15,6 +19,8 @@ type stmt =
   | If of expr * stmt * stmt
   | For of expr * expr * expr * stmt
   | While of expr * stmt
+  | Remove of expr * expr
+  | Place of expr * expr * expr list
 
 type func_decl = {
     fname : string;
@@ -26,7 +32,7 @@ type func_decl = {
 type program = string list * func_decl list
 
 let rec string_of_expr = function
-    Literal(l) -> string_of_int l
+    IntLiteral(l) -> string_of_int l
   | Id(s) -> s
   | Binop(e1, o, e2) ->
       string_of_expr e1 ^ " " ^

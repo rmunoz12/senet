@@ -1,19 +1,24 @@
 %{ open Ast %}
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA
-%token PLUS MINUS TIMES DIVIDE ASSIGN
+%token PLUS MINUS TIMES DIVIDE ASSIGN MOD
+%token AND OR
 %token EQ NEQ LT LEQ GT GEQ
 %token RETURN IF ELSE FOR WHILE INT
-%token <int> LITERAL
+%token <int> INTLITERAL
+%token <char> CHARLITERAL
+%token <string> STRLITERAL
 %token <string> ID
 %token EOF
 
 %nonassoc NOELSE
 %nonassoc ELSE
 %right ASSIGN
+%left OR
+%left AND
 %left EQ NEQ
 %left LT GT LEQ GEQ
-%left PLUS MINUS
+%left PLUS MINUS MOD
 %left TIMES DIVIDE
 
 %start program
@@ -70,7 +75,8 @@ expr_opt:
   | expr          { $1 }
 
 expr:
-    LITERAL          { Literal($1) }
+    INTLITERAL       { IntLiteral($1) }
+  | CHARLITERAL
   | ID               { Id($1) }
   | expr PLUS   expr { Binop($1, Add,   $3) }
   | expr MINUS  expr { Binop($1, Sub,   $3) }

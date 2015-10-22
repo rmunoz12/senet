@@ -46,7 +46,7 @@ rule token = parse
 | ">>"     { PLACE }
 | "@setup" { SETUP }
 | "@turns" { TURNS }
-| ['0'-'9']+ as lxm { LITERAL(int_of_string lxm) }
+| ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }
 | ['a'-'z' 'A'-'Z' '_']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
 | _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
@@ -60,7 +60,7 @@ and str buf = parse
    * String parsing. Modified version of:
    * https://realworldocaml.org/v1/en/html/parsing-with-ocamllex-and-menhir.html
    *)
-  '"'       { STRING (Buffer.contents buf) }
+  '"'       { STRLITERAL (Buffer.contents buf) }
 | '\\' '\\' { Buffer.add_char buf '\\'; str buf lexbuf }
 | '\\' 'n'  { Buffer.add_char buf '\n'; str buf lexbuf }
 | '\\' '"'  {}
