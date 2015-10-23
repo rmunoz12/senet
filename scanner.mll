@@ -4,6 +4,7 @@ rule token = parse
   [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
 | "#"      { comment lexbuf }           (* Comment until EOL *)
 | '"'      { str (Buffer.create 20) lexbuf }  (* String until next unescaped quote *)
+| '.'      { DOT }
 | '('      { LPAREN }
 | ')'      { RPAREN }
 | '{'      { LBRACE }
