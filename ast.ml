@@ -16,6 +16,8 @@ type stmt =
     Block of stmt list
   | Expr of expr
   | Return of expr
+  | Break
+  | Continue
   | If of expr * stmt * stmt
   | For of expr * expr * expr * stmt
   | While of expr * stmt
