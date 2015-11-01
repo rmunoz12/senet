@@ -30,7 +30,18 @@ type func_decl = {
     body : stmt list;
   }
 
-type program = string list * func_decl list
+type group_decl = {
+    gname : string;
+    extends : string;
+    attributes : string list;
+    methods : func_decl list;
+  }
+
+type setup = string list * func_decl list * group_decl list
+
+type turns = func_decl list
+
+type program = setup * turns
 
 let rec string_of_expr = function
     IntLiteral(l) -> string_of_int l
@@ -80,6 +91,23 @@ let string_of_fdecl fdecl =
   String.concat "" (List.map string_of_stmt fdecl.body) ^
   "}\n"
 
-let string_of_program (vars, funcs) =
+let string_of_gdecl gdecl =
+  "group " ^ gdecl.gname ^ "(" ^ gdecl.extends ^ ")\n{\n" ^
+  String.concat "" (List.map string_of_vdecl gdecl.attributes) ^
+  String.concat "" (List.map string_of_fdecl gdecl.methods) ^
+  "};\n"
+
+let string_of_setup (vars, funcs, groups) =
+  "@setup {\n" ^
   String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
-  String.concat "\n" (List.map string_of_fdecl funcs)
+  String.concat "\n" (List.map string_of_fdecl funcs) ^
+  String.concat "\n" (List.map string_of_gdecl groups) ^
+  "}\n"
+
+let string_of_turns (funcs) =
+  "@turns {\n" ^
+  String.concat "\n" (List.map string_of_fdecl funcs) ^
+  "}\n"
+
+let string_of_program (s, t) =
+  string_of_setup s ^ string_of_turns t

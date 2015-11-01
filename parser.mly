@@ -1,4 +1,7 @@
-%{ open Ast %}
+%{ open Ast
+   let fst_of_three (x, _, _) = x
+   let snd_of_three (_, x, _) = x
+   let trd_of_three (_, _, x) = x  %}
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA DOT
 %token PLUS MINUS TIMES DIVIDE ASSIGN MOD
@@ -36,12 +39,33 @@
 %%
 
 program:
-  decls EOF { $1 }
+  twoparts EOF { $1 }
+
+twoparts:
+    SETUP LBRACE decls RBRACE TURNS LBRACE fdecl_list RBRACE {$3, $7}
 
 decls:
-   /* nothing */ { [], [] }
- | decls vdecl { ($2 :: fst $1), snd $1 }
- | decls fdecl { fst $1, ($2 :: snd $1) }
+   /* nothing */ { [], [], [] }
+ | decls vdecl { ($2 :: fst_of_three $1),
+                 snd_of_three $1,
+                 trd_of_three $1 }
+ | decls fdecl { fst_of_three $1,
+                 ($2 :: snd_of_three $1),
+                 trd_of_three $1 }
+ | decls gdecl { fst_of_three $1,
+                 snd_of_three $1,
+                 ($2 :: trd_of_three $1)}
+
+gdecl:
+    GROUP ID LPAREN ID RPAREN LBRACE vdecl_list fdecl_list RBRACE SEMI
+      { { gname = $2;
+          extends = $4;
+          attributes = List.rev $7;
+          methods = List.rev $8 } }
+
+fdecl_list:
+    /* nothing */ { [] }
+  | fdecl_list fdecl  { $2 :: $1 }
 
 fdecl:
    ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
@@ -63,7 +87,10 @@ vdecl_list:
   | vdecl_list vdecl { $2 :: $1 }
 
 vdecl:
-   INT ID SEMI { $2 }
+    INT ID SEMI   { $2 }
+  | BOOL ID SEMI  { $2 }
+  | STR ID SEMI   { $2 }
+  | VOID ID SEMI  { $2 }
 
 stmt_list:
     /* nothing */  { [] }
