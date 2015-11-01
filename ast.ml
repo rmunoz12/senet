@@ -8,7 +8,7 @@ type expr =
   | Binop of expr * op * expr
   | Assign of string * expr
   | Call of string * expr list
-  | Field of string * string
+  (* | Field of string * string *)
   | Noexpr
 
 type stmt =
@@ -20,8 +20,8 @@ type stmt =
   | If of expr * stmt * stmt
   | For of expr * expr list * stmt
   | While of expr * stmt
-  | Remove of expr * expr
-  | Place of expr * expr * expr list
+  | Remove of expr * expr * expr (* TODO: change e3 to list<int> *)
+  | Place of expr * expr * expr  (* TODO: change e3 to list<int> *)
 
 type func_decl = {
     fname : string;
@@ -38,14 +38,17 @@ let rec string_of_expr = function
   | Binop(e1, o, e2) ->
       string_of_expr e1 ^ " " ^
       (match o with
-    Add -> "+" | Sub -> "-" | Mult -> "*" | Div -> "/"
+        Add -> "+" | Sub -> "-" | Mult -> "*" | Div -> "/"
       | Equal -> "==" | Neq -> "!="
-      | Less -> "<" | Leq -> "<=" | Greater -> ">" | Geq -> ">=") ^ " " ^
+      | Less -> "<" | Leq -> "<=" | Greater -> ">" | Geq -> ">="
+      | Mod -> "%"
+      | And -> "and" | Or -> "Or" ) ^ " " ^
       string_of_expr e2
   | Assign(v, e) -> v ^ " = " ^ string_of_expr e
   | Call(f, el) ->
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""
+  | StrLiteral(s) -> s
 
 let rec string_of_stmt = function
     Block(stmts) ->
@@ -55,10 +58,19 @@ let rec string_of_stmt = function
   | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
   | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
       string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
-(*   | For(e1, e2, s) ->
-      "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^
-            ") " ^ string_of_stmt s *)
+  | For(e, elist, s) ->
+      "for (" ^ string_of_expr e  ^ " in " ^
+            "{\n" ^ String.concat "" (List.map string_of_expr elist) ^ "}\n" ^
+          ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
+  | Break -> "break"
+  | Continue -> "continue"
+  | Place(e1, e2, e3) ->
+      string_of_expr e1 ^ ">>" ^ string_of_expr e2 ^
+        "[" ^ string_of_expr e3 ^ "]"
+  | Remove(e1, e2, e3) ->
+      string_of_expr e1 ^ "<<" ^ string_of_expr e2 ^
+        "[" ^ string_of_expr e3 ^ "]"
 
 let string_of_vdecl id = "int " ^ id ^ ";\n"
 
