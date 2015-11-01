@@ -1,4 +1,5 @@
 OBJS = ast.cmo parser.cmo scanner.cmo senet.cmo
+VERBOSE_YACC = -v
 
 # Choose one
 YACC = ocamlyacc
@@ -11,7 +12,7 @@ scanner.ml : scanner.mll
 	ocamllex scanner.mll
 
 parser.ml parser.mli : parser.mly
-	$(YACC) parser.mly
+	$(YACC) $(VERBOSE_YACC) parser.mly
 
 %.cmo : %.ml
 	ocamlc -c $<
@@ -22,7 +23,7 @@ parser.ml parser.mli : parser.mly
 .PHONY : clean
 clean :
 	@rm -f senet parser.ml parser.mli scanner.ml \
-	*.cmo *.cmi *.out *.diff
+	*.cmo *.cmi *.out *.diff *.output
 
 
 parser.cmo: ast.cmo parser.cmi
