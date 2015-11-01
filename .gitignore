@@ -2,6 +2,12 @@
 *.byte
 *.cmi
 *.cmo
+*.output
 scanner.ml
 parser.ml
 parser.mli
+senet
+
+# Latex
+*.log
+*.aux
