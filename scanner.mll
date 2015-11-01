@@ -1,4 +1,5 @@
-{ open Parser }
+{ open Parser
+  exception SyntaxError of string }
 
 rule token = parse
   [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
@@ -15,7 +16,7 @@ rule token = parse
 | '-'      { MINUS }
 | '*'      { TIMES }
 | '/'      { DIVIDE }
-| '%'      { MODULO }
+| '%'      { MOD }
 | '='      { ASSIGN }
 | "=="     { EQ }
 | "!="     { NEQ }
@@ -31,15 +32,16 @@ rule token = parse
 | "break"  { BREAK }
 | "continue" { CONTINUE }
 | "return" { RETURN }
+| "True"   { TRUE }
+| "False"  { FALSE }
+| "None"   { NONE }
+| "in"     { IN }
 | "int"    { INT }
-| "char"   { CHAR }
 | "str"    { STR }
 | "bool"   { BOOL }
 | "void"   { VOID }
 | "list"   { LIST }
-| "set"    { SET }
 | "group"  { GROUP }
-| "coord"  { COORD }
 | "and"    { AND }
 | "or"     { OR }
 | "not"    { NOT }
@@ -65,7 +67,7 @@ and str buf = parse
   '"'       { STRLITERAL (Buffer.contents buf) }
 | '\\' '\\' { Buffer.add_char buf '\\'; str buf lexbuf }
 | '\\' 'n'  { Buffer.add_char buf '\n'; str buf lexbuf }
-| '\\' '"'  {}
+| '\\' '"'  { Buffer.add_char buf '\"'; str buf lexbuf }
 | [^ '"' '\\']+ as lxm
   { Buffer.add_string buf (lxm);
     str buf lexbuf
