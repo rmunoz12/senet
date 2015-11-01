@@ -1,5 +1,4 @@
-(* type action = Ast | Interpret | Bytecode | Compile *)
-type action = Ast | Hw
+type action = Ast (* | Interpret | Bytecode | Compile *)
 
 let _ =
   let action = if Array.length Sys.argv > 1 then
@@ -7,16 +6,14 @@ let _ =
 			      ("-i", Interpret);
 			      ("-b", Bytecode);
 			      ("-c", Compile) ] *)
-  else Hw in
+  else Ast in
   let lexbuf = Lexing.from_channel stdin in
   let program = Parser.program Scanner.token lexbuf in
   match action with
     Ast -> let listing = Ast.string_of_program program
            in print_string listing
-  | Hw -> print_string "Hello World"; print_newline ()
   (* | Interpret -> ignore (Interpret.run program)
   | Bytecode -> let listing =
       Bytecode.string_of_prog (Compile.translate program)
     in print_endline listing
   | Compile -> Execute.execute_prog (Compile.translate program) *)
-
