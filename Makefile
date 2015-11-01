@@ -21,7 +21,7 @@ parser.ml parser.mli : parser.mly
 
 .PHONY : clean
 clean :
-	rm -f senet parser.ml parser.mli scanner.ml \
+	@rm -f senet parser.ml parser.mli scanner.ml \
 	*.cmo *.cmi *.out *.diff
 
 
