@@ -7,6 +7,7 @@ type id_type =
   | Str
   | Void
   | List of id_type
+  | Group of string
 
 type var_decl = {
     vname : string;
@@ -65,6 +66,7 @@ let rec string_of_vtype = function
   | Void -> "void"
   | List(vt) ->
       "list[" ^ string_of_vtype vt ^ "]"
+  | Group(s) -> s
 
 let rec string_of_vdecl vdecl =
   string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^ ";\n"

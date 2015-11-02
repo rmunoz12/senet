@@ -101,6 +101,7 @@ type_id:
   | STR                            { Str }
   | VOID                           { Void }
   | LIST LBRACKET type_id RBRACKET { List($3) }
+  | GROUP ID                       { Group($2) }
 
 stmt_list:
     /* nothing */  { [] }
