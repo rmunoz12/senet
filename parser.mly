@@ -28,6 +28,7 @@
 %right DOT
 %left OR
 %left AND
+%nonassoc NOT
 %left EQ NEQ
 %left LT GT LEQ GEQ
 %left PLUS MINUS MOD
@@ -136,6 +137,7 @@ expr:
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
   | MINUS expr %prec UMINUS { Uminus($2) }
+  | NOT expr { Not($2) }
 
 expr_list:
     expr                 { [$1] }

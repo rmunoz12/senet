@@ -10,6 +10,7 @@ type expr =
   | Call of string * expr list
   (* | Field of string * string *)
   | Uminus of expr
+  | Not of expr
   | Noexpr
 
 type stmt =
@@ -62,6 +63,7 @@ let rec string_of_expr = function
   | Noexpr -> ""
   | StrLiteral(s) -> s
   | Uminus(e) -> "-" ^ string_of_expr e
+  | Not(e) -> "not" ^ string_of_expr e
 
 let rec string_of_stmt = function
     Block(stmts) ->
