@@ -35,6 +35,7 @@
 %left PLUS MINUS MOD
 %left TIMES DIVIDE
 %nonassoc UMINUS
+%nonassoc LBRACKET
 
 %start program
 %type <Ast.program> program
@@ -142,6 +143,7 @@ expr:
   | expr OR    expr  { Binop($1, Or,    $3) }
   | ID ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
+  | expr LBRACKET expr RBRACKET { Element($1, $3) }
   | LPAREN expr RPAREN { $2 }
   | MINUS expr %prec UMINUS { Uminus($2) }
   | NOT expr { Not($2) }

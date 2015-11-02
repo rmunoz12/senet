@@ -21,6 +21,7 @@ type expr =
   | Assign of string * expr
   | Call of string * expr list
   (* | Field of string * string *)
+  | Element of expr * expr
   | Uminus of expr
   | Not of expr
   | Noexpr
@@ -87,6 +88,8 @@ let rec string_of_expr = function
   | StrLiteral(s) -> s
   | Uminus(e) -> "-" ^ string_of_expr e
   | Not(e) -> "not" ^ string_of_expr e
+  | Element(e1, e2) ->
+      string_of_expr e1 ^ " [" ^ string_of_expr e2 ^ "]"
 
 let rec string_of_stmt = function
     Block(stmts) ->
