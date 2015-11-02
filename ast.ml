@@ -21,7 +21,7 @@ type expr =
   | Binop of expr * op * expr
   | Assign of string * expr
   | Call of string * expr list
-  (* | Field of string * string *)
+  | Field of expr * string
   | Element of expr * expr
   | Uminus of expr
   | Not of expr
@@ -92,6 +92,8 @@ let rec string_of_expr = function
   | Not(e) -> "not" ^ string_of_expr e
   | Element(e1, e2) ->
       string_of_expr e1 ^ " [" ^ string_of_expr e2 ^ "]"
+  | Field(e1, s) ->
+      string_of_expr e1 ^ "." ^ s
 
 let rec string_of_stmt = function
     Block(stmts) ->
