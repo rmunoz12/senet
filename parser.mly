@@ -89,10 +89,18 @@ vdecl_list:
   | vdecl_list vdecl { $2 :: $1 }
 
 vdecl:
-    INT ID SEMI   { $2 }
-  | BOOL ID SEMI  { $2 }
-  | STR ID SEMI   { $2 }
-  | VOID ID SEMI  { $2 }
+    INT ID SEMI
+      { { vtype = Int;
+          vname = $2 } }
+  | BOOL ID SEMI
+      { { vtype = Bool;
+          vname = $2 } }
+  | STR ID SEMI
+      { { vtype = Str;
+          vname = $2 } }
+  | VOID ID SEMI
+      { { vtype = Void;
+          vname = $2 } }
 
 stmt_list:
     /* nothing */  { [] }

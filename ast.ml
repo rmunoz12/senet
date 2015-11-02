@@ -1,6 +1,17 @@
 type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq
         | Mod | And | Or
 
+type id_type =
+    Int
+  | Bool
+  | Str
+  | Void
+
+type var_decl = {
+    vname : string;
+    vtype : id_type;
+}
+
 type expr =
     IntLiteral of int
   | StrLiteral of string
@@ -28,22 +39,31 @@ type stmt =
 type func_decl = {
     fname : string;
     formals : string list;
-    locals : string list;
+    locals : var_decl list;
     body : stmt list;
   }
 
 type group_decl = {
     gname : string;
     extends : string;
-    attributes : string list;
+    attributes : var_decl list;
     methods : func_decl list;
   }
 
-type setup = string list * func_decl list * group_decl list
+type setup = var_decl list * func_decl list * group_decl list
 
 type turns = func_decl list
 
 type program = setup * turns
+
+let rec string_of_vtype = function
+    Int -> "int"
+  | Bool -> "bool"
+  | Str -> "str"
+  | Void -> "void"
+
+let rec string_of_vdecl vdecl =
+  string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^ ";\n"
 
 let rec string_of_expr = function
     IntLiteral(l) -> string_of_int l
@@ -86,8 +106,6 @@ let rec string_of_stmt = function
   | Remove(e1, e2, e3) ->
       string_of_expr e1 ^ "<<" ^ string_of_expr e2 ^
         "[" ^ string_of_expr e3 ^ "]"
-
-let string_of_vdecl id = "int " ^ id ^ ";\n"
 
 let string_of_fdecl fdecl =
   fdecl.fname ^ "(" ^ String.concat ", " fdecl.formals ^ ")\n{\n" ^
