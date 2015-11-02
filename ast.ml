@@ -9,6 +9,7 @@ type expr =
   | Assign of string * expr
   | Call of string * expr list
   (* | Field of string * string *)
+  | Uminus of expr
   | Noexpr
 
 type stmt =
@@ -60,6 +61,7 @@ let rec string_of_expr = function
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""
   | StrLiteral(s) -> s
+  | Uminus(e) -> "-" ^ string_of_expr e
 
 let rec string_of_stmt = function
     Block(stmts) ->

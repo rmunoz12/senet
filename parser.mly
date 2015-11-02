@@ -32,6 +32,7 @@
 %left LT GT LEQ GEQ
 %left PLUS MINUS MOD
 %left TIMES DIVIDE
+%nonassoc UMINUS
 
 %start program
 %type <Ast.program> program
@@ -134,6 +135,7 @@ expr:
   | ID ASSIGN expr   { Assign($1, $3) }
   | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
   | LPAREN expr RPAREN { $2 }
+  | MINUS expr %prec UMINUS { Uminus($2) }
 
 expr_list:
     expr                 { [$1] }
