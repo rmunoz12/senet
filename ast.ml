@@ -6,6 +6,7 @@ type id_type =
   | Bool
   | Str
   | Void
+  | List of id_type
 
 type var_decl = {
     vname : string;
@@ -61,6 +62,8 @@ let rec string_of_vtype = function
   | Bool -> "bool"
   | Str -> "str"
   | Void -> "void"
+  | List(vt) ->
+      "list<" ^ string_of_vtype vt ^ ">"
 
 let rec string_of_vdecl vdecl =
   string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^ ";\n"

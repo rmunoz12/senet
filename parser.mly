@@ -88,6 +88,7 @@ vdecl_list:
     /* nothing */    { [] }
   | vdecl_list vdecl { $2 :: $1 }
 
+/*
 vdecl:
     INT ID SEMI
       { { vtype = Int;
@@ -101,6 +102,19 @@ vdecl:
   | VOID ID SEMI
       { { vtype = Void;
           vname = $2 } }
+*/
+
+vdecl:
+    type_id ID SEMI
+      { { vtype = $1;
+          vname = $2 } }
+
+type_id:
+    INT                { Int }
+  | BOOL               { Bool }
+  | STR                { Str }
+  | VOID               { Void }
+  | LIST LT type_id GT { List($3) }
 
 stmt_list:
     /* nothing */  { [] }
