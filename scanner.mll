@@ -8,6 +8,8 @@ rule token = parse
 | '.'      { DOT }
 | '('      { LPAREN }
 | ')'      { RPAREN }
+| '['      { LBRACKET }
+| ']'      { RBRACKET }
 | '{'      { LBRACE }
 | '}'      { RBRACE }
 | ';'      { SEMI }

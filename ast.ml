@@ -63,7 +63,7 @@ let rec string_of_vtype = function
   | Str -> "str"
   | Void -> "void"
   | List(vt) ->
-      "list<" ^ string_of_vtype vt ^ ">"
+      "list[" ^ string_of_vtype vt ^ "]"
 
 let rec string_of_vdecl vdecl =
   string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^ ";\n"

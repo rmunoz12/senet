@@ -4,6 +4,7 @@
    let trd_of_three (_, _, x) = x  %}
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA DOT
+%token LBRACKET RBRACKET
 %token PLUS MINUS TIMES DIVIDE ASSIGN MOD
 %token AND OR NOT
 %token EQ NEQ LT LEQ GT GEQ
@@ -88,33 +89,17 @@ vdecl_list:
     /* nothing */    { [] }
   | vdecl_list vdecl { $2 :: $1 }
 
-/*
-vdecl:
-    INT ID SEMI
-      { { vtype = Int;
-          vname = $2 } }
-  | BOOL ID SEMI
-      { { vtype = Bool;
-          vname = $2 } }
-  | STR ID SEMI
-      { { vtype = Str;
-          vname = $2 } }
-  | VOID ID SEMI
-      { { vtype = Void;
-          vname = $2 } }
-*/
-
 vdecl:
     type_id ID SEMI
       { { vtype = $1;
           vname = $2 } }
 
 type_id:
-    INT                { Int }
-  | BOOL               { Bool }
-  | STR                { Str }
-  | VOID               { Void }
-  | LIST LT type_id GT { List($3) }
+    INT                            { Int }
+  | BOOL                           { Bool }
+  | STR                            { Str }
+  | VOID                           { Void }
+  | LIST LBRACKET type_id RBRACKET { List($3) }
 
 stmt_list:
     /* nothing */  { [] }
