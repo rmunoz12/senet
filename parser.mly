@@ -127,6 +127,7 @@ stmt:
 expr:
     INTLITERAL       { IntLiteral($1) }
   | STRLITERAL       { StrLiteral($1) }
+  | list_lit         { ListLiteral($1) }
   | ID               { Id($1) }
   | expr DOT ID      { Field($1, $3) }
   | expr PLUS   expr { Binop($1, Add,   $3) }
@@ -160,3 +161,16 @@ actuals_opt:
 actuals_list:
     expr                    { [$1] }
   | actuals_list COMMA expr { $3 :: $1 }
+
+list_lit:
+    LBRACKET RBRACKET              { EmptyList }
+  | LBRACKET int_lit_list RBRACKET { ListIntLit($2) }
+  | LBRACKET str_lit_list RBRACKET { ListStrLit($2) }
+
+int_lit_list:
+    INTLITERAL                    { [$1] }
+  | int_lit_list COMMA INTLITERAL { $3 :: $1 }
+
+str_lit_list:
+    STRLITERAL                    { [$1] }
+  | str_lit_list COMMA STRLITERAL { $3 :: $1 }

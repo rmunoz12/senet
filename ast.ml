@@ -14,9 +14,15 @@ type var_decl = {
     vtype : id_type;
 }
 
+type list_lit =
+    ListIntLit of int list
+  | ListStrLit of string list
+  | EmptyList
+
 type expr =
     IntLiteral of int
   | StrLiteral of string
+  | ListLiteral of list_lit
   | Id of string
   | Binop of expr * op * expr
   | Assign of string * expr
@@ -71,6 +77,13 @@ let rec string_of_vtype = function
 let rec string_of_vdecl vdecl =
   string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^ ";\n"
 
+let rec string_of_list_lit = function
+    EmptyList -> "[]"
+  | ListIntLit(i) ->
+      "[" ^ String.concat ", " (List.map string_of_int i) ^ "]"
+  | ListStrLit(s) ->
+      "[" ^ String.concat ", " s ^ "]"
+
 let rec string_of_expr = function
     IntLiteral(l) -> string_of_int l
   | Id(s) -> s
@@ -94,6 +107,7 @@ let rec string_of_expr = function
       string_of_expr e1 ^ " [" ^ string_of_expr e2 ^ "]"
   | Field(e1, s) ->
       string_of_expr e1 ^ "." ^ s
+  | ListLiteral(l) -> string_of_list_lit l
 
 let rec string_of_stmt = function
     Block(stmts) ->
