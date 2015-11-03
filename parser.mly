@@ -165,9 +165,14 @@ actuals_list:
   | actuals_list COMMA expr { $3 :: $1 }
 
 list_lit:
-    LBRACKET RBRACKET              { EmptyList }
-  | LBRACKET int_lit_list RBRACKET { ListIntLit($2) }
-  | LBRACKET str_lit_list RBRACKET { ListStrLit($2) }
+    LBRACKET RBRACKET                  { EmptyList }
+  | LBRACKET int_lit_list RBRACKET     { ListIntLit($2) }
+  | LBRACKET str_lit_list RBRACKET     { ListStrLit($2) }
+  | LBRACKET list_of_list_lit RBRACKET { List($2) }
+
+list_of_list_lit:
+    list_lit                        { [$1] }
+  | list_of_list_lit COMMA list_lit { $3 :: $1 }
 
 int_lit_list:
     INTLITERAL                    { [$1] }

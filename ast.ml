@@ -17,6 +17,7 @@ type var_decl = {
 type list_lit =
     ListIntLit of int list
   | ListStrLit of string list
+  | List of list_lit list
   | EmptyList
 
 type expr =
@@ -83,6 +84,8 @@ let rec string_of_list_lit = function
       "[" ^ String.concat ", " (List.map string_of_int i) ^ "]"
   | ListStrLit(s) ->
       "[" ^ String.concat ", " s ^ "]"
+  | List(l) ->
+      "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
 
 let rec string_of_expr = function
     IntLiteral(l) -> string_of_int l
