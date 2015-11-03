@@ -123,6 +123,8 @@ stmt:
      { While($3, $6) }
   | BREAK SEMI    { Break}
   | CONTINUE SEMI { Continue }
+  | expr PLACE expr REMOVE list_lit SEMI { Place($1, $3, $5) }
+  | expr REMOVE expr REMOVE list_lit SEMI { Remove($1, $3, $5) }
 
 expr:
     INTLITERAL       { IntLiteral($1) }

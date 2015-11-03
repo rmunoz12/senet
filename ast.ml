@@ -42,8 +42,8 @@ type stmt =
   | If of expr * stmt * stmt
   | For of expr * expr list * stmt
   | While of expr * stmt
-  | Remove of expr * expr * expr (* TODO: change e3 to list<int> *)
-  | Place of expr * expr * expr  (* TODO: change e3 to list<int> *)
+  | Remove of expr * expr * list_lit
+  | Place of expr * expr * list_lit
 
 type func_decl = {
     fname : string;
@@ -124,12 +124,12 @@ let rec string_of_stmt = function
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
   | Break -> "break"
   | Continue -> "continue"
-  | Place(e1, e2, e3) ->
+  | Place(e1, e2, l) ->
       string_of_expr e1 ^ ">>" ^ string_of_expr e2 ^
-        "[" ^ string_of_expr e3 ^ "]"
-  | Remove(e1, e2, e3) ->
+        string_of_list_lit l
+  | Remove(e1, e2, l) ->
       string_of_expr e1 ^ "<<" ^ string_of_expr e2 ^
-        "[" ^ string_of_expr e3 ^ "]"
+        string_of_list_lit l
 
 let string_of_fdecl fdecl =
   fdecl.fname ^ "(" ^ String.concat ", " fdecl.formals ^ ")\n{\n" ^
