@@ -21,7 +21,7 @@
 %token STR BOOL VOID LIST GROUP
 %token ASSERT
 %token REMOVE PLACE
-%token SETUP TURNS
+%token SETUP TURNS FUNC
 
 %nonassoc NOELSE
 %nonassoc ELSE
@@ -72,11 +72,17 @@ fdecl_list:
   | fdecl_list fdecl  { $2 :: $1 }
 
 fdecl:
-   ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
-     { { fname = $1;
-     formals = $3;
-     locals = List.rev $6;
-     body = List.rev $7 } }
+   FUNC type_id ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
+     { BasicFunc({ ftype = $2;
+     fname = $3;
+     formals = $5;
+     locals = List.rev $8;
+     body = List.rev $9 }) }
+  | ASSERT ID LPAREN formals_opt RPAREN LBRACE vdecl_list stmt_list RBRACE
+      { AssertFunc({ fname = $2;
+     formals = $4;
+     locals = List.rev $7;
+     body = List.rev $8 }) }
 
 formals_opt:
     /* nothing */ { [] }

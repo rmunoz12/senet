@@ -46,12 +46,25 @@ type stmt =
   | Remove of expr * expr * list_lit
   | Place of expr * expr * list_lit
 
-type func_decl = {
+
+type basic_func_decl = {
+    ftype : id_type;
     fname : string;
     formals : string list;
     locals : var_decl list;
     body : stmt list;
   }
+
+type assert_decl = {
+    fname : string;
+    formals : string list;
+    locals : var_decl list;
+    body : stmt list;
+  }
+
+type func_decl =
+    BasicFunc of basic_func_decl
+  | AssertFunc of assert_decl
 
 type group_decl = {
     gname : string;
@@ -134,11 +147,23 @@ let rec string_of_stmt = function
       string_of_expr e1 ^ "<<" ^ string_of_expr e2 ^
         string_of_list_lit l
 
-let string_of_fdecl fdecl =
+let string_of_basic_fdecl fdecl =
+  "func" ^ " " ^ string_of_vtype fdecl.ftype ^ " " ^
   fdecl.fname ^ "(" ^ String.concat ", " fdecl.formals ^ ")\n{\n" ^
   String.concat "" (List.map string_of_vdecl fdecl.locals) ^
   String.concat "" (List.map string_of_stmt fdecl.body) ^
   "}\n"
+
+let string_of_assert_decl fdecl =
+  "assert " ^
+  fdecl.fname ^ "(" ^ String.concat ", " fdecl.formals ^ ")\n{\n" ^
+  String.concat "" (List.map string_of_vdecl fdecl.locals) ^
+  String.concat "" (List.map string_of_stmt fdecl.body) ^
+  "}\n"
+
+let string_of_fdecl = function
+    BasicFunc(f) -> string_of_basic_fdecl f
+  | AssertFunc(f) -> string_of_assert_decl f
 
 let string_of_gdecl gdecl =
   "group " ^ gdecl.gname ^ "(" ^ gdecl.extends ^ ")\n{\n" ^

@@ -50,6 +50,7 @@ rule token = parse
 | "assert" { ASSERT }
 | "<<"     { REMOVE }
 | ">>"     { PLACE }
+| "func"   { FUNC }
 | "@setup" { SETUP }
 | "@turns" { TURNS }
 | ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }
