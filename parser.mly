@@ -26,7 +26,6 @@
 %nonassoc NOELSE
 %nonassoc ELSE
 %right ASSIGN
-%right DOT
 %left OR
 %left AND
 %nonassoc NOT
@@ -36,6 +35,7 @@
 %left TIMES DIVIDE
 %nonassoc UMINUS
 %nonassoc LBRACKET
+%left DOT
 
 %start program
 %type <Ast.program> program
