@@ -14,6 +14,10 @@ type var_decl = {
     vtype : id_type;
 }
 
+type bool_lit =
+    True
+  | False
+
 type list_lit =
     ListIntLit of int list
   | ListStrLit of string list
@@ -24,6 +28,7 @@ type expr =
     IntLiteral of int
   | StrLiteral of string
   | ListLiteral of list_lit
+  | BoolLiteral of bool_lit
   | Id of string
   | Binop of expr * op * expr
   | Assign of string * expr
@@ -124,6 +129,7 @@ let rec string_of_expr = function
   | Field(e1, s) ->
       string_of_expr e1 ^ "." ^ s
   | ListLiteral(l) -> string_of_list_lit l
+  | BoolLiteral(b) -> (match b with True -> "True" | False -> "False")
 
 let rec string_of_stmt = function
     Block(stmts) ->

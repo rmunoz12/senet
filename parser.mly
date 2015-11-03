@@ -135,6 +135,7 @@ stmt:
 expr:
     INTLITERAL       { IntLiteral($1) }
   | STRLITERAL       { StrLiteral($1) }
+  | bool_lit        { BoolLiteral($1) }
   | list_lit         { ListLiteral($1) }
   | ID               { Id($1) }
   | expr DOT ID      { Field($1, $3) }
@@ -187,3 +188,7 @@ int_lit_list:
 str_lit_list:
     STRLITERAL                    { [$1] }
   | str_lit_list COMMA STRLITERAL { $3 :: $1 }
+
+bool_lit:
+    TRUE  { True }
+  | FALSE { False }
