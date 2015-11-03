@@ -24,8 +24,9 @@ group b (Boards.Rect(3,3)) {
         }
 
         bool won (int player) { # checks if the player won
-            if three_in_a_row(player) 
+            if three_in_a_row(player) {
                 return True;
+            }
             return False;
         }
         
@@ -48,9 +49,9 @@ group Mark (Piece) {  # inherits from Piece
 
     str repr () { 
         if (this.owner == 0) { # this.owner is the id of the owner
-            return ‘X’;
+            return 'X';
         } else {
-            return ‘Y’;
+            return 'Y';
         }
     }
 };
@@ -62,13 +63,13 @@ N_PLAYERS = 2; # number of players, this default of 1
 reset()
 {
     str c;
-    str c = “”;
-    while(c != “y” && c != “n”) {
-        print(“Do you want to continue playing?\n”);
-        print(“Type y to continue and n to exit\n”);
+    str c = "";
+    while(c != "y" && c != "n") {
+        print("Do you want to continue playing?\n");
+        print("Type y to continue and n to exit\n");
         c = read(1);
     }
-    if(c == “y”) {
+    if(c == "y") {
         restart();  # restarts the game
     } else {
         exit();     # exits from the game
@@ -84,8 +85,8 @@ reset()
 begin () {
     # this is basically just "while True" with only 1 phase
     # players input moves by typing coordinates, e.g. "11" or "02"
-    print(“Input coordinates of square to place”)
-    print(“in i.e. \”22\” or \”10\”.\n”); # prompts the players
+    print("Input coordinates of square to place")
+    print("in i.e. \"22\" or \"10\".\n"); # prompts the players
     int a = stoi(read(1)); # reads one character and converts it to an int
     int c = stoi(read(1));
     if (Mark >> B [a,c]) {
@@ -101,4 +102,6 @@ begin () {
         # if the move was legal, went through successfully,
         # and the game is not over, pass the turn to the next player
     }
+}
+
 }
