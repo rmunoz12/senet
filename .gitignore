@@ -3,6 +3,7 @@
 *.cmi
 *.cmo
 *.output
+*.automaton
 scanner.ml
 parser.ml
 parser.mli
