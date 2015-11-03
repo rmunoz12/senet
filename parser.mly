@@ -10,7 +10,6 @@
 %token EQ NEQ LT LEQ GT GEQ
 %token RETURN IF ELSE FOR WHILE INT
 %token <int> INTLITERAL
-%token <char> CHARLITERAL
 %token <string> STRLITERAL
 %token <string> ID
 %token EOF
@@ -135,7 +134,8 @@ stmt:
 expr:
     INTLITERAL       { IntLiteral($1) }
   | STRLITERAL       { StrLiteral($1) }
-  | bool_lit        { BoolLiteral($1) }
+  | NONE             { VoidLiteral }
+  | bool_lit         { BoolLiteral($1) }
   | list_lit         { ListLiteral($1) }
   | ID               { Id($1) }
   | expr DOT ID      { Field($1, $3) }
