@@ -112,20 +112,24 @@ stmt_list:
     /* nothing */  { [] }
   | stmt_list stmt { $2 :: $1 }
 
+stmt_list_req:
+    stmt               { [$1] }
+  | stmt_list_req stmt { $2 :: $1 }
+
 stmt:
     expr SEMI { Expr($1) }
   | RETURN expr SEMI { Return($2) }
   | LBRACE stmt_list RBRACE { Block(List.rev $2) }
-  | IF LPAREN expr RPAREN LBRACE stmt RBRACE %prec NOELSE
-     { If($3, $6, Block([])) }
-  | IF LPAREN expr RPAREN LBRACE stmt RBRACE ELIF LBRACE stmt RBRACE
-     { If($3, $6, $10) }
-  | IF LPAREN expr RPAREN LBRACE stmt RBRACE ELSE LBRACE stmt RBRACE
-     { If($3, $6, $10) }
-  | FOR LPAREN expr IN LBRACE expr_list RBRACE RPAREN LBRACE stmt RBRACE
-     { For($3, $6, $10) }
-  | WHILE LPAREN expr RPAREN LBRACE stmt RBRACE
-     { While($3, $6) }
+  | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE %prec NOELSE
+     { If($3, Block($6), Block([])) }
+  | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE ELIF LBRACE stmt_list_req RBRACE
+     { If($3, Block($6), Block($10)) }
+  | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE ELSE LBRACE stmt_list_req RBRACE
+     { If($3, Block($6), Block($10)) }
+  | FOR LPAREN expr IN LBRACE expr_list RBRACE RPAREN LBRACE stmt_list_req RBRACE
+     { For($3, $6, Block($10)) }
+  | WHILE LPAREN expr RPAREN LBRACE stmt_list_req RBRACE
+     { While($3, Block($6)) }
   | BREAK SEMI    { Break}
   | CONTINUE SEMI { Continue }
   | expr PLACE expr REMOVE list_lit SEMI { Place($1, $3, $5) }
