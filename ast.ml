@@ -100,12 +100,15 @@ let rec string_of_vtype = function
 let rec string_of_vdecl vdecl =
   string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^ ";\n"
 
+let escaped_string s =
+  Printf.sprintf "%S" s
+
 let rec string_of_list_lit = function
     EmptyList -> "[]"
   | ListIntLit(i) ->
       "[" ^ String.concat ", " (List.map string_of_int i) ^ "]"
   | ListStrLit(s) ->
-      "[" ^ String.concat ", " s ^ "]"
+      "[" ^ String.concat ", " (List.map escaped_string s) ^ "]"
   | List(l) ->
       "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
 
@@ -130,11 +133,11 @@ let rec string_of_expr = function
       string_of_field f ^
       "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""
-  | StrLiteral(s) -> s
+  | StrLiteral(s) -> escaped_string s
   | Uminus(e) -> "-" ^ string_of_expr e
   | Not(e) -> "not" ^ string_of_expr e
   | Element(e1, e2) ->
-      string_of_expr e1 ^ " [" ^ string_of_expr e2 ^ "]"
+      string_of_expr e1 ^ "[" ^ string_of_expr e2 ^ "]"
   | ListLiteral(l) -> string_of_list_lit l
   | BoolLiteral(b) -> (match b with True -> "True" | False -> "False")
   | VoidLiteral -> "None"
@@ -152,14 +155,14 @@ let rec string_of_stmt = function
             "{\n" ^ String.concat "" (List.map string_of_expr elist) ^ "}\n" ^
           ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
-  | Break -> "break"
-  | Continue -> "continue"
+  | Break -> "break;\n"
+  | Continue -> "continue;\n"
   | Place(e1, e2, l) ->
-      string_of_expr e1 ^ ">>" ^ string_of_expr e2 ^
-        string_of_list_lit l
+      string_of_expr e1 ^ " >> " ^ string_of_expr e2 ^ " << " ^
+        string_of_list_lit l ^ ";\n"
   | Remove(e1, e2, l) ->
-      string_of_expr e1 ^ "<<" ^ string_of_expr e2 ^
-        string_of_list_lit l
+      string_of_expr e1 ^ " << " ^ string_of_expr e2 ^ " << " ^
+        string_of_list_lit l ^ ";\n"
 
 let string_of_basic_fdecl fdecl =
   "func" ^ " " ^ string_of_vtype fdecl.ftype ^ " " ^
