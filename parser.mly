@@ -88,8 +88,8 @@ formals_opt:
   | formal_list   { List.rev $1 }
 
 formal_list:
-    ID                   { [$1] }
-  | formal_list COMMA ID { $3 :: $1 }
+    type_id ID                   { [{ vtype = $1; vname = $2 }] }
+  | formal_list COMMA type_id ID { { vtype = $3; vname = $4 } :: $1 }
 
 vdecl_list:
     /* nothing */    { [] }

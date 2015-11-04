@@ -59,14 +59,14 @@ type stmt =
 type basic_func_decl = {
     ftype : id_type;
     fname : string;
-    formals : string list;
+    formals : var_decl list;
     locals : var_decl list;
     body : stmt list;
   }
 
 type assert_decl = {
     fname : string;
-    formals : string list;
+    formals : var_decl list;
     locals : var_decl list;
     body : stmt list;
   }
@@ -163,14 +163,16 @@ let rec string_of_stmt = function
 
 let string_of_basic_fdecl fdecl =
   "func" ^ " " ^ string_of_vtype fdecl.ftype ^ " " ^
-  fdecl.fname ^ "(" ^ String.concat ", " fdecl.formals ^ ")\n{\n" ^
+  fdecl.fname ^ "(" ^
+        String.concat ", " (List.map string_of_vdecl fdecl.formals) ^ ")\n{\n" ^
   String.concat "" (List.map string_of_vdecl fdecl.locals) ^
   String.concat "" (List.map string_of_stmt fdecl.body) ^
   "}\n"
 
 let string_of_assert_decl fdecl =
   "assert " ^
-  fdecl.fname ^ "(" ^ String.concat ", " fdecl.formals ^ ")\n{\n" ^
+  fdecl.fname ^ "(" ^
+        String.concat ", " (List.map string_of_vdecl fdecl.formals) ^ ")\n{\n" ^
   String.concat "" (List.map string_of_vdecl fdecl.locals) ^
   String.concat "" (List.map string_of_stmt fdecl.body) ^
   "}\n"
