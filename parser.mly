@@ -137,8 +137,7 @@ expr:
   | NONE             { VoidLiteral }
   | bool_lit         { BoolLiteral($1) }
   | list_lit         { ListLiteral($1) }
-  | ID               { Id($1) }
-  | expr DOT ID      { Field($1, $3) }
+  | field_expr       { Field($1) }
   | expr PLUS   expr { Binop($1, Add,   $3) }
   | expr MINUS  expr { Binop($1, Sub,   $3) }
   | expr TIMES  expr { Binop($1, Mult,  $3) }
@@ -152,12 +151,16 @@ expr:
   | expr GEQ    expr { Binop($1, Geq,   $3) }
   | expr AND    expr { Binop($1, And,   $3) }
   | expr OR    expr  { Binop($1, Or,    $3) }
-  | ID ASSIGN expr   { Assign($1, $3) }
-  | ID LPAREN actuals_opt RPAREN { Call($1, $3) }
+  | field_expr ASSIGN expr   { Assign($1, $3) }
+  | field_expr LPAREN actuals_opt RPAREN { Call($1, $3) }
   | expr LBRACKET expr RBRACKET { Element($1, $3) }
   | LPAREN expr RPAREN { $2 }
   | MINUS expr %prec UMINUS { Uminus($2) }
   | NOT expr { Not($2) }
+
+field_expr:
+    ID                     { Id($1) }
+  | field_expr DOT ID      { FieldCall($1, $3) }
 
 expr_list:
     expr                 { [$1] }

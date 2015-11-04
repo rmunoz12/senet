@@ -24,17 +24,20 @@ type list_lit =
   | List of list_lit list
   | EmptyList
 
+type field_expr =
+    Id of string
+  | FieldCall of field_expr * string
+
 type expr =
     IntLiteral of int
   | StrLiteral of string
   | ListLiteral of list_lit
   | BoolLiteral of bool_lit
   | VoidLiteral
-  | Id of string
+  | Field of field_expr
   | Binop of expr * op * expr
-  | Assign of string * expr
-  | Call of string * expr list
-  | Field of expr * string
+  | Assign of field_expr * expr
+  | Call of field_expr * expr list
   | Element of expr * expr
   | Uminus of expr
   | Not of expr
@@ -106,9 +109,13 @@ let rec string_of_list_lit = function
   | List(l) ->
       "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
 
+let rec string_of_field = function
+    Id(s) -> s
+  | FieldCall(f,s) -> string_of_field f ^ "." ^ s
+
 let rec string_of_expr = function
     IntLiteral(l) -> string_of_int l
-  | Id(s) -> s
+  | Field(f) -> string_of_field f
   | Binop(e1, o, e2) ->
       string_of_expr e1 ^ " " ^
       (match o with
@@ -118,17 +125,16 @@ let rec string_of_expr = function
       | Mod -> "%"
       | And -> "and" | Or -> "Or" ) ^ " " ^
       string_of_expr e2
-  | Assign(v, e) -> v ^ " = " ^ string_of_expr e
+  | Assign(f, e) -> string_of_field f ^ " = " ^ string_of_expr e
   | Call(f, el) ->
-      f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+      string_of_field f ^
+      "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""
   | StrLiteral(s) -> s
   | Uminus(e) -> "-" ^ string_of_expr e
   | Not(e) -> "not" ^ string_of_expr e
   | Element(e1, e2) ->
       string_of_expr e1 ^ " [" ^ string_of_expr e2 ^ "]"
-  | Field(e1, s) ->
-      string_of_expr e1 ^ "." ^ s
   | ListLiteral(l) -> string_of_list_lit l
   | BoolLiteral(b) -> (match b with True -> "True" | False -> "False")
   | VoidLiteral -> "None"
