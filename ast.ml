@@ -18,9 +18,14 @@ type bool_lit =
     True
   | False
 
+type list_elem =
+    IntElem of int
+  | StrElem of string
+  | IdElem of string
+  | BoolElem of bool_lit
+
 type list_lit =
-    ListIntLit of int list
-  | ListStrLit of string list
+    Elems of list_elem list
   | List of list_lit list
   | EmptyList
 
@@ -100,15 +105,23 @@ let rec string_of_vtype = function
 let rec string_of_vdecl vdecl =
   string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^ ";\n"
 
-let escaped_string s =
+let rec escaped_string s =
   Printf.sprintf "%S" s
+
+let rec string_of_list_elems = function
+    IntElem(i) -> string_of_int i
+  | StrElem(s) -> escaped_string s
+  | BoolElem(b) -> (match b with True -> "True" | False -> "False")
+  | IdElem(s) -> s
 
 let rec string_of_list_lit = function
     EmptyList -> "[]"
-  | ListIntLit(i) ->
+  (* | ListIntLit(i) ->
       "[" ^ String.concat ", " (List.map string_of_int i) ^ "]"
   | ListStrLit(s) ->
-      "[" ^ String.concat ", " (List.map escaped_string s) ^ "]"
+      "[" ^ String.concat ", " (List.map escaped_string s) ^ "]" *)
+  | Elems(e) ->
+        "[" ^ String.concat ", " (List.map string_of_list_elems e) ^ "]"
   | List(l) ->
       "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
 
