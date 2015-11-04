@@ -88,8 +88,8 @@ formals_opt:
   | formal_list   { List.rev $1 }
 
 formal_list:
-    type_id ID                   { [{ vtype = $1; vname = $2 }] }
-  | formal_list COMMA type_id ID { { vtype = $3; vname = $4 } :: $1 }
+    type_id ID                   { [{ vtype = $1; vname = $2; vinit = NoInit }] }
+  | formal_list COMMA type_id ID { { vtype = $3; vname = $4; vinit = NoInit } :: $1 }
 
 vdecl_list:
     /* nothing */    { [] }
@@ -98,7 +98,28 @@ vdecl_list:
 vdecl:
     type_id ID SEMI
       { { vtype = $1;
-          vname = $2 } }
+          vname = $2;
+          vinit = NoInit } }
+  | type_id ID ASSIGN ID SEMI
+      { { vtype = $1;
+          vname = $2;
+          vinit = IdInit($4) } }
+  | type_id ID ASSIGN INTLITERAL SEMI
+      { { vtype = $1;
+          vname = $2;
+          vinit = IntInit($4) } }
+  | type_id ID ASSIGN STRLITERAL SEMI
+      { { vtype = $1;
+          vname = $2;
+          vinit = StrInit($4) } }
+  | type_id ID ASSIGN bool_lit SEMI
+      { { vtype = $1;
+          vname = $2;
+          vinit = BoolInit($4) } }
+  | type_id ID ASSIGN list_lit SEMI
+      { { vtype = $1;
+          vname = $2;
+          vinit = ListInit($4) } }
 
 type_id:
     INT                            { Int }

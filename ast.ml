@@ -9,11 +9,6 @@ type id_type =
   | List of id_type
   | Group of string
 
-type var_decl = {
-    vname : string;
-    vtype : id_type;
-}
-
 type bool_lit =
     True
   | False
@@ -60,6 +55,19 @@ type stmt =
   | Remove of expr * expr * list_lit
   | Place of expr * expr * list_lit
 
+type init =
+    IdInit of string
+  | IntInit of int
+  | StrInit of string
+  | BoolInit of bool_lit
+  | ListInit of list_lit
+  | NoInit
+
+type var_decl = {
+    vname : string;
+    vtype : id_type;
+    vinit : init
+}
 
 type basic_func_decl = {
     ftype : id_type;
@@ -93,6 +101,9 @@ type turns = func_decl list
 
 type program = setup * turns
 
+let rec escaped_string s =
+  Printf.sprintf "%S" s
+
 let rec string_of_vtype = function
     Int -> "int"
   | Bool -> "bool"
@@ -102,12 +113,6 @@ let rec string_of_vtype = function
       "list[" ^ string_of_vtype vt ^ "]"
   | Group(s) -> s
 
-let rec string_of_vdecl vdecl =
-  string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^ ";\n"
-
-let rec escaped_string s =
-  Printf.sprintf "%S" s
-
 let rec string_of_list_elems = function
     IntElem(i) -> string_of_int i
   | StrElem(s) -> escaped_string s
@@ -116,14 +121,22 @@ let rec string_of_list_elems = function
 
 let rec string_of_list_lit = function
     EmptyList -> "[]"
-  (* | ListIntLit(i) ->
-      "[" ^ String.concat ", " (List.map string_of_int i) ^ "]"
-  | ListStrLit(s) ->
-      "[" ^ String.concat ", " (List.map escaped_string s) ^ "]" *)
   | Elems(e) ->
         "[" ^ String.concat ", " (List.map string_of_list_elems e) ^ "]"
   | List(l) ->
       "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
+
+let rec string_of_vinit = function
+    NoInit -> ""
+  | IntInit(i) -> " = " ^ string_of_int i
+  | StrInit(s) -> " = " ^ escaped_string s
+  | BoolInit(b) -> " = " ^ (match b with True -> "True" | False -> "False")
+  | ListInit(l) -> " = " ^ string_of_list_lit l
+  | IdInit(s) -> " = " ^ s
+
+let rec string_of_vdecl vdecl =
+  string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^
+  string_of_vinit vdecl.vinit ^ ";\n"
 
 let rec string_of_field = function
     Id(s) -> s
