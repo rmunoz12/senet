@@ -4,6 +4,7 @@
 *.cmo
 *.output
 *.automaton
+*.conflicts
 scanner.ml
 parser.ml
 parser.mli
