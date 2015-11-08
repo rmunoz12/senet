@@ -1,8 +1,9 @@
 { open Parser
-  exception SyntaxError of string }
+  exception SyntaxError of string * Lexing.lexbuf }
 
 rule token = parse
-  [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
+  '\n'            {Lexing.new_line lexbuf; token lexbuf} (* http://caml.inria.fr/pub/docs/manual-ocaml/libref/Lexing.html; http://courses.softlab.ntua.gr/compilers/ocamlyacc-tutorial.pdf *)
+| [' ' '\t' '\r'] { token lexbuf } (* Whitespace *)
 | "#"      { comment lexbuf }           (* Comment until EOL *)
 | '"'      { str (Buffer.create 20) lexbuf }  (* String until next unescaped quote *)
 | '.'      { DOT }
@@ -56,10 +57,11 @@ rule token = parse
 | ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }
 | ['a'-'z' 'A'-'Z' '_']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
-| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
+| _ as char
+    { raise (SyntaxError("Illegal character: " ^ Char.escaped char, lexbuf)) }
 
 and comment = parse
-  '\n' { token lexbuf }
+  '\n' { Lexing.new_line lexbuf; token lexbuf }
 | _    { comment lexbuf }
 
 and str buf = parse
@@ -75,5 +77,7 @@ and str buf = parse
   { Buffer.add_string buf (lxm);
     str buf lexbuf
   }
-| _  as char { raise (SyntaxError ("Illegal string character: " ^ Char.escaped char)) }
-| eof { raise (SyntaxError ("String is not terminated")) }
+| _  as char
+    { raise (SyntaxError ("Illegal string character: " ^ Char.escaped char, lexbuf)) }
+| eof
+    { raise (SyntaxError ("String is not terminated", lexbuf)) }
