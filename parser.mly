@@ -100,26 +100,10 @@ vdecl:
       { { vtype = $1;
           vname = $2;
           vinit = NoInit } }
-  | type_id ID ASSIGN ID SEMI
+  | type_id ID ASSIGN expr SEMI
       { { vtype = $1;
           vname = $2;
-          vinit = IdInit($4) } }
-  | type_id ID ASSIGN INTLITERAL SEMI
-      { { vtype = $1;
-          vname = $2;
-          vinit = IntInit($4) } }
-  | type_id ID ASSIGN STRLITERAL SEMI
-      { { vtype = $1;
-          vname = $2;
-          vinit = StrInit($4) } }
-  | type_id ID ASSIGN bool_lit SEMI
-      { { vtype = $1;
-          vname = $2;
-          vinit = BoolInit($4) } }
-  | type_id ID ASSIGN list_lit SEMI
-      { { vtype = $1;
-          vname = $2;
-          vinit = ListInit($4) } }
+          vinit = ExprInit($4) } }
 
 type_id:
     INT                            { Int }

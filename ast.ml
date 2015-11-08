@@ -56,11 +56,7 @@ type stmt =
   | Place of expr * expr * list_lit
 
 type init =
-    IdInit of string
-  | IntInit of int
-  | StrInit of string
-  | BoolInit of bool_lit
-  | ListInit of list_lit
+  | ExprInit of expr
   | NoInit
 
 type var_decl = {
@@ -126,18 +122,6 @@ let rec string_of_list_lit = function
   | List(l) ->
         "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
 
-let rec string_of_vinit = function
-    NoInit -> ""
-  | IntInit(i) -> " = " ^ string_of_int i
-  | StrInit(s) -> " = " ^ escaped_string s
-  | BoolInit(b) -> " = " ^ (match b with True -> "True" | False -> "False")
-  | ListInit(l) -> " = " ^ string_of_list_lit l
-  | IdInit(s) -> " = " ^ s
-
-let rec string_of_vdecl vdecl =
-  string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^
-  string_of_vinit vdecl.vinit ^ ";\n"
-
 let rec string_of_field = function
     Id(s) -> s
   | FieldCall(f,s) -> string_of_field f ^ "." ^ s
@@ -167,6 +151,19 @@ let rec string_of_expr = function
   | ListLiteral(l) -> string_of_list_lit l
   | BoolLiteral(b) -> (match b with True -> "True" | False -> "False")
   | VoidLiteral -> "None"
+
+let rec string_of_vinit = function
+    NoInit -> ""
+  | ExprInit(e) -> " = " ^ string_of_expr e
+  (* | IntInit(i) -> " = " ^ string_of_int i
+  | StrInit(s) -> " = " ^ escaped_string s
+  | BoolInit(b) -> " = " ^ (match b with True -> "True" | False -> "False")
+  | ListInit(l) -> " = " ^ string_of_list_lit l
+  | IdInit(s) -> " = " ^ s *)
+
+let rec string_of_vdecl vdecl =
+  string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^
+  string_of_vinit vdecl.vinit ^ ";\n"
 
 let rec string_of_stmt = function
     Block(stmts) ->
