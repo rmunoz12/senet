@@ -142,15 +142,15 @@ stmt:
   | RETURN expr SEMI { Return($2) }
   | LBRACE stmt_list RBRACE { Block(List.rev $2) }
   | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE %prec NOELSE
-     { If($3, Block($6), Block([])) }
+     { If($3, Block(List.rev $6), Block([])) }
   | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE ELIF LBRACE stmt_list_req RBRACE
-     { If($3, Block($6), Block($10)) }
+     { If($3, Block(List.rev $6), Block(List.rev $10)) }
   | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE ELSE LBRACE stmt_list_req RBRACE
-     { If($3, Block($6), Block($10)) }
+     { If($3, Block(List.rev $6), Block(List.rev $10)) }
   | FOR LPAREN expr IN LBRACE expr_list RBRACE RPAREN LBRACE stmt_list_req RBRACE
-     { For($3, $6, Block($10)) }
+     { For($3, List.rev $6, Block(List.rev $10)) }
   | WHILE LPAREN expr RPAREN LBRACE stmt_list_req RBRACE
-     { While($3, Block($6)) }
+     { While($3, Block(List.rev $6)) }
   | BREAK SEMI    { Break}
   | CONTINUE SEMI { Continue }
   | expr PLACE expr REMOVE list_lit SEMI { Place($1, $3, $5) }
@@ -201,8 +201,8 @@ actuals_list:
 
 list_lit:
     LBRACKET RBRACKET                  { EmptyList }
-  | LBRACKET list_elems RBRACKET       { Elems($2) }
-  | LBRACKET list_of_list_lit RBRACKET { List($2) }
+  | LBRACKET list_elems RBRACKET       { Elems(List.rev $2) }
+  | LBRACKET list_of_list_lit RBRACKET { List(List.rev $2) }
 
 list_of_list_lit:
     list_lit                        { [$1] }

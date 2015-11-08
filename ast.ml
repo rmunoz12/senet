@@ -124,7 +124,7 @@ let rec string_of_list_lit = function
   | Elems(e) ->
         "[" ^ String.concat ", " (List.map string_of_list_elems e) ^ "]"
   | List(l) ->
-      "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
+        "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
 
 let rec string_of_vinit = function
     NoInit -> ""
@@ -178,7 +178,7 @@ let rec string_of_stmt = function
       string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
   | For(e, elist, s) ->
       "for (" ^ string_of_expr e  ^ " in " ^
-            "{\n" ^ String.concat "" (List.map string_of_expr elist) ^ "}\n" ^
+            "{\n" ^ String.concat ", " (List.map string_of_expr elist) ^ "}\n" ^
           ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
   | Break -> "break;\n"
