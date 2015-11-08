@@ -42,6 +42,8 @@ type expr =
   | Uminus of expr
   | Not of expr
   | Noexpr
+  | Remove of field_expr * field_expr * list_lit
+  | Place of field_expr * field_expr * list_lit
 
 type stmt =
     Block of stmt list
@@ -52,8 +54,6 @@ type stmt =
   | If of expr * stmt * stmt
   | For of expr * expr list * stmt
   | While of expr * stmt
-  | Remove of expr * expr * list_lit
-  | Place of expr * expr * list_lit
 
 type init =
   | ExprInit of expr
@@ -151,6 +151,12 @@ let rec string_of_expr = function
   | ListLiteral(l) -> string_of_list_lit l
   | BoolLiteral(b) -> (match b with True -> "True" | False -> "False")
   | VoidLiteral -> "None"
+  | Place(f1, f2, l) ->
+      string_of_field f1 ^ " >> " ^ string_of_field f2 ^ " >> " ^
+        string_of_list_lit l
+  | Remove(f1, f2, l) ->
+      string_of_field f1 ^ " << " ^ string_of_field f2 ^ " << " ^
+        string_of_list_lit l
 
 let rec string_of_vinit = function
     NoInit -> ""
@@ -180,12 +186,6 @@ let rec string_of_stmt = function
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
   | Break -> "break;\n"
   | Continue -> "continue;\n"
-  | Place(e1, e2, l) ->
-      string_of_expr e1 ^ " >> " ^ string_of_expr e2 ^ " << " ^
-        string_of_list_lit l ^ ";\n"
-  | Remove(e1, e2, l) ->
-      string_of_expr e1 ^ " << " ^ string_of_expr e2 ^ " << " ^
-        string_of_list_lit l ^ ";\n"
 
 let string_of_basic_fdecl fdecl =
   "func" ^ " " ^ string_of_vtype fdecl.ftype ^ " " ^

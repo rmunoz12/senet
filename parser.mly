@@ -137,8 +137,7 @@ stmt:
      { While($3, Block(List.rev $6)) }
   | BREAK SEMI    { Break}
   | CONTINUE SEMI { Continue }
-  | expr PLACE expr PLACE list_lit SEMI { Place($1, $3, $5) }
-  | expr REMOVE expr REMOVE list_lit SEMI { Remove($1, $3, $5) }
+
 
 expr:
     INTLITERAL       { IntLiteral($1) }
@@ -166,6 +165,8 @@ expr:
   | LPAREN expr RPAREN { $2 }
   | MINUS expr %prec UMINUS { Uminus($2) }
   | NOT expr { Not($2) }
+  | field_expr PLACE field_expr PLACE list_lit   { Place($1, $3, $5) }
+  | field_expr REMOVE field_expr REMOVE list_lit { Remove($1, $3, $5) }
 
 field_expr:
     ID                     { Id($1) }
