@@ -1,5 +1,5 @@
 { open Parser
-  exception SyntaxError of string * Lexing.lexbuf }
+  exception LexError of string * Lexing.lexbuf }
 
 rule token = parse
   '\n'            {Lexing.new_line lexbuf; token lexbuf} (* http://caml.inria.fr/pub/docs/manual-ocaml/libref/Lexing.html; http://courses.softlab.ntua.gr/compilers/ocamlyacc-tutorial.pdf *)
@@ -58,7 +58,8 @@ rule token = parse
 | ['a'-'z' 'A'-'Z' '_']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
 | _ as char
-    { raise (SyntaxError("Illegal character: " ^ Char.escaped char, lexbuf)) }
+    { let msg = "Lexical error: Illegal character: " ^ Char.escaped char in
+      raise (LexError(msg, lexbuf)) }
 
 and comment = parse
   '\n' { Lexing.new_line lexbuf; token lexbuf }
@@ -78,6 +79,8 @@ and str buf = parse
     str buf lexbuf
   }
 | _  as char
-    { raise (SyntaxError ("Illegal string character: " ^ Char.escaped char, lexbuf)) }
+    { let msg = "Lexical error: Illegal string character: " ^ Char.escaped char in
+      raise (LexError (msg, lexbuf)) }
 | eof
-    { raise (SyntaxError ("String is not terminated", lexbuf)) }
+    { let msg = "Lexical error: String is not terminated" in
+      raise (LexError (msg, lexbuf)) }

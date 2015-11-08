@@ -44,5 +44,8 @@ let _ =
         in print_endline listing
       | Compile -> Execute.execute_prog (Compile.translate program) *)
 
-  with Scanner.SyntaxError(msg,lb) ->
+  with Scanner.LexError(msg,lb) ->
           print_string (string_of_error msg lb); print_newline ()
+     | Parser.Error ->
+          let msg = "Syntax error: " ^ Lexing.lexeme lexbuf in
+          print_string (string_of_error msg lexbuf); print_newline ()
