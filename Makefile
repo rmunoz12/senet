@@ -2,8 +2,8 @@ OBJS = ast.cmo parser.cmo scanner.cmo senet.cmo
 VERBOSE_YACC = -v
 
 # Choose one
-YACC = ocamlyacc
-# YACC = menhir --explain
+# YACC = ocamlyacc
+YACC = menhir --explain
 
 senet : $(OBJS)
 	ocamlc -o senet $(OBJS)
