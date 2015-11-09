@@ -161,11 +161,6 @@ let rec string_of_expr = function
 let rec string_of_vinit = function
     NoInit -> ""
   | ExprInit(e) -> " = " ^ string_of_expr e
-  (* | IntInit(i) -> " = " ^ string_of_int i
-  | StrInit(s) -> " = " ^ escaped_string s
-  | BoolInit(b) -> " = " ^ (match b with True -> "True" | False -> "False")
-  | ListInit(l) -> " = " ^ string_of_list_lit l
-  | IdInit(s) -> " = " ^ s *)
 
 let rec string_of_vdecl vdecl =
   string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^

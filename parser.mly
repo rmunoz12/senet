@@ -22,8 +22,8 @@
 %token REMOVE PLACE
 %token SETUP TURNS FUNC
 
-%nonassoc NOELSE
-%nonassoc ELSE
+/* %nonassoc NOELSE */
+/* %nonassoc ELSE */
 %right ASSIGN
 %left OR
 %left AND
@@ -34,7 +34,7 @@
 %left TIMES DIVIDE
 %nonassoc UMINUS
 %nonassoc LBRACKET
-%left DOT
+/* %left DOT */
 
 %start program
 %type <Ast.program> program
@@ -125,7 +125,7 @@ stmt:
     expr SEMI { Expr($1) }
   | RETURN expr SEMI { Return($2) }
   | LBRACE stmt_list RBRACE { Block(List.rev $2) }
-  | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE %prec NOELSE
+  | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE /* %prec NOELSE */
      { If($3, Block(List.rev $6), Block([])) }
   | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE ELIF LBRACE stmt_list_req RBRACE
      { If($3, Block(List.rev $6), Block(List.rev $10)) }
