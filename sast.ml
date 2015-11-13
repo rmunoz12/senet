@@ -16,24 +16,6 @@ type expr_detail =
 
 type expression = expr_detail * t
 
-(*
-type expr =
-    IntLiteral of int
-  | StrLiteral of string
-  | ListLiteral of list_lit
-  | BoolLiteral of bool_lit
-  | VoidLiteral
-  | Field of field_expr
-  | Binop of expr * op * expr
-  | Assign of field_expr * expr
-  | Call of field_expr * expr list
-  | Element of expr * expr
-  | Uminus of expr
-  | Not of expr
-  | Noexpr
-  | Remove of field_expr * field_expr * list_lit
-  | Place of field_expr * field_expr * list_lit *)
-
 let check_expression = function
     IntLiteral(i) -> true
   | StrLiteral(s) -> true

@@ -62,12 +62,10 @@ Check() {
 
     generatedfiles=""
 
-    generatedfiles="$generatedfiles ${basename}.i.out" &&
-    Run "$SENET" "-i" "<" $1 ">" ${basename}.i.out &&
-    Compare ${basename}.i.out ${reffile}.out ${basename}.i.diff
-
     generatedfiles="$generatedfiles ${basename}.c.out" &&
-    Run "$SENET" "-c" "<" $1 ">" ${basename}.c.out &&
+    Run "$SENET" "-c" "<" $1 &&
+    Run "gcc output.c" &&
+    Run "./a.out >" ${basename}.c.out &&
     Compare ${basename}.c.out ${reffile}.out ${basename}.c.diff
 
     # Report the status and clean up the generated files
