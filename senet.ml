@@ -1,6 +1,6 @@
 open Lexing
 
-type action = Ast (* | Interpret | Bytecode | Compile *)
+type action = Ast | Semantic | Compile
 
 (**
   * Printing of error line based on:
@@ -23,10 +23,9 @@ let string_of_error msg lb =
 
 let _ =
   let action = if Array.length Sys.argv > 1 then
-    List.assoc Sys.argv.(1) [ ("-a", Ast) ](* ;
-			      ("-i", Interpret);
-			      ("-b", Bytecode);
-			      ("-c", Compile) ] *)
+    List.assoc Sys.argv.(1) [ ("-a", Ast) ;
+			      ("-s", Semantic) ;
+			      ("-c", Compile) ]
   else Ast in
   let lexbuf = Lexing.from_channel stdin in
 
@@ -38,11 +37,11 @@ let _ =
       match action with
         Ast -> let listing = Ast.string_of_program program
                in print_string listing
-      (* | Interpret -> ignore (Interpret.run program)
-      | Bytecode -> let listing =
-          Bytecode.string_of_prog (Compile.translate program)
-        in print_endline listing
-      | Compile -> Execute.execute_prog (Compile.translate program) *)
+      | Semantic -> let result = Sast.check_program program
+               in print_string (result ^ "\n")
+      | Compile -> Compile.translate program
+
+      (* | Compile -> Execute.execute_prog (Compile.translate program) *)
 
   with Scanner.LexError(msg,lb) ->
           print_string (string_of_error msg lb); print_newline ()

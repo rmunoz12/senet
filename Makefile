@@ -1,4 +1,4 @@
-OBJS = ast.cmo parser.cmo scanner.cmo senet.cmo
+OBJS = ast.cmo parser.cmo scanner.cmo sast.cmo compile.cmo senet.cmo
 VERBOSE_YACC = -v
 
 # Choose one
@@ -27,3 +27,4 @@ clean :
 
 
 parser.cmo: ast.cmo parser.cmi
+

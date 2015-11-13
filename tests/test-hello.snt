@@ -1,0 +1,2 @@
+@setup { }
+@turns { func void begin() { print("Hello World"); } }
