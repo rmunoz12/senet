@@ -33,18 +33,19 @@ let _ =
 
     let program = Parser.program Scanner.token lexbuf in
 
-
       match action with
         Ast -> let listing = Ast.string_of_program program
                in print_string listing
-      | Semantic -> let result = Sast.check_program program
-               in print_string (result ^ "\n")
-      | Compile -> Compile.translate program
-
-      (* | Compile -> Execute.execute_prog (Compile.translate program) *)
+      | Semantic -> let checked_program = Sast.check_program program
+               in ignore(checked_program);
+                  print_string ("Success!\n")
+      | Compile -> Compile.translate (Sast.check_program program)
 
   with Scanner.LexError(msg,lb) ->
           print_string (string_of_error msg lb); print_newline ()
      | Parser.Error ->
           let msg = "Syntax error: " ^ Lexing.lexeme lexbuf in
           print_string (string_of_error msg lexbuf); print_newline ()
+     | Sast.SemError(msg) ->
+          let msg = "Semantic error: " ^ msg in
+          print_string msg; print_newline ()

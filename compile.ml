@@ -1,5 +1,4 @@
 open Sast
-open Ast
 
 let setup_to_c s =
     "" ^ "\n"
@@ -14,6 +13,13 @@ let rec field_expr_to_c = function
     Id(s) -> if s = "print" then "printf" else s
   | FieldCall(fd, s) -> (field_expr_to_c fd) ^ "." ^ s
 
+let rec function_call_to_c = function
+    BasicFunc(f) ->
+      if f.fname = "print" then
+        "printf"
+      else
+        f.fname
+
 let rec expression_to_c = function
     IntLiteral(i) -> ""
   | StrLiteral(s) -> Ast.escaped_string s
@@ -23,8 +29,10 @@ let rec expression_to_c = function
   | Field(fd) -> ""
   | Binop(e1, o, e2) -> ""
   | Assign(fd, e) -> ""
-  | Call(fd, el) -> (field_expr_to_c fd) ^ "(" ^
-                    String.concat "," (List.map expression_to_c el) ^ ")"
+  | Call(fd, el) ->
+        let e = List.map (fun (detail, _) -> detail) el in
+        (function_call_to_c fd) ^ "(" ^
+         String.concat "," (List.map expression_to_c e) ^ ")"
   | Element(e1, e2) -> ""
   | Uminus(e) -> ""
   | Not(e) -> ""
@@ -34,7 +42,9 @@ let rec expression_to_c = function
 
 let rec statement_to_c = function
     Block(slist) -> "{}"
-  | Expr(e) -> expression_to_c(e) ^ ";"
+  | Expression(e) ->
+      let detail, _ = e in
+      expression_to_c(detail) ^ ";"
   | Return(e) -> ""
   | Break -> ""
   | Continue -> ""
@@ -64,7 +74,7 @@ let turns_to_c t =
       )
     )
 
-let senet_to_c(s, t) =
+let senet_to_c (s, t) =
     "#include <stdio.h>" ^
     setup_to_c(s) ^ turns_to_c(t) ^
     "int main() {\n
@@ -72,8 +82,8 @@ let senet_to_c(s, t) =
     return 0;\n
     }\n"
 
-let translate program =
+let translate (program : Sast.program) =
     let outfile = open_out "output.c" in
     let ctext = senet_to_c program in
-    output_string outfile ctext;
-    print_string ctext
+    output_string outfile ctext (* ;
+    print_string ctext *)

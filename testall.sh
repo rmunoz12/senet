@@ -7,6 +7,7 @@ ulimit -t 30
 
 globallog=testall.log
 rm -f $globallog
+rm -f output.c
 error=0
 globalerror=0
 
