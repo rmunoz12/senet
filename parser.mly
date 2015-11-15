@@ -131,7 +131,7 @@ stmt:
      { If($3, Block(List.rev $6), Block(List.rev $10)) }
   | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE ELSE LBRACE stmt_list_req RBRACE
      { If($3, Block(List.rev $6), Block(List.rev $10)) }
-  | FOR LPAREN expr IN LBRACE expr_list RBRACE RPAREN LBRACE stmt_list_req RBRACE
+  | FOR LPAREN vdecl IN LBRACE expr_list RBRACE RPAREN LBRACE stmt_list_req RBRACE
      { For($3, List.rev $6, Block(List.rev $10)) }
   | WHILE LPAREN expr RPAREN LBRACE stmt_list_req RBRACE
      { While($3, Block(List.rev $6)) }

@@ -1,0 +1,10 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    print(True);
+    print(False);
+}
+
+}

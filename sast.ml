@@ -51,13 +51,13 @@ and field_expr =
   | FieldCall of field_expr * string
 
 and statement =
-    Block of statement list
+    Block of symbol_table * statement list
   | Expression of expression
   | Return of expression
   | Break
   | Continue
   | If of expression * statement * statement
-  | For of expression * expression list * statement
+  | For of var_decl * expression list * statement
   | While of expression * statement
 
 and basic_func_decl = {
@@ -79,21 +79,21 @@ and func_decl =
     BasicFunc of basic_func_decl
   | AssertFunc of assert_decl
 
-type group_decl = {
+and group_decl = {
     gname : string;
     extends : string;
     attributes : var_decl list;
     methods : func_decl list;
   }
 
-type setup = var_decl list * func_decl list * group_decl list
+and setup = var_decl list * func_decl list * group_decl list
 
-type turns = func_decl list
+and turns = func_decl list
 
-type program = setup * turns
+and program = setup * turns
 
 
-type symbol_table = {
+and symbol_table = {
   parent : symbol_table option;
   mutable variables : var_decl list;
   functions : func_decl list
@@ -129,7 +129,7 @@ let rec find_variable (scope : symbol_table) name =
       Some(parent) -> find_variable parent name
     | _ -> raise Not_found
 
-let rec field env = function
+let rec check_field env = function
     Ast.Id(vname) ->
       let vdecl = try
         find_variable env.scope vname
@@ -141,7 +141,7 @@ let rec field env = function
   | Ast.FieldCall(fe, vname) ->
       (* This is a stopgap, what we really need to do is
          check that fe's fields include name *)
-      ignore(field env fe); field env (Ast.Id(vname))
+      ignore(check_field env fe); check_field env (Ast.Id(vname))
 
 let rec check_single_elem env = function
     Ast.IntElem(i) -> IntLiteral(i), Int
@@ -191,14 +191,14 @@ let rec verify_list_of_list_type env typ = function
   | (EmptyList, b) :: rest ->
       verify_list_of_list_type env typ rest
 
-let rec listlit env = function
+let rec check_listlit env = function
     Ast.Elems(elems_list) ->
       let el = check_elems_list env elems_list in
       let e, typ = List.hd el in
       let typ = verify_elems_list_type env typ el in
       Elems(el), List_t(typ)
   | Ast.List(ll_list) ->
-      let list_of_list_with_typ = List.map (listlit env) ll_list in
+      let list_of_list_with_typ = List.map (check_listlit env) ll_list in
       let first_list, typ = List.hd list_of_list_with_typ in
       let typ = verify_list_of_list_type env typ list_of_list_with_typ in
       let list_of_list = List.map (fun (l, _) -> l) list_of_list_with_typ in
@@ -229,11 +229,34 @@ let rec check_func_call env = function
       in
       fdecl, typ
 
-let rec expr env = function
+let ast_op_to_sast_op = function
+    Ast.Add -> Add
+  | Ast.Sub -> Sub
+  | Ast.Mult -> Mult
+  | Ast.Div -> Div
+  | Ast.Equal -> Equal
+  | Ast.Neq -> Neq
+  | Ast.Less -> Less
+  | Ast.Leq -> Leq
+  | Ast.Greater -> Greater
+  | Ast.Geq -> Geq
+  | Ast.Mod -> Mod
+  | Ast.And -> And
+  | Ast.Or -> Or
+
+let require_bool e msg = match e with
+    _, Bool -> ()
+  | _, _ -> raise (SemError msg)
+
+let require_int e msg = match e with
+    _, Int -> ()
+  | _, _ -> raise (SemError msg)
+
+let rec check_expr env = function
     Ast.IntLiteral(i) -> IntLiteral(i), Int
   | Ast.StrLiteral(s) -> StrLiteral(s), Str
   | Ast.ListLiteral(ll) ->
-      let l, typ = listlit env ll in
+      let l, typ = check_listlit env ll in
       ListLiteral(l), typ
   | Ast.BoolLiteral(b) ->
       (match b with
@@ -241,45 +264,108 @@ let rec expr env = function
         | Ast.False -> BoolLiteral(False), Bool)
   | Ast.VoidLiteral -> VoidLiteral, Void
   | Ast.Field(fe) ->
-      let f, typ = field env fe in
+      let f, typ = check_field env fe in
       Field(f), typ
-(*  | Ast.Binop(e1, o, e2) -> true *)
+ | Ast.Binop(e1, op, e2) ->
+      let e1 = check_expr env e1
+      and e2 = check_expr env e2 in
+      if op <> Ast.Equal && op <> Ast.Neq &&
+         op <> Ast.And && op <> Ast.Or then
+            (require_int e1 "Left operand must be integer";
+             require_int e2 "Right operand must be integer";
+             let op = ast_op_to_sast_op op in
+             Binop(e1, op, e2), Int)
+      else
+        (require_bool e1 "Left operand must be boolean";
+         require_bool e2 "Right operand must be boolean";
+         let op = ast_op_to_sast_op op in
+         Binop(e1, op, e2), Bool)
 (*  | Ast.Assign(fd, e) -> true  *)
   | Ast.Call(fd, el) ->
       let fdcl, typ = check_func_call env fd in
-      let expr_list = List.map (expr env) el in
+      let expr_list = List.map (check_expr env) el in
       Call(fdcl, expr_list), typ
-(*  | Ast.Element(e1, e2) -> true
-  | Ast.Uminus(e) -> true
-  | Ast.Not(e) -> true
-  | Ast.Noexpr -> true
-  | Ast.Remove(fd1, fd2, ll) -> true
+(*  | Ast.Element(e1, e2) -> true *)
+  | Ast.Uminus(e) ->
+      let e = check_expr env e in
+      require_int e "Operand must be integer";
+      Uminus(e), Int
+  | Ast.Not(e) ->
+      let e = check_expr env e in
+      require_bool e "Operand must be boolean";
+      Not(e), Bool
+  | Ast.Noexpr ->
+      Noexpr, Void
+(*  | Ast.Remove(fd1, fd2, ll) -> true
   | Ast.Place(fd1, fd2, ll) -> true *)
 
-let require_bool e msg = match e with
-    _, Bool -> ()
-  | _, _ -> raise (SemError msg)
+let rec verify_expr_list_type env typ = function
+    [] -> typ
+  | (a, b) :: rest ->
+      if b = typ then
+        verify_expr_list_type env typ rest
+      else
+        raise (SemError ("List of expressions are not all of same type: " ^
+                         string_of_t typ))
 
-let rec stmt env = function
-    Ast.Expr(e) -> Expression(expr env e)
+let check_init env = function
+    Ast.ExprInit(e) -> Some(check_expr env e)
+  | Ast.NoInit -> None
+
+let rec check_stmt env = function
+    Ast.Block(sl) ->
+      let scope' =
+        { parent = Some(env.scope);
+          variables = [];
+          functions = [] } in
+      let env' =
+        { env with scope = scope';
+          return_type = Void } in
+      let sl = List.map (fun s -> check_stmt env' s) sl in
+      Block(scope', sl)
+  | Ast.Expr(e) -> Expression(check_expr env e)
+  (* | Ast.Return(e) ->
+  | Ast.Break ->
+  | Ast.Continue -> *)
   | Ast.If(e, s1, s2) ->
-      let e = expr env e in (* Check the predicate *)
+      let e = check_expr env e in (* Check the predicate *)
       require_bool e "Predicate of if must be boolean";
-      If(e, stmt env s1, stmt env s2)  (* Check then, else *)
+      If(e, check_stmt env s1, check_stmt env s2)  (* Check then, else *)
+  | Ast.For(vd, el, s) ->
+      let decl =
+      { vname = vd.Ast.vname;
+        vtype = id_type_to_t vd.Ast.vtype;
+        vinit = check_init env vd.Ast.vinit}
+      and el = List.map (check_expr env) el in
+      let _, t_el = List.hd el in
+      let t_vd = decl.vtype
+      and t_el = verify_expr_list_type env t_el el in
+      if t_vd <> t_el then
+        raise (SemError ("For loop elements and loop variable must be " ^
+                         "the same type. Expected: " ^ string_of_t t_vd))
+      else
+        let scope' =
+          { parent = Some(env.scope);
+          variables = [];
+          functions = [] } in
+        let env' =
+          { env with scope = scope';
+            return_type = Void } in
+        scope'.variables <- decl :: scope'.variables;
+        For(decl, el, check_stmt env' s)
+  | Ast.While(e, s) ->
+      let e = check_expr env e in
+      require_bool e "While loop predicate must be Boolean";
+      While(e, check_stmt env s)
 
 let rec check_for_begin(turns_section) = match turns_section with
-  | [] -> false
+    [] -> false
   | Ast.BasicFunc(f) :: rest ->
       if f.Ast.fname = "begin" then
         true
       else
         check_for_begin(rest)
   | Ast.AssertFunc(f) :: rest -> check_for_begin(rest)
-
-let check_init env = function
-    Ast.ExprInit(e) -> Some(expr env e)
-  | Ast.NoInit -> None
-
 
 let check_formal env v =
   let name = v.Ast.vname in
@@ -306,11 +392,11 @@ let check_basic_func env f =
       variables = [];
       functions = [] } in
   let env' =
-    { scope = scope';
+    { env with scope = scope';
       return_type = id_type_to_t f.Ast.ftype; } in
   let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
   let ll = List.map (fun dcl -> check_local env' dcl) f.Ast.locals in
-  let sl = List.map (fun s -> stmt env' s) f.Ast.body in
+  let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
   BasicFunc({ ftype = id_type_to_t f.Ast.ftype;
               fname = f.Ast.fname;
               formals = fl;

@@ -52,14 +52,14 @@ type stmt =
   | Break
   | Continue
   | If of expr * stmt * stmt
-  | For of expr * expr list * stmt
+  | For of var_decl * expr list * stmt
   | While of expr * stmt
 
-type init =
+and init =
   | ExprInit of expr
   | NoInit
 
-type var_decl = {
+and var_decl = {
     vname : string;
     vtype : id_type;
     vinit : init
@@ -174,8 +174,8 @@ let rec string_of_stmt = function
   | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
   | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
       string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
-  | For(e, elist, s) ->
-      "for (" ^ string_of_expr e  ^ " in " ^
+  | For(vd, elist, s) ->
+      "for (" ^ string_of_vdecl vd  ^ " in " ^
             "{\n" ^ String.concat ", " (List.map string_of_expr elist) ^ "}\n" ^
           ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s

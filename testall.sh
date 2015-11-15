@@ -8,6 +8,7 @@ ulimit -t 30
 globallog=testall.log
 rm -f $globallog
 rm -f output.c
+rm -f a.out
 error=0
 globalerror=0
 
@@ -63,7 +64,7 @@ Check() {
 
     generatedfiles=""
 
-    generatedfiles="$generatedfiles ${basename}.c.out" &&
+    generatedfiles="$generatedfiles ${basename}.c.out output.c a.out" &&
     Run "$SENET" "-c" "<" $1 &&
     Run "gcc output.c" &&
     Run "./a.out >" ${basename}.c.out &&
