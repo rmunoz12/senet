@@ -180,7 +180,7 @@ let rec string_of_stmt = function
       "for (" ^ string_of_vdecl vd  ^ " in " ^
             "{\n" ^ String.concat ", " (List.map string_of_expr elist) ^ "}\n" ^
           ") " ^ string_of_stmt s
-  | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
+  | While(e, s) -> "while (" ^ string_of_expr e ^ ") {\n" ^ string_of_stmt s ^ "\n}\n"
   | Pass(e, s) -> "pass (" ^ string_of_expr e ^ ", " ^ string_of_expr s ^ ")\n"
   | Break -> "break;\n"
   | Continue -> "continue;\n"

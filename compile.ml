@@ -19,7 +19,7 @@ let rec function_call_to_c = function
 let printf el_string typ =
   let arg =
     (match typ with
-         Bool -> "\"%s\\n\", " ^ el_string ^" ? \"true\" : \"false\"";
+         Bool -> "\"%s\", " ^ el_string ^" ? \"true\" : \"false\"";
        | Int -> "\"%d\", " ^ el_string
        | Str -> "\"%s\" ," ^ el_string )
   in
@@ -46,8 +46,8 @@ let rec expression_to_c = function
           fname ^ "(" ^
           String.concat "," (List.map expression_to_c e) ^ ")"
   | Element(e1, e2) -> ""
-  | Uminus(e) -> ""
-  | Not(e) -> ""
+  | Uminus(e) -> let detail, _ = e in "-(" ^ expression_to_c detail ^ ")"
+  | Not(e) -> let detail, _ = e in "!(" ^ expression_to_c detail ^ ")"
   | Noexpr -> ""
   | Remove(fd1, fd2, ll) -> ""
   | Place(fd1, fd2, ll) -> ""

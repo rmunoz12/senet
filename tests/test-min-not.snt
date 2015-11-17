@@ -3,9 +3,11 @@
 @turns {
 
 func void begin() {
-    print(True);
+    print(5);
     print("\n");
-    print(False);
+    print(not True);
+    print("\n");
+    print(-3);
     print("\n");
     end();
 }
