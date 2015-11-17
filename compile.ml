@@ -91,7 +91,11 @@ let senet_to_c (s, t) =
     "#include <stdbool.h>" ^ "\n" ^
     setup_to_c(s) ^ turns_to_c(t) ^
     "int main() {\n
-    begin();\n
+    void (* CUR_TURN)() = &begin;\n
+    int PLAYER_ON_MOVE = 0;\n
+    //while (true) {\n
+    CUR_TURN();\n
+    //}\n
     return 0;\n
     }\n"
 
