@@ -34,6 +34,7 @@ rule token = parse
 | "while"  { WHILE }
 | "break"  { BREAK }
 | "continue" { CONTINUE }
+| "end"    { END }
 | "return" { RETURN }
 | "True"   { TRUE }
 | "False"  { FALSE }
@@ -52,6 +53,7 @@ rule token = parse
 | "<<"     { REMOVE }
 | ">>"     { PLACE }
 | "func"   { FUNC }
+| "pass"   { PASS }
 | "@setup" { SETUP }
 | "@turns" { TURNS }
 | ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }

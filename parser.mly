@@ -14,7 +14,7 @@
 %token <string> ID
 %token EOF
 %token IN
-%token BREAK CONTINUE
+%token BREAK CONTINUE PASS END
 %token ELIF
 %token TRUE FALSE NONE
 %token STR BOOL VOID LIST GROUP
@@ -137,6 +137,8 @@ stmt:
      { While($3, Block(List.rev $6)) }
   | BREAK SEMI    { Break}
   | CONTINUE SEMI { Continue }
+  | END LPAREN RPAREN SEMI { End }
+  | PASS LPAREN expr COMMA expr RPAREN SEMI { Pass($3, $5) }
 
 
 expr:

@@ -58,10 +58,14 @@ let rec statement_to_c = function
       let detail, _ = e in
       expression_to_c(detail) ^ ";"
   | Return(e) -> ""
-  | Break -> ""
-  | Continue -> ""
-  | If(e, s1, s2) -> ""
+  | Break -> "break;"
+  | Continue -> "continue;"
+  | If(e, s1, s2) -> "if (" ^ statement_to_c s1 ^ " ) {\n" ^ statement_to_c s2 ^ "\n}\n"
   | For(vd, elist, s) -> ""
+  | End -> "exit(0);"
+  | Pass(e,s) -> let detail, _ = e in let detaill, _ = s in
+                                      "CUR_TURN = " ^ expression_to_c detail  ^ ";\n"
+                     ^ "PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";\n"
   | While(e, s) -> ""
 
 let statements_to_c stmts =
@@ -87,15 +91,16 @@ let turns_to_c t =
     )
 
 let senet_to_c (s, t) =
+    "#include <stdlib.h>" ^ "\n" ^
     "#include <stdio.h>" ^ "\n" ^
     "#include <stdbool.h>" ^ "\n" ^
     setup_to_c(s) ^ turns_to_c(t) ^
     "int main() {\n
     void (* CUR_TURN)() = &begin;\n
     int PLAYER_ON_MOVE = 0;\n
-    //while (true) {\n
+    while (true) {\n
     CUR_TURN();\n
-    //}\n
+    }\n
     return 0;\n
     }\n"
 

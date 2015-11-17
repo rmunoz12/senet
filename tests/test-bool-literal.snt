@@ -5,6 +5,7 @@
 func void begin() {
     print(True);
     print(False);
+    end();
 }
 
 }

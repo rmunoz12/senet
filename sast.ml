@@ -56,6 +56,8 @@ and statement =
   | Return of expression
   | Break
   | Continue
+  | End
+  | Pass of expression * expression
   | If of expression * statement * statement
   | For of var_decl * expression list * statement
   | While of expression * statement
@@ -327,6 +329,7 @@ let rec check_stmt env = function
   (* | Ast.Return(e) ->
   | Ast.Break ->
   | Ast.Continue -> *)
+  | Ast.End -> End
   | Ast.If(e, s1, s2) ->
       let e = check_expr env e in (* Check the predicate *)
       require_bool e "Predicate of if must be boolean";

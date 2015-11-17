@@ -54,6 +54,8 @@ type stmt =
   | If of expr * stmt * stmt
   | For of var_decl * expr list * stmt
   | While of expr * stmt
+  | End
+  | Pass of expr * expr
 
 and init =
   | ExprInit of expr
@@ -179,8 +181,10 @@ let rec string_of_stmt = function
             "{\n" ^ String.concat ", " (List.map string_of_expr elist) ^ "}\n" ^
           ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt s
+  | Pass(e, s) -> "pass (" ^ string_of_expr e ^ ", " ^ string_of_expr s ^ ")\n"
   | Break -> "break;\n"
   | Continue -> "continue;\n"
+  | End -> "end();\n"
 
 let string_of_basic_fdecl fdecl =
   "func" ^ " " ^ string_of_vtype fdecl.ftype ^ " " ^
