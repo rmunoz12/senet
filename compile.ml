@@ -1,10 +1,16 @@
 open Sast
 
 let setup_to_c s =
+    "#include <stdbool.h>" ^ "\n" ^
+    "#include <stdio.h>" ^ "\n" ^
+    "#include <stdlib.h>" ^ "\n" ^
     "" ^ "\n"
 
-let id_type_to_c ft =
-    "void"
+let id_type_to_c ft = match ft with
+  |  Int -> "int "
+  |  Bool -> "bool "
+  |  Str -> "char* "
+  |  _ -> "void"
 
 let var_decls_to_c vdlcs =
     ""
@@ -16,7 +22,9 @@ let rec field_expr_to_c = function
 let rec function_call_to_c = function
     BasicFunc(f) -> f.fname
 
-let printf el_string typ =
+let rec printf var = match var with
+  | [] -> ""
+  | [el_string, typ] ->
   let arg =
     (match typ with
          Bool -> "\"%s\", " ^ el_string ^" ? \"true\" : \"false\"";
@@ -24,6 +32,7 @@ let printf el_string typ =
        | Str -> "\"%s\" ," ^ el_string )
   in
   "printf(" ^ arg ^ ")"
+  | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr)
 
 let rec expression_to_c = function
     IntLiteral(i) -> string_of_int i
@@ -39,9 +48,8 @@ let rec expression_to_c = function
         let e = List.map (fun (detail, _) -> detail) el in
         let fname = function_call_to_c fd in
         if fname = "print" then
-          let _, typ = List.hd el
-          and el_string = String.concat "," (List.map expression_to_c e) in
-          printf el_string typ
+          let res = List.map (fun (detail, typ) -> expression_to_c detail, typ) el in
+          printf res
         else
           fname ^ "(" ^
           String.concat "," (List.map expression_to_c e) ^ ")"
@@ -57,7 +65,7 @@ let rec statement_to_c = function
   | Expression(e) ->
       let detail, _ = e in
       expression_to_c(detail) ^ ";"
-  | Return(e) -> ""
+  | Return(e) -> let detail, _ = e in "return " ^ expression_to_c detail ^ ";\n"
   | Break -> "break;"
   | Continue -> "continue;"
   | If(e, s1, s2) -> "if (" ^ statement_to_c s1 ^ " ) {\n" ^ statement_to_c s2 ^ "\n}\n"
@@ -91,9 +99,6 @@ let turns_to_c t =
     )
 
 let senet_to_c (s, t) =
-    "#include <stdlib.h>" ^ "\n" ^
-    "#include <stdio.h>" ^ "\n" ^
-    "#include <stdbool.h>" ^ "\n" ^
     setup_to_c(s) ^ turns_to_c(t) ^
     "int main() {\n
     void (* CUR_TURN)() = &begin;\n

@@ -3,7 +3,7 @@
 @turns {
 
 func void begin() {
-    print(3);
+    print(3, "\n");
     end();
 }
 
