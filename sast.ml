@@ -47,8 +47,14 @@ and expression =
     expr_detail * t
 
 and field_expr =
-    Id of string
-  | FieldCall of field_expr * string
+    Var of var_decl
+  | Parent of group_decl
+  | Child of child
+
+and child =
+    Attrib of var_decl
+  | Method of func_decl
+  | Subclass of group_decl
 
 and statement =
     Block of symbol_table * statement list
@@ -83,7 +89,7 @@ and func_decl =
 
 and group_decl = {
     gname : string;
-    extends : string;
+    extends : group_decl;
     attributes : var_decl list;
     methods : func_decl list;
   }
@@ -98,12 +104,14 @@ and program = setup * turns
 and symbol_table = {
   parent : symbol_table option;
   mutable variables : var_decl list;
-  functions : func_decl list
+  mutable functions : func_decl list;
+  mutable groups : group_decl list
 }
 
 type translation_environment = {
   scope : symbol_table;
   return_type : t;
+  in_loop : bool
 }
 
 let rec string_of_t = function
@@ -131,6 +139,69 @@ let rec find_variable (scope : symbol_table) name =
       Some(parent) -> find_variable parent name
     | _ -> raise Not_found
 
+let rec find_function (scope : symbol_table) name =
+  try
+    List.find (fun f -> match f with
+                   BasicFunc(x) -> x.fname = name
+                 | AssertFunc(x) -> x.aname = name) scope.functions
+  with Not_found ->
+    match scope.parent with
+      Some(parent) -> find_function parent name
+    | _ -> raise Not_found
+
+let rec find_group (scope : symbol_table) name =
+  try
+    List.find (fun g -> g.gname = name) scope.groups
+  with Not_found ->
+    match scope.parent with
+      Some(parent) -> find_group parent name
+    | _ -> raise Not_found
+
+let rec find_child (parent : group_decl) name =
+  if List.exists (fun v -> v.vname = name) parent.attributes then
+    let vdcl = List.find (fun v -> v.vname = name) parent.attributes in
+    Attrib(vdcl), vdcl.vtype
+  else
+  if List.exists (fun f -> match f with
+                      BasicFunc(x) -> x.fname = name
+                    | AssertFunc(x) -> x.aname = name) parent.methods then
+    let fdcl = List.find (fun f -> match f with
+                              BasicFunc(x) -> x.fname = name
+                            | AssertFunc(x) -> x.aname = name) parent.methods in
+    let f_typ = (match fdcl with
+                     BasicFunc(x) -> x.ftype
+                   | AssertFunc(x) -> Bool) in
+    Method(fdcl), f_typ
+  else
+    raise Not_found
+
+let get_parent_gdecl = function
+    Parent(g) -> g
+  | Child(c) ->
+      (match c with
+          Subclass(g) -> g
+        | _ -> raise(SemError("Internal Error: Non-group classified as a subclass parent")))
+  | _ -> raise(SemError("Internal Error: Non-group classified as a parent"))
+
+let rec check_parent env = function
+    Ast.Id(name) ->
+      let gdecl = try
+        find_group env.scope name
+      with Not_found ->
+        raise (SemError("Undeclared parent identifier: " ^ name))
+      in
+      Parent(gdecl), Group(gdecl.gname)
+  | Ast.FieldCall(fe, name) ->
+      let par, _ = check_parent env fe in
+      let par = get_parent_gdecl par in
+      let child, t_child =
+      try
+        find_child par name
+      with Not_found ->
+        raise (SemError("Undeclared child identifier: " ^ name))
+      in
+      Child(child), t_child
+
 let rec check_field env = function
     Ast.Id(vname) ->
       let vdecl = try
@@ -138,12 +209,17 @@ let rec check_field env = function
       with Not_found ->
         raise (SemError("Undeclared identifier: " ^ vname))
       in
-      let typ = vdecl.vtype in
-      Id(vname), typ
-  | Ast.FieldCall(fe, vname) ->
-      (* This is a stopgap, what we really need to do is
-         check that fe's fields include name *)
-      ignore(check_field env fe); check_field env (Ast.Id(vname))
+      Var(vdecl), vdecl.vtype
+  | Ast.FieldCall(fe, name) ->
+      (* ignore(check_field env fe); check_field env (Ast.Id(vname)) *)
+      let parent, _ = check_parent env fe in
+      let parent = get_parent_gdecl parent in
+      let child, t_child = try
+        find_child parent name
+      with Not_found ->
+        raise (SemError("Undeclared child identifier: " ^ name))
+      in
+      Child(child), t_child
 
 let rec check_single_elem env = function
     Ast.IntElem(i) -> IntLiteral(i), Int
@@ -155,7 +231,7 @@ let rec check_single_elem env = function
         raise (SemError("Undeclared identifier: " ^ s))
       in
       let typ = vdecl.vtype in
-      Field(Id(s)), typ
+      Field(Var(vdecl)), typ
   | Ast.BoolElem(b) ->
       (match b with
           Ast.True -> BoolLiteral(True), Bool
@@ -208,16 +284,6 @@ let rec check_listlit env = function
   | Ast.EmptyList ->
       EmptyList, List_t(Void)
 
-let rec find_function (scope : symbol_table) name =
-  try
-    List.find (fun f -> match f with
-                   BasicFunc(x) -> x.fname = name
-                 | AssertFunc(x) -> x.aname = name) scope.functions
-  with Not_found ->
-    match scope.parent with
-      Some(parent) -> find_function parent name
-    | _ -> raise Not_found
-
 let rec check_func_call env = function
     Ast.Id(s) ->
       let fdecl = try
@@ -230,6 +296,20 @@ let rec check_func_call env = function
         | AssertFunc(f) -> Bool)
       in
       fdecl, typ
+  | Ast.FieldCall(fe, name) ->
+      let parent, _ = check_parent env fe in
+      let parent = get_parent_gdecl parent in
+      let child, t_child = try
+        find_child parent name
+      with Not_found ->
+        raise (SemError("Undeclared child identifier: " ^ name))
+      in
+      (match child with
+           Method(m) ->
+             (match m with
+                BasicFunc(x) -> m, x.ftype
+              | AssertFunc(x) -> m, Bool)
+         | _ -> raise (SemError("Not callable: " ^ name)))
 
 let ast_op_to_sast_op = function
     Ast.Add -> Add
@@ -253,6 +333,45 @@ let require_bool e msg = match e with
 let require_int e msg = match e with
     _, Int -> ()
   | _, _ -> raise (SemError msg)
+
+let require_integer_list l msg = match l with
+    _, List_t(typ) ->
+      (match typ with
+         Int -> ()
+       | _ -> raise (SemError msg))
+  | _, _ -> raise (SemError msg)
+
+let rec require_board fe msg = match fe with
+    Child(c) ->
+      (match c with
+          Subclass(g) ->
+            if g.extends.gname = "Board" then
+              ()
+            else
+              require_board (Child(Subclass(g.extends))) msg
+        | _ -> raise (SemError msg))
+  | Parent(g) ->
+      if g.gname = "Board" then
+        ()
+      else
+        raise (SemError msg)
+  | Var(v) -> raise (SemError msg)
+
+let rec require_piece fe msg = match fe with
+    Child(c) ->
+      (match c with
+          Subclass(g) ->
+            if g.extends.gname = "Piece" then
+              ()
+            else
+              require_board (Child(Subclass(g.extends))) msg
+        | _ -> raise (SemError msg))
+  | Parent(g) ->
+      if g.gname = "Piece" then
+        ()
+      else
+        raise (SemError msg)
+  | Var(v) -> raise (SemError msg)
 
 let rec check_expr env = function
     Ast.IntLiteral(i) -> IntLiteral(i), Int
@@ -282,12 +401,27 @@ let rec check_expr env = function
          require_bool e2 "Right operand must be boolean";
          let op = ast_op_to_sast_op op in
          Binop(e1, op, e2), Bool)
-(*  | Ast.Assign(fd, e) -> true  *)
+  | Ast.Assign(fd, e) ->
+      let field, tf = check_field env fd
+      and e = check_expr env e in
+      let _, te = e in
+      if tf = te then
+        Assign(field, e), tf
+      else
+        raise (SemError ("Types differ in assignment expression; expected: " ^
+                         string_of_t tf))
   | Ast.Call(fd, el) ->
       let fdcl, typ = check_func_call env fd in
       let expr_list = List.map (check_expr env) el in
       Call(fdcl, expr_list), typ
-(*  | Ast.Element(e1, e2) -> true *)
+  | Ast.Element(e1, e2) ->
+      let e1 = check_expr env e1
+      and e2 = check_expr env e2 in
+      let _, t1 = e1 in
+      require_integer_list e2 "List of integers expected";
+      (match t1 with
+          List_t(typ) -> Element(e1, e2), typ
+        | _ -> raise (SemError ("Expression not subscriptable")))
   | Ast.Uminus(e) ->
       let e = check_expr env e in
       require_int e "Operand must be integer";
@@ -298,8 +432,22 @@ let rec check_expr env = function
       Not(e), Bool
   | Ast.Noexpr ->
       Noexpr, Void
-(*  | Ast.Remove(fd1, fd2, ll) -> true
-  | Ast.Place(fd1, fd2, ll) -> true *)
+  | Ast.Remove(fd1, fd2, ll) ->
+      let fd1, _ = check_field env fd1
+      and fd2, _ = check_field env fd2
+      and ll, ll_typ = check_listlit env ll in
+      require_board fd1 "Board (sub)group expected";
+      require_piece fd2 "Piece (sub)group expected";
+      require_integer_list (ll, ll_typ) "List of integers expected";
+      Remove(fd1, fd2, ll), Bool
+  | Ast.Place(fd1, fd2, ll) ->
+      let fd1, _ = check_field env fd1
+      and fd2, _ = check_field env fd2
+      and ll, ll_typ = check_listlit env ll in
+      require_piece fd1 "Piece (sub)group expected";
+      require_board fd2 "Board (sub)group expected";
+      require_integer_list (ll, ll_typ) "List of integers expected";
+      Remove(fd1, fd2, ll), Bool
 
 let rec verify_expr_list_type env typ = function
     [] -> typ
@@ -319,16 +467,32 @@ let rec check_stmt env = function
       let scope' =
         { parent = Some(env.scope);
           variables = [];
-          functions = [] } in
+          functions = [];
+          groups = [] } in
       let env' =
         { env with scope = scope';
           return_type = Void } in
       let sl = List.map (fun s -> check_stmt env' s) sl in
       Block(scope', sl)
   | Ast.Expr(e) -> Expression(check_expr env e)
-  (* | Ast.Return(e) ->
+  | Ast.Return(e) ->
+      let e = check_expr env e in
+      let _, typ = e in
+      if env.return_type <> typ then
+        raise (SemError ("Return types do not match; expected: " ^
+                         string_of_t env.return_type))
+      else
+        Return(e)
   | Ast.Break ->
-  | Ast.Continue -> *)
+      if env.in_loop = false then
+        raise (SemError ("Break outside of loop"))
+      else
+        Break
+  | Ast.Continue ->
+      if env.in_loop = false then
+        raise (SemError ("Continue outside of loop"))
+      else
+        Break
   | Ast.End -> End
   | Ast.If(e, s1, s2) ->
       let e = check_expr env e in (* Check the predicate *)
@@ -350,16 +514,27 @@ let rec check_stmt env = function
         let scope' =
           { parent = Some(env.scope);
           variables = [];
-          functions = [] } in
+          functions = [];
+          groups = [] } in
         let env' =
-          { env with scope = scope';
-            return_type = Void } in
+          { scope = scope';
+            return_type = Void;
+            in_loop = true } in
         scope'.variables <- decl :: scope'.variables;
         For(decl, el, check_stmt env' s)
   | Ast.While(e, s) ->
       let e = check_expr env e in
+      let scope' =
+        { parent = Some(env.scope);
+          variables = [];
+          functions = [];
+          groups = [] } in
+      let env' =
+        { scope = scope';
+          return_type = Void;
+          in_loop = true } in
       require_bool e "While loop predicate must be Boolean";
-      While(e, check_stmt env s)
+      While(e, check_stmt env' s)
 
 let rec check_for_begin(turns_section) = match turns_section with
     [] -> false
@@ -389,30 +564,94 @@ let check_formal env v =
 let check_local env v =
   check_formal env v
 
-let check_basic_func env f =
-  let scope' =
-    { parent = Some(env.scope);
-      variables = [];
-      functions = [] } in
-  let env' =
-    { env with scope = scope';
-      return_type = id_type_to_t f.Ast.ftype; } in
-  let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
-  let ll = List.map (fun dcl -> check_local env' dcl) f.Ast.locals in
-  let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
-  BasicFunc({ ftype = id_type_to_t f.Ast.ftype;
-              fname = f.Ast.fname;
-              formals = fl;
-              locals = ll;
-              body = sl })
+let check_basic_func env (f : Ast.basic_func_decl) =
+  let already_declared =
+    List.exists (fun x -> match x with
+                   BasicFunc(b) -> b.fname = f.Ast.fname
+                 | AssertFunc(a) -> a.aname = f.Ast.fname )
+                env.scope.functions
+  in
+  if already_declared then
+    raise (SemError ("Function name previously declared in scope: " ^
+                     f.Ast.fname))
+  else
+    let scope' =
+      { parent = Some(env.scope);
+        variables = [];
+        functions = [];
+        groups = [] } in
+    let env' =
+      { env with scope = scope';
+        return_type = id_type_to_t f.Ast.ftype; } in
+    let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
+    let ll = List.map (fun dcl -> check_local env' dcl) f.Ast.locals in
+    let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
+    let fdecl =
+      BasicFunc({ ftype = id_type_to_t f.Ast.ftype;
+                  fname = f.Ast.fname;
+                  formals = fl;
+                  locals = ll;
+                  body = sl })
+    in
+    env.scope.functions <- fdecl :: env.scope.functions;
+    fdecl
+
+let check_assert_func env (f : Ast.assert_decl) =
+  let already_declared =
+    List.exists (fun x -> match x with
+                   BasicFunc(b) -> b.fname = f.Ast.fname
+                 | AssertFunc(a) -> a.aname = f.Ast.fname )
+                env.scope.functions
+  in
+  if already_declared then
+    raise (SemError ("Function name previously declared in scope: " ^
+                     f.Ast.fname))
+  else
+    let scope' =
+      { parent = Some(env.scope);
+        variables = [];
+        functions = [];
+        groups = [] } in
+    let env' =
+      { env with scope = scope';
+        return_type = Bool; } in
+    let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
+    let ll = List.map (fun dcl -> check_local env' dcl) f.Ast.locals in
+    let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
+    let fdecl =
+      AssertFunc({ aname = f.Ast.fname;
+                   aformals = fl;
+                   alocals = ll;
+                   abody = sl })
+    in
+    env.scope.functions <- fdecl :: env.scope.functions;
+    fdecl
+
 
 let check_function env = function
     Ast.BasicFunc(f) -> check_basic_func env f
-  (* | Ast.AssertFunc(f) -> check_assert_func env f *)
+  | Ast.AssertFunc(f) -> check_assert_func env f
 
-let check_setup setup_section =
-  (* not currently implemented *)
-  [], [], []
+let check_vdcl env v =
+  check_formal env v
+
+let rec check_group env g =
+  let parent_name = g.Ast.extends in
+  let parent = find_group env.scope parent_name in
+  let gdecl =
+    { gname = g.Ast.gname;
+      extends = parent;
+      attributes = List.map (check_vdcl env) g.Ast.attributes;
+      methods = List.map (check_function env) g.Ast.methods }
+  in
+  env.scope.groups <- gdecl :: env.scope.groups;
+  gdecl
+
+let check_setup env setup_section =
+  let vars, funcs, groups = setup_section in
+  List.map (check_vdcl env) vars,
+  List.map (check_function env) funcs,
+  List.map (check_group env) groups
 
 let built_in_funcs =
   let dcl =
@@ -426,22 +665,24 @@ let built_in_funcs =
                locals = [];
                body = [] })]
 
-let check_turns turns_section =
+let check_turns env turns_section =
   if check_for_begin(turns_section) = false then
     raise (SemError "No begin() function in @turns section")
   else
-    let symbols =
-      { parent = None ;
-        variables = [];
-        functions = built_in_funcs } in
-    let env =
-      { scope = symbols;
-        return_type = Void; } in
     List.map (check_function env) turns_section
 
 let check_program (program : Ast.program) =
+  let symbols =
+    { parent = None ;
+      variables = [];
+      functions = built_in_funcs;
+      groups = [] } in
+  let env =
+    { scope = symbols;
+      return_type = Void;
+      in_loop = false } in
   let setup_section, turns_section = program in
-  let setup_section = check_setup setup_section
-  and turns_section = check_turns turns_section in
+  let setup_section = check_setup env setup_section in
+  let turns_section = check_turns env turns_section in
   setup_section, turns_section
 
