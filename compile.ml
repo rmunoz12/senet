@@ -10,8 +10,7 @@ let var_decls_to_c vdlcs =
     ""
 
 let rec field_expr_to_c = function
-    Id(s) -> if s = "print" then "printf" else s
-  | FieldCall(fd, s) -> (field_expr_to_c fd) ^ "." ^ s
+    Var(vd) -> if vd.vname = "print" then "printf" else vd.vname
 
 let rec function_call_to_c = function
     BasicFunc(f) -> f.fname
