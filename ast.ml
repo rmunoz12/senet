@@ -138,7 +138,7 @@ let rec string_of_expr = function
       | Equal -> "==" | Neq -> "!="
       | Less -> "<" | Leq -> "<=" | Greater -> ">" | Geq -> ">="
       | Mod -> "%"
-      | And -> "and" | Or -> "Or" ) ^ " " ^
+      | And -> "and" | Or -> "or" ) ^ " " ^
       string_of_expr e2
   | Assign(f, e) -> string_of_field f ^ " = " ^ string_of_expr e
   | Call(f, el) ->
