@@ -4,6 +4,9 @@ let setup_to_c s =
     "#include <stdbool.h>" ^ "\n" ^
     "#include <stdio.h>" ^ "\n" ^
     "#include <stdlib.h>" ^ "\n" ^
+       "\n" ^
+    "void (*CUR_TURN)();" ^ "\n" ^
+    "int PLAYER_ON_MOVE;" ^ "\n" ^
     "" ^ "\n"
 
 let id_type_to_c ft = match ft with
@@ -87,7 +90,7 @@ let basic_func_to_c f =
     (statements_to_c f.body) ^ "\n" ^
     "}\n"
 
-let turns_to_c t =
+let rec turns_to_c t =
     "// @turns\n" ^
 
     (match t with
@@ -96,14 +99,14 @@ let turns_to_c t =
       ( match hd with
           BasicFunc(f) -> basic_func_to_c f
         | AssertFunc(f) -> ""
-      )
+      ) ^ turns_to_c tl
     )
 
 let senet_to_c (s, t) =
     setup_to_c(s) ^ turns_to_c(t) ^
     "int main() {\n
-    void (* CUR_TURN)() = &begin;\n
-    int PLAYER_ON_MOVE = 0;\n
+    CUR_TURN = &begin;\n
+    PLAYER_ON_MOVE = 0;\n
     while (true) {\n
     CUR_TURN();\n
     }\n
