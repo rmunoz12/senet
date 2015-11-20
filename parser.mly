@@ -138,7 +138,7 @@ stmt:
   | BREAK SEMI    { Break}
   | CONTINUE SEMI { Continue }
   | END LPAREN RPAREN SEMI { End }
-  | PASS LPAREN expr COMMA expr RPAREN SEMI { Pass($3, $5) }
+  | PASS LPAREN field_expr COMMA expr RPAREN SEMI { Pass($3, $5) }
 
 
 expr:

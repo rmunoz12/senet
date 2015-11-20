@@ -70,8 +70,8 @@ let rec statement_to_c = function
   | If(e, s1, s2) -> "if (" ^ statement_to_c s1 ^ " ) {\n" ^ statement_to_c s2 ^ "\n}\n"
   | For(vd, elist, s) -> ""
   | End -> "exit(0);"
-  | Pass(e,s) -> let detail, _ = e in let detaill, _ = s in
-                                      "CUR_TURN = " ^ expression_to_c detail  ^ ";\n"
+  | Pass(e,s) -> let detaill, _ = s in
+                     "CUR_TURN = &" ^ field_expr_to_c e  ^ ";\n"
                      ^ "PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";\n"
   | While(e, s) -> ""
 

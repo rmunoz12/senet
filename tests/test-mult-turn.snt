@@ -1,0 +1,14 @@
+@setup { }
+
+@turns {
+
+func void ending() {
+     print(False, "\n");
+     end();
+}
+func void begin() {
+    print(True, "\n");
+    pass(ending, 2);
+}
+
+}
