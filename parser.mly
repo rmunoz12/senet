@@ -137,7 +137,7 @@ stmt:
      { While($3, Block(List.rev $6)) }
   | BREAK SEMI    { Break}
   | CONTINUE SEMI { Continue }
-  | END LPAREN RPAREN SEMI { End }
+  | END SEMI { End }
   | PASS LPAREN field_expr COMMA expr RPAREN SEMI { Pass($3, $5) }
 
 

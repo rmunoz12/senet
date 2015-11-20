@@ -9,7 +9,7 @@ func void begin() {
 
 func void ending() {
      print(False, "\n");
-     end();
+     end;
 }
 
 }

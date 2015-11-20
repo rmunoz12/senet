@@ -4,7 +4,7 @@
 
 func void begin() {
     print(3, "\n");
-    end();
+    end;
 }
 
 }
