@@ -63,7 +63,7 @@ and statement =
   | Break
   | Continue
   | End
-  | Pass of field_expr * expression
+  | Pass of func_decl * expression
   | If of expression * statement * statement
   | For of var_decl * expression list * statement
   | While of expression * statement
@@ -475,11 +475,11 @@ let rec check_stmt env = function
       let sl = List.map (fun s -> check_stmt env' s) sl in
       Block(scope', sl)
   | Ast.Expr(e) -> Expression(check_expr env e)
-  | Ast.Pass(e, s) -> let s = check_expr env s in
-                      let e, _ = check_field env e in
-                      let t = require_int s "Must pass to an integer player." in
-                      Pass(e,s)
-                      (* should also check that e is a turn *)
+  | Ast.Pass(f, i) -> let i = check_expr env i in
+                      let f, _ = check_func_call env f in
+                      require_int i "Must pass to an integer player.";
+                      Pass(f,i)
+
   | Ast.Return(e) ->
       let e = check_expr env e in
       let _, typ = e in
