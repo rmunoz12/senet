@@ -129,7 +129,7 @@ let rec string_of_field = function
   | FieldCall(f,s) -> string_of_field f ^ "." ^ s
 
 let rec string_of_expr = function
-    IntLiteral(l) -> string_of_int l
+    IntLiteral(l) -> string_of_int [?  |  ?]
   | Field(f) -> string_of_field f
   | Binop(e1, o, e2) ->
       string_of_expr e1 ^ " " ^
@@ -149,7 +149,7 @@ let rec string_of_expr = function
   | Uminus(e) -> "-" ^ string_of_expr e
   | Not(e) -> "not" ^ string_of_expr e
   | Element(e1, e2) ->
-      string_of_expr e1 ^ "[" ^ string_of_expr e2 ^ "]"
+     string_of_expr e1 ^ "[" ^ string_of_expr e2 ^ "]"
   | ListLiteral(l) -> string_of_list_lit l
   | BoolLiteral(b) -> (match b with True -> "True" | False -> "False")
   | VoidLiteral -> "None"
