@@ -28,6 +28,15 @@ void push(struct node** head_ref, void *new_data, size_t data_size) {
     (*head_ref)    = new_node;
 }
 
+// Function to print an integer
+void printInt(void *n) {
+   printf(" %d", *(int *)n);
+}
+
+void printChar(char *n) {
+   printf(" %c", *(char *)n);
+}
+
 /* Function to print nodes in a given linked list. fpitr is used
    to access the function to be used for printing current node data.
    Note that different data types need different specifier in printf() */

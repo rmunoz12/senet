@@ -67,13 +67,14 @@ let rec statement_to_c = function
   | Return(e) -> let detail, _ = e in "return " ^ expression_to_c detail ^ ";\n"
   | Break -> "break;"
   | Continue -> "continue;"
-  | If(e, s1, s2) -> "if (" ^ statement_to_c s1 ^ " ) {\n" ^ statement_to_c s2 ^ "\n}\n"
+  | If(e, s1, s2) -> "if (" ^ expression_to_c e ^ " ) {\n" ^ statement_to_c s1 ^ "\n}" ^
+                      ^ "else {\n" ^ statement_to_c s2 "}\n"
   | For(vd, elist, s) -> ""
   | End -> "exit(0);"
   | Pass(e,s) -> let detaill, _ = s in
                      "CUR_TURN = &" ^ field_expr_to_c e  ^ ";\n"
                      ^ "PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";\n"
-  | While(e, s) -> ""
+  | While(e, s) -> "while (" ^ statement_to_c ")"
 
 let statements_to_c stmts =
     String.concat "\n" (List.map statement_to_c stmts)
