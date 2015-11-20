@@ -9,7 +9,6 @@ scanner.ml
 parser.ml
 parser.mli
 senet
-*.out
 output.c
 
 # Latex
