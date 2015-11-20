@@ -1,4 +1,4 @@
-OBJS = ast.cmo parser.cmo scanner.cmo sast.cmo compile.cmo senet.cmo
+OBJS = ast.cmo parser.cmo scanner.cmo sast.cmo cast.cmo compile.cmo senet.cmo
 VERBOSE_YACC = -v
 
 # Choose one
@@ -30,16 +30,18 @@ clean :
 # see http://caml.inria.fr/pub/docs/manual-ocaml/depend.html
 ast.cmo :
 ast.cmx :
-compile.cmo : sast.cmo ast.cmo
-compile.cmx : sast.cmx ast.cmx
+cast.cmo : sast.cmo
+cast.cmx : sast.cmx
+compile.cmo : sast.cmo cast.cmo ast.cmo
+compile.cmx : sast.cmx cast.cmx ast.cmx
 parser.cmo : ast.cmo parser.cmi
 parser.cmx : ast.cmx parser.cmi
 sast.cmo : ast.cmo
 sast.cmx : ast.cmx
 scanner.cmo : parser.cmi
 scanner.cmx : parser.cmx
-senet.cmo : scanner.cmo sast.cmo parser.cmi compile.cmo ast.cmo
-senet.cmx : scanner.cmx sast.cmx parser.cmx compile.cmx ast.cmx
+senet.cmo : scanner.cmo sast.cmo parser.cmi compile.cmo cast.cmo ast.cmo
+senet.cmx : scanner.cmx sast.cmx parser.cmx compile.cmx cast.cmx ast.cmx
 parser.cmi : ast.cmo
 
 # Manually written

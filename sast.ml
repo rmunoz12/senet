@@ -341,33 +341,17 @@ let require_integer_list l msg = match l with
        | _ -> raise (SemError msg))
   | _, _ -> raise (SemError msg)
 
-let rec require_board fe msg = match fe with
+let rec require_parent pname fe msg = match fe with
     Child(c) ->
       (match c with
           Subclass(g) ->
-            if g.extends.gname = "Board" then
+            if g.extends.gname = pname then
               ()
             else
-              require_board (Child(Subclass(g.extends))) msg
+              require_parent pname (Child(Subclass(g.extends))) msg
         | _ -> raise (SemError msg))
   | Parent(g) ->
-      if g.gname = "Board" then
-        ()
-      else
-        raise (SemError msg)
-  | Var(v) -> raise (SemError msg)
-
-let rec require_piece fe msg = match fe with
-    Child(c) ->
-      (match c with
-          Subclass(g) ->
-            if g.extends.gname = "Piece" then
-              ()
-            else
-              require_board (Child(Subclass(g.extends))) msg
-        | _ -> raise (SemError msg))
-  | Parent(g) ->
-      if g.gname = "Piece" then
+      if g.gname = pname then
         ()
       else
         raise (SemError msg)
@@ -436,16 +420,16 @@ let rec check_expr env = function
       let fd1, _ = check_field env fd1
       and fd2, _ = check_field env fd2
       and ll, ll_typ = check_listlit env ll in
-      require_board fd1 "Board (sub)group expected";
-      require_piece fd2 "Piece (sub)group expected";
+      require_parent "Board" fd1 "Board (sub)group expected";
+      require_parent "Piece" fd2 "Piece (sub)group expected";
       require_integer_list (ll, ll_typ) "List of integers expected";
       Remove(fd1, fd2, ll), Bool
   | Ast.Place(fd1, fd2, ll) ->
       let fd1, _ = check_field env fd1
       and fd2, _ = check_field env fd2
       and ll, ll_typ = check_listlit env ll in
-      require_piece fd1 "Piece (sub)group expected";
-      require_board fd2 "Board (sub)group expected";
+      require_parent "Piece" fd1 "Piece (sub)group expected";
+      require_parent "Board" fd2 "Board (sub)group expected";
       require_integer_list (ll, ll_typ) "List of integers expected";
       Remove(fd1, fd2, ll), Bool
 
