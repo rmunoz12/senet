@@ -60,11 +60,22 @@ decls:
                  ($2 :: trd_of_three $1)}
 
 gdecl:
-    GROUP ID LPAREN ID RPAREN LBRACE vdecl_list fdecl_list RBRACE SEMI
+    GROUP ID LPAREN extend_opt RPAREN LBRACE vdecl_list fdecl_list RBRACE SEMI
       { { gname = $2;
           extends = $4;
+          par_actuals = None;
           attributes = List.rev $7;
           methods = List.rev $8 } }
+  | GROUP ID LPAREN field_expr LPAREN actuals_opt RPAREN RPAREN LBRACE vdecl_list fdecl_list RBRACE SEMI
+      { { gname = $2;
+          extends = Some($4);
+          par_actuals = Some($6);
+          attributes = List.rev $10;
+          methods = List.rev $11 } }
+
+extend_opt:
+    /* nothing */ { None }
+  | field_expr    { Some($1) }
 
 fdecl_list:
     /* nothing */ { [] }

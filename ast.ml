@@ -88,7 +88,8 @@ type func_decl =
 
 type group_decl = {
     gname : string;
-    extends : string;
+    extends : field_expr option;
+    par_actuals : expr list option;
     attributes : var_decl list;
     methods : func_decl list;
   }
@@ -207,7 +208,10 @@ let string_of_fdecl = function
   | AssertFunc(f) -> string_of_assert_decl f
 
 let string_of_gdecl gdecl =
-  "group " ^ gdecl.gname ^ "(" ^ gdecl.extends ^ ")\n{\n" ^
+  "group " ^ gdecl.gname ^ "(" ^
+      (match gdecl.extends with
+           Some(par) -> string_of_field par
+         | None -> "") ^ ")\n{\n" ^
   String.concat "" (List.map string_of_vdecl gdecl.attributes) ^
   String.concat "" (List.map string_of_fdecl gdecl.methods) ^
   "};\n"
