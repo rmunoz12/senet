@@ -3,12 +3,12 @@
 @turns {
 
 func void begin() {
-    print(True, "\n");
+    print(True); print("\n");
     pass(ending, 2);
 }
 
 func void ending() {
-     print(False, "\n");
+     print(False); print("\n");
      end;
 }
 
