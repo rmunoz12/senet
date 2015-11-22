@@ -3,7 +3,9 @@
 @turns {
 
 func void begin() {
-    print(True, "\n", False, "\n");
+    print(True);
+    print("\n");
+    print(False);
     end;
 }
 
