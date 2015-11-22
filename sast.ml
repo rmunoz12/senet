@@ -155,24 +155,6 @@ let rec find_group (scope : symbol_table) name =
       Some(parent) -> find_group parent name
     | _ -> raise Not_found
 
-let rec find_child (parent : group_decl) name =
-  if List.exists (fun v -> v.vname = name) parent.attributes then
-    let vdcl = List.find (fun v -> v.vname = name) parent.attributes in
-    Var(vdcl), vdcl.vtype
-  else
-  if List.exists (fun f -> match f with
-                      BasicFunc(x) -> x.fname = name
-                    | AssertFunc(x) -> x.aname = name) parent.methods then
-    let fdcl = List.find (fun f -> match f with
-                              BasicFunc(x) -> x.fname = name
-                            | AssertFunc(x) -> x.aname = name) parent.methods in
-    let f_typ = (match fdcl with
-                     BasicFunc(x) -> x.ftype
-                   | AssertFunc(x) -> Bool) in
-    Fun(fdcl), f_typ
-  else
-    raise Not_found
-
 let rec verify_args_signature formals actuals = match formals, actuals with
     [], [] -> true
   | f :: frest, a :: arest ->
@@ -184,6 +166,41 @@ let rec verify_args_signature formals actuals = match formals, actuals with
       false
   | _ :: _, [] -> false
   | [], _ :: _ -> false
+
+let rec search_func_in_child (parent : group_decl) actuals name =
+  let rec helper = function
+      [] -> raise (SemError ("Function name " ^ name ^ " exists in parent methods " ^
+                             "but actuals signature not matched"))
+    | f :: rest ->
+        let formals = (match f with
+                            BasicFunc(x) -> x.formals
+                          | AssertFunc(x) -> x.aformals)
+        in
+        if List.length formals = List.length actuals then
+          if verify_args_signature formals actuals then
+            f
+          else
+            helper rest
+        else
+          helper rest
+  in
+  helper parent.methods
+
+let rec find_child (parent : group_decl) actuals name =
+  if List.exists (fun v -> v.vname = name) parent.attributes then
+    let vdcl = List.find (fun v -> v.vname = name) parent.attributes in
+    Var(vdcl), vdcl.vtype
+  else
+  if List.exists (fun f -> match f with
+                      BasicFunc(x) -> x.fname = name
+                    | AssertFunc(x) -> x.aname = name) parent.methods then
+    let fdcl = search_func_in_child parent actuals name in
+    let f_typ = (match fdcl with
+                     BasicFunc(x) -> x.ftype
+                   | AssertFunc(x) -> Bool) in
+    Fun(fdcl), f_typ
+  else
+    raise Not_found
 
 let rec search_func_in_parent scope actuals name =
   let rec helper = function
@@ -225,7 +242,6 @@ let rec search_field_local_first scope actuals name =
   else if fe_is_f then
     let rec helper = function
         [] ->
-        (* TODO change above to look at parent scope? *)
             (match scope.parent with
                 Some(parent) -> search_func_in_parent parent actuals name
               | None -> raise (SemError ("Function name " ^ name ^ " exists in scope " ^
@@ -271,8 +287,7 @@ let rec check_field env actuals = function
       (match parent with
           Grp(par) ->
             (try
-              find_child par name
-              (* TODO pass actuals to find_child *)
+              find_child par actuals name
             with Not_found ->
               raise (SemError("Undeclared child identifier: " ^ name)))
         | _ ->
