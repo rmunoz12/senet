@@ -1,6 +1,6 @@
 open Lexing
 
-type action = Ast | Semantic | Compile
+type action = Ast | Semantic | Groupeval | Compile
 
 (**
   * Printing of error line based on:
@@ -25,6 +25,7 @@ let _ =
   let action = if Array.length Sys.argv > 1 then
     List.assoc Sys.argv.(1) [ ("-a", Ast) ;
 			      ("-s", Semantic) ;
+            ("-g", Groupeval) ;
 			      ("-c", Compile) ]
   else Ast in
   let lexbuf = Lexing.from_channel stdin in
@@ -39,7 +40,11 @@ let _ =
       | Semantic -> let checked_program = Sast.check_program program
                in ignore(checked_program);
                   print_string ("Success!\n")
-      | Compile -> Compile.translate (Sast.check_program program)
+      | Groupeval -> let checked_program = Sast.check_program program in
+                     let checked_program = Cast.group_eval checked_program in
+                     Cast.print_program checked_program
+      | Compile -> let checked_program = Sast.check_program program in
+                   Compile.translate (Cast.group_eval checked_program)
 
   with Scanner.LexError(msg,lb) ->
           print_string (string_of_error msg lb); print_newline ()
