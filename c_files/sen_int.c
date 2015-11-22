@@ -1,33 +1,48 @@
 #include "headers/all_headers.h"
 
-void print(Sen_basic_type *self) {
+Sen_basic_type *construct_int(void *val) {
+    Sen_int *ret = malloc(sizeof(Sen_basic_type));
+    ret->classp = &Sen_int_class_;
+    ret->val = *(int *) val;
+    return (Sen_basic_type *) ret;
+}
+
+void print_int(Sen_object *self) {
     printf("%d", ((Sen_int *) self)->val);
 }
 
-void *get_val(Sen_basic_type *self) {
+void *get_val_int(Sen_basic_type *self) {
     int *ret = malloc(sizeof *ret);
     *ret=((Sen_int *) self)->val;
     return ret;
 }
 
-int set_val(Sen_int *self, int val) {
-    printf("%d\n", 1);
-    self->val=val;
+void *set_val_int(Sen_basic_type *self, void *val) {
+    ((Sen_int *)self)->val=*(int*)val;
     return val;
 }
 
-Sen_basic_type *sum(Sen_basic_type *x, Sen_basic_type *y) {
-    Sen_basic_type *ret = malloc(sizeof ret);
-    return ret;
+Sen_basic_type *add_int(Sen_basic_type *x, Sen_basic_type *y) {
+    // Need to check types for safety
+    Sen_int *ret = malloc(sizeof ret);
+    *ret=*(Sen_int *)x;
+    ret->val+=((Sen_int *) y)->val;
+    return (Sen_basic_type *) ret;
 }
 
 Sen_int_vtable Sen_int_vtable_ = {
-    print,
-    get_val,
-    set_val,
-    sum
+    print_int,
+    construct_int,
+    get_val_int,
+    set_val_int,
+    add_int
 };
 
-Sen_int_class Sen_int_class_;
+Sen_basic_type_class temp; /* NEED TO FIX */
+Sen_int_class Sen_int_class_ = {
+    &temp,
+    &Sen_int_vtable_,
+    INT
+};
 
 
