@@ -1,11 +1,13 @@
 #include "stdio.h"
 #include "stdlib.h"
 
+struct Sen_node;
+
+typedef Sen_node Sen_node;
 struct Sen_node {
     void *data;
     struct Sen_node *next;
 };
-typedef Sen_node Sen_node;
 
 /* Function to add a Sen_node at the beginning of Linked List.
    This function expects a pointer to the data to be added
