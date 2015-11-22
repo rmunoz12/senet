@@ -848,7 +848,7 @@ let check_setup env setup_section =
 let built_in_funcs =
   [BasicFunc({ ftype = Void;
                fname = "print";
-               formals = [{ vname = "print_string";
+               formals = [{ vname = "print_arg";
                             vtype = Str;
                             vinit = None}];
                locals = [];
@@ -856,8 +856,16 @@ let built_in_funcs =
                turns_func = false });
   BasicFunc({ ftype = Void;
                fname = "print";
-               formals = [{ vname = "print_string";
+               formals = [{ vname = "print_arg";
                             vtype = Bool;
+                            vinit = None}];
+               locals = [];
+               body = [];
+               turns_func = false });
+  BasicFunc({ ftype = Void;
+               fname = "print";
+               formals = [{ vname = "print_arg";
+                            vtype = Int;
                             vinit = None}];
                locals = [];
                body = [];
