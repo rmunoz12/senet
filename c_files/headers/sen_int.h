@@ -14,9 +14,10 @@ typedef struct Sen_int Sen_int;
 
 struct Sen_int_vtable {
     void (*print) (Sen_object *);
-    Sen_basic_type *(*construct) (void *);
     void *(*get_val) (Sen_basic_type *);
     void *(*set_val) (Sen_basic_type *, void *);
+    Sen_int *(*construct) (int);
+    void (*destruct) (Sen_int *);
     Sen_basic_type *(*add) (Sen_basic_type *, Sen_basic_type *);
 };
 
@@ -27,7 +28,9 @@ struct Sen_int_class {
 };
 
 struct Sen_int {
+    bool bound;
     Sen_int_class *classp;
+    Sen_basic_type *superp;
     int val;
 };
 
@@ -35,10 +38,10 @@ extern Sen_int_class Sen_int_class_;
 extern Sen_int_vtable Sen_int_vtable_;
 
 void print_int (Sen_object *);
-Sen_basic_type * construct_int (void *);
+Sen_int * construct_int (int);
 void *get_val_int (Sen_basic_type *);
 void *set_val_int (Sen_basic_type *, void *);
 
-#define CONSTRUCT_INT(val) (Sen_int*) construct_int(& val)
+#define CONSTRUCT_INT(val) (Sen_int*) construct_int(val)
 
 #endif

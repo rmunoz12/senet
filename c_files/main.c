@@ -1,21 +1,32 @@
 #include "headers/all_headers.h"
 
 int main() {
-    int y = 100;
-    int z = 50;
-    printf("%d\n", 5);
-    Sen_int *x = (Sen_int *) construct_int(&y);
-    __auto_type f = CONSTRUCT_INT(z);
-    printf("%d\n", 5);
-    __auto_type val = *x;
-    __auto_type valp = &val;
-    free(x);
-    x = (typeof(x)) ADD(valp, f);
+    __auto_type x = CONSTRUCT_INT(100);
+    x->bound = true;
+    __auto_type f = CONSTRUCT_INT(50);
+    f->bound=true;
+    printf("%d\n", x->val);
+    PRINT(x);
     printf("\n");
-    PRINT_OBJECT(x);
+    PRINT(f);
     printf("\n");
-    printf("%d\n", 5);
+    printf("%d %d\n", x->bound, f->bound);
+    x = (typeof(x)) ADD_BASIC_TYPE(x, ((Sen_int *) ADD_BASIC_TYPE(x, f)));
+    printf("%d %d\n", x->bound, f->bound);
+    x->bound=true;
+    PRINT(x);
+    printf("\n");
+    printf("%d %d\n", x->bound, f->bound);
     free(x);
     free(f);
+
+    __auto_type s = CONSTRUCT_STRING("testing ");
+    s->bound=true;
+    __auto_type ss = CONSTRUCT_STRING("hooray!!\n");
+    ss->bound=true;
+    PRINT(((Sen_string *)ADD_BASIC_TYPE(s, ss)));
+    PRINT(((Sen_string *)ADD_BASIC_TYPE(s, ((Sen_string *)ADD_BASIC_TYPE(s, ss)))));
+    DESTRUCT(((Sen_string *) s));
+    DESTRUCT(((Sen_string *) ss));
     return 0;
 }

@@ -29,7 +29,9 @@ struct Sen_basic_type_class {
 };
 
 struct Sen_basic_type {
-    Sen_basic_type_class *class;
+    bool bound;
+    Sen_basic_type_class *classp;
+    Sen_object *superp;
 };
 
 extern Sen_basic_type_class Sen_basic_type_class_;
@@ -39,6 +41,6 @@ void * get_val_basic_type (Sen_basic_type *);
 void * set_val_basic_type (Sen_basic_type *, void *);
 Sen_basic_type * add_basic_type (Sen_basic_type *, Sen_basic_type *);
 
-#define ADD(x,y) x->classp->tablep->add((Sen_basic_type *)x, (Sen_basic_type *)y);
+#define ADD_BASIC_TYPE(x,y) x->classp->tablep->add((Sen_basic_type *)x, (Sen_basic_type *)y)
 
 #endif
