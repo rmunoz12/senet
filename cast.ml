@@ -1,3 +1,10 @@
+(**
+  * C Abstract Syntax Tree (CAST)
+  *
+  * The CAST is a slightly modifed version of the SAST, where inherited
+  * group attributes have been copied, in order, into groups.
+  *)
+
 open Sast
 
 let rec get_attributes g = match g.extends with
@@ -21,7 +28,11 @@ let group_eval (program : Sast.program) =
   let program = setup, turns in
   program
 
-(* ----------------------------------------------------------------- *)
+(**
+ * -----------------------------------------
+ * Functions to convert the CAST to a string
+ * -----------------------------------------
+ *)
 
 let rec string_of_t = function
     Int -> "int"

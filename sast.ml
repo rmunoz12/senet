@@ -525,18 +525,6 @@ let check_init env = function
     Ast.ExprInit(e) -> Some(check_expr env e)
   | Ast.NoInit -> None
 
-let verify_in_turns = function
-    BasicFunc(f) ->
-      if f.turns_func then
-        ()
-      else
-        raise (SemError ("Function not in turns section"))
-  | AssertFunc(f) ->
-      if f.a_turns_func then
-        ()
-      else
-        raise (SemError ("Function not in turns section"))
-
 let rec find_turn_name (scope : symbol_table) name =
   try
     List.find (fun t -> t = name) scope.turns
@@ -559,7 +547,6 @@ let rec check_stmt env = function
       Block(scope', sl)
   | Ast.Expr(e) -> Expression(check_expr env e)
   | Ast.Pass(s, e) ->
-      (* let fd, _ = check_field env [] fd *)
       let turn_name =
         try
           find_turn_name env.scope s
@@ -575,12 +562,8 @@ let rec check_stmt env = function
           turns_func = true }
       in
       let e = check_expr env e in
-        (* (match fd with
-            Fun(f) -> *)
-              require_int e "Must pass to an integer player.";
-              (* verify_in_turns f; *)
-              Pass(BasicFunc(dummy_turn_func), e)
-          (* | _ -> raise (SemError ("Pass requires a function argument"))) *)
+      require_int e "Must pass to an integer player.";
+      Pass(BasicFunc(dummy_turn_func), e)
   | Ast.Return(e) ->
       let e = check_expr env e in
       let _, typ = e in
@@ -954,8 +937,8 @@ let fix_pass_stmts_helper turns = function
         with Not_found ->
           raise (SemError ("Turns function declaration not found in pass statement: " ^ name ))
       in
-      Pass(fdcl, e) (* :: fix_pass_stmts_helper turns rest *)
-  | s -> s (* :: fix_pass_stmts_helper turns rest *)
+      Pass(fdcl, e)
+  | s -> s
 
 let fix_pass_stmts turns = function
     BasicFunc(f) ->
@@ -968,12 +951,6 @@ let fix_pass_stmts turns = function
       {f with abody = List.map (fix_pass_stmts_helper turns) f.abody}
     in
     AssertFunc(new_f)
-
-(* let rec fix_pass_stmts = function
-    [] -> []
-  | f :: rest ->
-      let new_f = fix_pass_stmts_helper f in
-      new_f :: fix_pass_stmts rest *)
 
 let check_program (program : Ast.program) =
   let symbols =
