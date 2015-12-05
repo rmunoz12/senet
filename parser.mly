@@ -45,7 +45,11 @@ program:
   twoparts EOF { $1 }
 
 twoparts:
-    SETUP LBRACE decls RBRACE TURNS LBRACE fdecl_list RBRACE {$3, $7}
+    SETUP LBRACE decls RBRACE TURNS LBRACE fdecl_list RBRACE
+      {(List.rev (fst_of_three $3),
+        List.rev (snd_of_three $3),
+        List.rev (trd_of_three $3)),
+        List.rev $7}
 
 decls:
    /* nothing */ { [], [], [] }
