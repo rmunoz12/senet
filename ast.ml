@@ -210,7 +210,11 @@ let string_of_fdecl = function
 let string_of_gdecl gdecl =
   "group " ^ gdecl.gname ^ "(" ^
       (match gdecl.extends with
-           Some(par) -> string_of_field par
+           Some(par) -> string_of_field par ^
+              (match gdecl.par_actuals with
+                  Some(acts) ->
+                    "(" ^ String.concat ", " (List.map string_of_expr acts) ^ ")"
+                | None -> "")
          | None -> "") ^ ")\n{\n" ^
   String.concat "" (List.map string_of_vdecl gdecl.attributes) ^
   String.concat "" (List.map string_of_fdecl gdecl.methods) ^
