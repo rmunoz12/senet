@@ -27,7 +27,7 @@ let _ =
 			      ("-s", Semantic) ;
             ("-g", Groupeval) ;
 			      ("-c", Compile) ]
-  else Ast in
+  else Compile in
   let lexbuf = Lexing.from_channel stdin in
 
   try
@@ -42,7 +42,7 @@ let _ =
                   print_string ("Success!\n")
       | Groupeval -> let checked_program = Sast.check_program program in
                      let checked_program = Cast.group_eval checked_program in
-                     Cast.print_program checked_program
+                     print_string (Cast.string_of_program checked_program)
       | Compile -> let checked_program = Sast.check_program program in
                    Compile.translate (Cast.group_eval checked_program)
 

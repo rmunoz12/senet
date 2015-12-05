@@ -21,6 +21,16 @@ let group_eval (program : Sast.program) =
   let program = setup, turns in
   program
 
-let print_program (program : Sast.program) =
-  raise (Sast.SemError "Not Implemented")
+(* ----------------------------------------------------------------- *)
+
+let string_of_setup s =
+  ""
+
+let string_of_turns t =
+  ""
+
+let string_of_program (program : Sast.program) =
+  let s, t = program in
+  string_of_setup s ^ string_of_turns t
+  (* raise (Sast.SemError "Not Implemented") *)
 
