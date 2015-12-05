@@ -167,7 +167,7 @@ let rec string_of_vinit = function
 
 let rec string_of_vdecl vdecl =
   string_of_vtype vdecl.vtype ^ " " ^ vdecl.vname ^
-  string_of_vinit vdecl.vinit ^ ";\n"
+  string_of_vinit vdecl.vinit
 
 let rec string_of_stmt = function
     Block(stmts) ->
@@ -191,7 +191,7 @@ let string_of_basic_fdecl fdecl =
   "func" ^ " " ^ string_of_vtype fdecl.ftype ^ " " ^
   fdecl.fname ^ "(" ^
         String.concat ", " (List.map string_of_vdecl fdecl.formals) ^ ")\n{\n" ^
-  String.concat "" (List.map string_of_vdecl fdecl.locals) ^
+  String.concat "" (List.map (fun v -> string_of_vdecl v ^ ";\n") fdecl.locals) ^
   String.concat "" (List.map string_of_stmt fdecl.body) ^
   "}\n"
 
@@ -199,7 +199,7 @@ let string_of_assert_decl fdecl =
   "assert " ^
   fdecl.fname ^ "(" ^
         String.concat ", " (List.map string_of_vdecl fdecl.formals) ^ ")\n{\n" ^
-  String.concat "" (List.map string_of_vdecl fdecl.locals) ^
+  String.concat "" (List.map (fun v -> string_of_vdecl v ^ ";\n") fdecl.locals) ^
   String.concat "" (List.map string_of_stmt fdecl.body) ^
   "}\n"
 
@@ -216,13 +216,13 @@ let string_of_gdecl gdecl =
                     "(" ^ String.concat ", " (List.map string_of_expr acts) ^ ")"
                 | None -> "")
          | None -> "") ^ ")\n{\n" ^
-  String.concat "" (List.map string_of_vdecl gdecl.attributes) ^
+  String.concat "" (List.map (fun v -> string_of_vdecl v ^ ";\n") gdecl.attributes) ^
   String.concat "" (List.map string_of_fdecl gdecl.methods) ^
   "};\n"
 
 let string_of_setup (vars, funcs, groups) =
   "@setup {\n" ^
-  String.concat "" (List.map string_of_vdecl vars) ^ "\n" ^
+  String.concat "" (List.map (fun v -> string_of_vdecl v ^ ";\n") vars) ^
   String.concat "\n" (List.map string_of_fdecl funcs) ^
   String.concat "\n" (List.map string_of_gdecl groups) ^
   "}\n"

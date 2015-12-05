@@ -142,8 +142,12 @@ stmt:
      { If($3, Block(List.rev $6), Block(List.rev $10)) }
   | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE ELSE LBRACE stmt_list_req RBRACE
      { If($3, Block(List.rev $6), Block(List.rev $10)) }
-  | FOR LPAREN vdecl IN LBRACE expr_list RBRACE RPAREN LBRACE stmt_list_req RBRACE
-     { For($3, List.rev $6, Block(List.rev $10)) }
+  | FOR LPAREN type_id ID IN LBRACE expr_list RBRACE RPAREN LBRACE stmt_list_req RBRACE
+     { For({ vtype = $3;
+             vname = $4;
+             vinit = NoInit },
+           List.rev $7,
+           Block(List.rev $11)) }
   | WHILE LPAREN expr RPAREN LBRACE stmt_list_req RBRACE
      { While($3, Block(List.rev $6)) }
   | BREAK SEMI    { Break}
