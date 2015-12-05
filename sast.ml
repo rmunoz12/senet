@@ -379,6 +379,13 @@ let require_int e msg = match e with
     _, Int -> ()
   | _, _ -> raise (SemError msg)
 
+let require_same e1 e2 msg =
+  let _, t1 = e1
+  and _, t2 = e2 in
+  if t1 = t2 then
+    ()
+  else raise (SemError msg)
+
 let require_integer_list l msg = match l with
     _, List_t(typ) ->
       (match typ with
@@ -439,8 +446,7 @@ let rec check_expr env = function
              let op = ast_op_to_sast_op op in
              Binop(e1, op, e2), Int)
       else
-        (require_bool e1 "Left operand must be boolean";
-         require_bool e2 "Right operand must be boolean";
+        (require_same e1 e2 "Left and right operands in comparison must be equal";
          let op = ast_op_to_sast_op op in
          Binop(e1, op, e2), Bool)
   | Ast.Assign(fd, e) ->
