@@ -544,8 +544,7 @@ let rec check_stmt env = function
           functions = [];
           groups = [] } in
       let env' =
-        { env with scope = scope';
-          return_type = Void } in
+        { env with scope = scope'; } in
       let sl = List.map (fun s -> check_stmt env' s) sl in
       Block(scope', sl)
   | Ast.Expr(e) -> Expression(check_expr env e)
@@ -578,9 +577,9 @@ let rec check_stmt env = function
         Break
   | Ast.End -> End
   | Ast.If(e, s1, s2) ->
-      let e = check_expr env e in (* Check the predicate *)
+      let e = check_expr env e in
       require_bool e "Predicate of if must be boolean";
-      If(e, check_stmt env s1, check_stmt env s2)  (* Check then, else *)
+      If(e, check_stmt env s1, check_stmt env s2)
   | Ast.For(vd, el, s) ->
       let decl =
       { vname = vd.Ast.vname;
@@ -599,10 +598,7 @@ let rec check_stmt env = function
           variables = [];
           functions = [];
           groups = [] } in
-        let env' =
-          { scope = scope';
-            return_type = Void;
-            in_loop = true } in
+        let env' = { env with scope = scope'; in_loop = true } in
         scope'.variables <- decl :: scope'.variables;
         For(decl, el, check_stmt env' s)
   | Ast.While(e, s) ->
@@ -612,10 +608,7 @@ let rec check_stmt env = function
           variables = [];
           functions = [];
           groups = [] } in
-      let env' =
-        { scope = scope';
-          return_type = Void;
-          in_loop = true } in
+      let env' = { env with scope = scope'; in_loop = true } in
       require_bool e "While loop predicate must be Boolean";
       While(e, check_stmt env' s)
 
@@ -838,12 +831,20 @@ let rec check_group env g =
       Some(el) -> Some(List.map (check_expr env) el)
     | None -> None
   in
-  let attribs = List.map (check_vdcl env) g.Ast.attributes in
+  let scope' =
+      { parent = Some(env.scope);
+        variables = [];
+        functions = [];
+        groups = [] } in
+    let env' =
+      { env with scope = scope';
+        return_type = Void; } in
+  let attribs = List.map (check_vdcl env') g.Ast.attributes in
   let attribs =
     (match parent with
        Some(par) -> verify_attributes par.attributes attribs
      | None -> attribs) in
-  let methods = List.map (check_function env false) g.Ast.methods in
+  let methods = List.map (check_function env' false) g.Ast.methods in
   let init_opt = try
     Some(find_init_func methods)
   with Not_found ->
