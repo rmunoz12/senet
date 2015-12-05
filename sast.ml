@@ -453,8 +453,6 @@ let rec check_expr env = function
         raise (SemError ("Types differ in assignment expression; expected: " ^
                          string_of_t tf))
   | Ast.Call(fd, el) ->
-      (* let fd, typ = check_field env fd *)
-      (* and actuals = List.map (check_expr env) el in *)
       let actuals = List.map (check_expr env) el in
       let fd, typ = check_field env actuals fd in
       (match fd with
@@ -696,16 +694,6 @@ let rec verify_if_func_declared new_fun = function
               verify_if_func_declared new_fun rest)
 
 let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
-  (* let already_declared =
-    List.exists (fun x -> match x with
-                   BasicFunc(b) -> b.fname = f.Ast.fname
-                 | AssertFunc(a) -> a.aname = f.Ast.fname )
-                env.scope.functions
-  in
-  if already_declared then
-    raise (SemError ("Function name previously declared in scope: " ^
-                     f.Ast.fname))
-  else *)
     let scope' =
       { parent = Some(env.scope);
         variables = [];
@@ -808,6 +796,24 @@ let verify_extends parent par_actuals init_opt =
             Some(init) -> ()
           | None -> raise (SemError("No constructor function")))
 
+let rec verify_single_attrib par_attr v = match par_attr with
+    [] -> Some(v)
+  | p :: rest ->
+      if p.vname = v.vname then
+        if p.vtype = v.vtype then
+          None
+        else
+          raise (SemError("Cannot change type of inherited attribute"))
+      else
+        verify_single_attrib rest v
+
+let rec verify_attributes par_attr = function
+    [] -> []
+  | v :: rest ->
+      (match verify_single_attrib par_attr v with
+          None -> verify_attributes par_attr rest
+        | Some(var) -> var :: verify_attributes par_attr rest)
+
 let rec check_group env g =
   let parent = match g.Ast.extends with
       Some(fe) ->
@@ -822,6 +828,10 @@ let rec check_group env g =
     | None -> None
   in
   let attribs = List.map (check_vdcl env) g.Ast.attributes in
+  let attribs =
+    (match parent with
+       Some(par) -> verify_attributes par.attributes attribs
+     | None -> attribs) in
   let methods = List.map (check_function env false) g.Ast.methods in
   let init_opt = try
     Some(find_init_func methods)
