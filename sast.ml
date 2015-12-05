@@ -273,7 +273,12 @@ let rec search_field_local_first scope actuals name =
 
 let rec check_field env actuals = function
     Ast.Id(name) ->
-      let dcl = search_field_local_first env.scope actuals name in
+      let dcl =
+        try
+          search_field_local_first env.scope actuals name
+        with Not_found ->
+          raise (SemError("Undeclared identifier: " ^ name))
+      in
       let typ = match dcl with
           Var(v) -> v.vtype
         | Fun(x) -> (match x with
