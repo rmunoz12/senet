@@ -157,7 +157,7 @@ stmt:
   | BREAK SEMI    { Break}
   | CONTINUE SEMI { Continue }
   | END SEMI { End }
-  | PASS LPAREN field_expr COMMA expr RPAREN SEMI { Pass($3, $5) }
+  | PASS LPAREN ID COMMA expr RPAREN SEMI { Pass($3, $5) }
 
 
 expr:

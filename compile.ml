@@ -90,20 +90,26 @@ let basic_func_to_c f =
     (statements_to_c f.body) ^ "\n" ^
     "}\n"
 
-let rec turns_to_c t =
-    "// @turns\n" ^
+let declare_turns = function
+    BasicFunc(f) ->
+      (id_type_to_c f.ftype) ^ " " ^
+      f.fname ^ "(" ^
+      (var_decls_to_c f.formals) ^ ");"
+  | AssertFunc(f) -> ""
 
-    (match t with
-      [] -> ""
-    | hd :: tl ->
-      ( match hd with
-          BasicFunc(f) -> basic_func_to_c f
-        | AssertFunc(f) -> ""
-      ) ^ turns_to_c tl
-    )
+let rec turns_to_c = function
+    [] -> ""
+  | hd :: tl ->
+    ( match hd with
+        BasicFunc(f) -> basic_func_to_c f
+      | AssertFunc(f) -> ""
+    ) ^ turns_to_c tl
 
 let senet_to_c (s, t) =
-    setup_to_c(s) ^ turns_to_c(t) ^
+    setup_to_c(s) ^
+    "// @turns\n" ^
+    String.concat "\n" (List.map declare_turns t) ^ "\n\n" ^
+    turns_to_c(t) ^
     "int main() {\n
     CUR_TURN = &begin;\n
     PLAYER_ON_MOVE = 0;\n

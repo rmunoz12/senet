@@ -103,7 +103,8 @@ and symbol_table = {
   parent : symbol_table option;
   mutable variables : var_decl list;
   mutable functions : func_decl list;
-  mutable groups : group_decl list
+  mutable groups : group_decl list;
+  mutable turns : string list
 }
 
 type translation_environment = {
@@ -536,27 +537,50 @@ let verify_in_turns = function
       else
         raise (SemError ("Function not in turns section"))
 
+let rec find_turn_name (scope : symbol_table) name =
+  try
+    List.find (fun t -> t = name) scope.turns
+  with Not_found ->
+    match scope.parent with
+      Some(parent) -> find_turn_name parent name
+    | _ -> raise Not_found
+
 let rec check_stmt env = function
     Ast.Block(sl) ->
       let scope' =
         { parent = Some(env.scope);
           variables = [];
           functions = [];
-          groups = [] } in
+          groups = [];
+          turns = [] } in
       let env' =
         { env with scope = scope'; } in
       let sl = List.map (fun s -> check_stmt env' s) sl in
       Block(scope', sl)
   | Ast.Expr(e) -> Expression(check_expr env e)
-  | Ast.Pass(fd, e) ->
-      let fd, _ = check_field env [] fd
-      and e = check_expr env e in
-        (match fd with
-            Fun(f) ->
+  | Ast.Pass(s, e) ->
+      (* let fd, _ = check_field env [] fd *)
+      let turn_name =
+        try
+          find_turn_name env.scope s
+        with Not_found ->
+          raise (SemError ("Turn name not found: " ^ s))
+      in
+      let dummy_turn_func =
+        { ftype = Void;
+          fname = turn_name;
+          formals = [];
+          locals = [];
+          body = [];
+          turns_func = true }
+      in
+      let e = check_expr env e in
+        (* (match fd with
+            Fun(f) -> *)
               require_int e "Must pass to an integer player.";
-              verify_in_turns f;
-              Pass(f, e)
-          | _ -> raise (SemError ("Pass requires a function argument")))
+              (* verify_in_turns f; *)
+              Pass(BasicFunc(dummy_turn_func), e)
+          (* | _ -> raise (SemError ("Pass requires a function argument"))) *)
   | Ast.Return(e) ->
       let e = check_expr env e in
       let _, typ = e in
@@ -597,7 +621,8 @@ let rec check_stmt env = function
           { parent = Some(env.scope);
           variables = [];
           functions = [];
-          groups = [] } in
+          groups = [];
+          turns = [] } in
         let env' = { env with scope = scope'; in_loop = true } in
         scope'.variables <- decl :: scope'.variables;
         For(decl, el, check_stmt env' s)
@@ -607,7 +632,8 @@ let rec check_stmt env = function
         { parent = Some(env.scope);
           variables = [];
           functions = [];
-          groups = [] } in
+          groups = [];
+          turns = [] } in
       let env' = { env with scope = scope'; in_loop = true } in
       require_bool e "While loop predicate must be Boolean";
       While(e, check_stmt env' s)
@@ -702,7 +728,8 @@ let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
       { parent = Some(env.scope);
         variables = [];
         functions = [];
-        groups = [] } in
+        groups = [];
+        turns = [] } in
     let env' =
       { env with scope = scope';
         return_type = id_type_to_t f.Ast.ftype; } in
@@ -735,7 +762,8 @@ let check_assert_func env in_turn_section (f : Ast.assert_decl) =
       { parent = Some(env.scope);
         variables = [];
         functions = [];
-        groups = [] } in
+        groups = [];
+        turns = [] } in
     let env' =
       { env with scope = scope';
         return_type = Bool; } in
@@ -835,7 +863,8 @@ let rec check_group env g =
       { parent = Some(env.scope);
         variables = [];
         functions = [];
-        groups = [] } in
+        groups = [];
+        turns = [] } in
     let env' =
       { env with scope = scope';
         return_type = Void; } in
@@ -893,18 +922,66 @@ let built_in_funcs =
                body = [];
                turns_func = false })]
 
+let rec gather_turn_names env = function
+    [] -> ()
+  | Ast.BasicFunc(t) :: rest ->
+      env.scope.turns <- t.Ast.fname :: env.scope.turns;
+      gather_turn_names env rest
+  | Ast.AssertFunc(t) :: rest ->
+      env.scope.turns <- t.Ast.fname :: env.scope.turns;
+      gather_turn_names env rest
+
 let check_turns env turns_section =
   if check_for_begin(turns_section) = false then
     raise (SemError "No begin() function in @turns section")
   else
+    gather_turn_names env turns_section;
     List.map (check_function env true) turns_section
+
+let fix_pass_stmts_helper turns = function
+    Pass(s, e) ->
+      let name = (match s with
+                    BasicFunc(x) -> x.fname
+                  | AssertFunc(x) -> x.aname)
+      in
+      let fdcl =
+        try
+          List.find
+            (fun f -> match f with
+               BasicFunc(x) -> x.fname = name
+             | AssertFunc(x) -> x.aname = name)
+          turns
+        with Not_found ->
+          raise (SemError ("Turns function declaration not found in pass statement: " ^ name ))
+      in
+      Pass(fdcl, e) (* :: fix_pass_stmts_helper turns rest *)
+  | s -> s (* :: fix_pass_stmts_helper turns rest *)
+
+let fix_pass_stmts turns = function
+    BasicFunc(f) ->
+    let new_f =
+      {f with body = List.map (fix_pass_stmts_helper turns) f.body}
+    in
+    BasicFunc(new_f)
+  | AssertFunc(f) ->
+    let new_f =
+      {f with abody = List.map (fix_pass_stmts_helper turns) f.abody}
+    in
+    AssertFunc(new_f)
+
+(* let rec fix_pass_stmts = function
+    [] -> []
+  | f :: rest ->
+      let new_f = fix_pass_stmts_helper f in
+      new_f :: fix_pass_stmts rest *)
 
 let check_program (program : Ast.program) =
   let symbols =
     { parent = None ;
       variables = [];
       functions = built_in_funcs;
-      groups = [] } in
+      groups = [];
+      turns = [] } in
   let env =
     { scope = symbols;
       return_type = Void;
@@ -912,5 +989,6 @@ let check_program (program : Ast.program) =
   let setup_section, turns_section = program in
   let setup_section = check_setup env setup_section in
   let turns_section = check_turns env turns_section in
+  let turns_section = List.map (fix_pass_stmts turns_section) turns_section in
   setup_section, turns_section
 
