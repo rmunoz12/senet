@@ -140,16 +140,31 @@ let string_of_fdecl = function
     BasicFunc(f) -> string_of_basic_fdecl f
   | AssertFunc(f) -> string_of_assert_decl f
 
+let string_of_gdecl gdecl =
+  "group " ^ gdecl.gname ^ "(" ^
+      (match gdecl.extends with
+           Some(par) -> par.gname ^
+              (match gdecl.par_actuals with
+                  Some(acts) ->
+                    "(" ^ String.concat ", " (List.map string_of_expression acts) ^ ")"
+                | None -> "")
+         | None -> "") ^ ")\n{\n" ^
+  String.concat "" (List.map (fun v -> string_of_vdecl v ^ ";\n") gdecl.attributes) ^
+  String.concat "" (List.map string_of_fdecl gdecl.methods) ^
+  "};\n"
+
 let string_of_setup s =
   let vars, funcs, groups = s in
   "@setup {\n\n" ^
   String.concat "" (List.map (fun v -> string_of_vdecl v ^ ";\n") vars) ^ "\n" ^
   String.concat "\n" (List.map string_of_fdecl funcs) ^
-  (* String.concat "\n" (List.map string_of_gdecl groups) ^ *)
+  String.concat "\n" (List.map string_of_gdecl groups) ^
   "\n}\n"
 
 let string_of_turns t =
-  "" (* Not implemented *)
+  "@turns {\n\n" ^
+  String.concat "\n" (List.map string_of_fdecl t) ^
+  "\n}\n"
 
 let string_of_program (program : Sast.program) =
   let s, t = program in

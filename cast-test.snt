@@ -1,0 +1,33 @@
+@setup
+{
+
+group A() {
+    int x;
+    int y;
+    int z;
+    func void __init__() {
+        1;
+        2;
+        3;
+    }
+};
+
+group B(A()) {
+    int x;
+    bool a;
+    bool b;
+};
+
+}
+
+
+@turns
+{
+
+func void begin () {
+
+}
+
+func void test () {}
+
+}
