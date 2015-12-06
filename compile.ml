@@ -114,22 +114,28 @@ and expression_to_c = function
   | Place(fd1, fd2, ll) -> "" *)
 
 let rec statement_to_c = function
-    Block(scope, slist) -> "{}"
+    Block(scope, slist) ->
+      "  " ^ String.concat "\n  " (List.map statement_to_c slist)
   | Expression(e) ->
       let detail, _ = e in
       expression_to_c(detail) ^ ";"
-  | Return(e) -> let detail, _ = e in "return " ^ expression_to_c detail ^ ";\n"
+  | Return(e) -> let detail, _ = e in "return " ^ expression_to_c detail ^ ";"
   | Break -> "break;"
   | Continue -> "continue;"
-  | If(e, s1, s2) -> let e, _  = e in
-                     "if (" ^ expression_to_c e ^ " ) {\n" ^ statement_to_c s1 ^ "\n}" ^
-                     "else {\n" ^ statement_to_c s2 ^ "}\n"
-  | For(vd, elist, s) -> ""
+  | If(e, s1, s2) ->
+      let e, _  = e in
+      "if (" ^ expression_to_c e ^ " ) {\n" ^
+      statement_to_c s1 ^ "\n} " ^
+      "else {\n" ^ statement_to_c s2 ^ "}\n"
+  (* | For(vd, elist, s) -> *)
   | End -> "exit(0);"
   | Pass(e,s) -> let detaill, _ = s in
                      "CUR_TURN = &" ^ prefix_name (function_call_to_c e) ^ ";\n" ^
-                     "PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";\n"
-  | While(e, s) -> "while (" ^ statement_to_c s ^ ")"
+                     "PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";"
+  | While(e, s) ->
+      let detail, _ = e in
+      "while (" ^ expression_to_c detail ^ ") {\n" ^
+      statement_to_c s ^ "\n" ^ "}\n"
 
 let basic_func_to_c f =
     (id_type_to_c f.ftype) ^ " " ^ prefix_name f.fname ^ "(" ^

@@ -592,7 +592,7 @@ let rec check_stmt env = function
       if env.in_loop = false then
         raise (SemError ("Continue outside of loop"))
       else
-        Break
+        Continue
   | Ast.End -> End
   | Ast.If(e, s1, s2) ->
       let e = check_expr env e in
@@ -609,7 +609,8 @@ let rec check_stmt env = function
       and t_el = verify_expr_list_type env t_el el in
       if t_vd <> t_el then
         raise (SemError ("For loop elements and loop variable must be " ^
-                         "the same type. Expected: " ^ string_of_t t_vd))
+                         "the same type. Variable type: " ^ string_of_t t_vd ^
+                         "; List type: " ^ string_of_t t_el))
       else
         let scope' =
           { parent = Some(env.scope);
