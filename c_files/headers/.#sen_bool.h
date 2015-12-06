@@ -1,1 +1,0 @@
-xamvo@xamvo-Lenovo-IdeaPad-Y510P.15505:1448584469

@@ -40,8 +40,8 @@ let rec expression_to_c = function
     IntLiteral(i) -> "CONSTRUCT_INT(" ^ string_of_int i ^ ")"
   | StrLiteral(s) -> Ast.escaped_string s
   | ListLiteral(ll) -> ""
-  | BoolLiteral(b) ->
-        (match b with True -> "true" | False -> "false")
+  | BoolLiteral(b) -> "CONSTRUCT_BOOL(" ^
+        (match b with True -> "true" | False -> "false") ^ ")"
   | VoidLiteral -> ""
   | Field(fd) -> ""
   | Binop(e1, o, e2) -> ""

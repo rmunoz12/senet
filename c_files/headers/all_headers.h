@@ -11,4 +11,5 @@
 #include "sen_object.h"
 #include "sen_bool.h"
 #include "sen_string.h"
+#include "sen_array.h"
 #endif

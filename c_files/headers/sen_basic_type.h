@@ -23,8 +23,8 @@ struct Sen_basic_type_vtable {
 };
 
 struct Sen_basic_type_class {
-    Sen_object_class *super;
-    Sen_basic_type_vtable *table;
+    Sen_object_class *superp;
+    Sen_basic_type_vtable *tablep;
     Type type;
 };
 

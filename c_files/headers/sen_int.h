@@ -18,6 +18,7 @@ struct Sen_int_vtable {
     void *(*set_val) (Sen_basic_type *, void *);
     Sen_int *(*construct) (int);
     void (*destruct) (Sen_int *);
+    Sen_int *(*copy) (Sen_int *);
     Sen_basic_type *(*add) (Sen_basic_type *, Sen_basic_type *);
 };
 
@@ -42,6 +43,6 @@ Sen_int * construct_int (int);
 void *get_val_int (Sen_basic_type *);
 void *set_val_int (Sen_basic_type *, void *);
 
-#define CONSTRUCT_INT(val) (Sen_int*) construct_int(val)
+#define CONSTRUCT_INT(val) ((Sen_int*) construct_int(val))
 
 #endif

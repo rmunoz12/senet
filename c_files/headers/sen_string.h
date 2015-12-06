@@ -42,6 +42,6 @@ Sen_string * construct_string (char *);
 void *get_val_string (Sen_basic_type *);
 void *set_val_string (Sen_basic_type *, void *);
 
-#define CONSTRUCT_STRING(val) (Sen_string*) construct_string(val)
+#define CONSTRUCT_STRING(val) ((Sen_string*) construct_string(val))
 
 #endif
