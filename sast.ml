@@ -445,14 +445,25 @@ let rec check_expr env = function
  | Ast.Binop(e1, op, e2) ->
       let e1 = check_expr env e1
       and e2 = check_expr env e2 in
-      if op <> Ast.Equal && op <> Ast.Neq &&
-         op <> Ast.And && op <> Ast.Or then
-            (require_int e1 "Left operand must be integer";
+      if op = Ast.Add || op = Ast.Sub || op = Ast.Mult ||
+         op = Ast.Div || op = Ast.Mod then
+            ((require_int e1 "Left operand must be integer";
              require_int e2 "Right operand must be integer";
              let op = ast_op_to_sast_op op in
-             Binop(e1, op, e2), Int)
-      else
+             Binop(e1, op, e2), Int))
+      else if op = Ast.Less || op = Ast.Leq ||
+              op = Ast.Greater || op = Ast.Geq then
+            ((require_int e1 "Left operand must be integer";
+              require_int e2 "Right operand must be integer";
+              let op = ast_op_to_sast_op op in
+              Binop(e1, op, e2), Bool))
+      else if op = Ast.Equal || op = Ast.Neq then
         (require_same e1 e2 "Left and right operands in comparison must be equal";
+         let op = ast_op_to_sast_op op in
+         Binop(e1, op, e2), Bool)
+      else (* op = Ast.And || op = Ast.Or *)
+        (require_bool e1 "Left opreand must be boolean";
+         require_bool e2 "Right operand must be boolean";
          let op = ast_op_to_sast_op op in
          Binop(e1, op, e2), Bool)
   | Ast.Assign(fd, e) ->

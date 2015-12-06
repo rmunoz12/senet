@@ -1,0 +1,11 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    print(15 / 3); print("\n");
+    print(14 / 3); print("\n");
+    end;
+}
+
+}
