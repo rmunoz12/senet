@@ -3,14 +3,23 @@ open Sast
 let prefix_name n =
   "snt_" ^ n
 
-let setup_to_c s =
+let senet_header =
     "#include <stdbool.h>" ^ "\n" ^
     "#include <stdio.h>" ^ "\n" ^
     "#include <stdlib.h>" ^ "\n" ^
        "\n" ^
     "void (*CUR_TURN)();" ^ "\n" ^
-    "int PLAYER_ON_MOVE;" ^ "\n" ^
-    "" ^ "\n"
+    "int PLAYER_ON_MOVE;" ^ "\n"
+
+let senet_footer =
+  "int main() {\n" ^
+  "  CUR_TURN = &snt_begin;\n" ^
+  "  PLAYER_ON_MOVE = 0;\n" ^
+  "  while (true) {\n" ^
+  "    CUR_TURN();\n" ^
+  "  }\n" ^
+  "  return 0;\n" ^
+  "}\n"
 
 let binop_to_c = function
    Add -> "+"
@@ -131,6 +140,24 @@ let declare_turns = function
       String.concat ", " (List.map var_decl_to_c f.formals) ^ ");"
   | AssertFunc(f) -> ""
 
+let rec setup_vars_to_c = function
+    [] -> ""
+  | v :: rest ->
+      var_decl_to_c v ^ "\n" ^
+      setup_vars_to_c rest
+
+let setup_funcs_to_c f =
+  ""
+
+let setup_groups_to_c g =
+  ""
+
+let setup_to_c s =
+  let v, f, g = s in
+  setup_vars_to_c v ^
+  setup_funcs_to_c f ^
+  setup_groups_to_c g
+
 let rec turns_to_c = function
     [] -> ""
   | hd :: tl ->
@@ -140,18 +167,15 @@ let rec turns_to_c = function
     ) ^ turns_to_c tl
 
 let senet_to_c (s, t) =
-    setup_to_c(s) ^
+    "// @senet_header\n" ^
+    senet_header ^ "\n" ^
+    "// @setup\n" ^
+    setup_to_c s ^ "\n" ^
     "// @turns\n" ^
     String.concat "\n" (List.map declare_turns t) ^ "\n\n" ^
-    turns_to_c(t) ^
-    "int main() {\n
-    CUR_TURN = &snt_begin;\n
-    PLAYER_ON_MOVE = 0;\n
-    while (true) {\n
-    CUR_TURN();\n
-    }\n
-    return 0;\n
-    }\n"
+    turns_to_c t ^ "\n" ^
+    "// @senet_footer\n" ^
+    senet_footer
 
 let translate (program : Sast.program) =
     let outfile = open_out "output.c" in
