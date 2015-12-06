@@ -41,13 +41,16 @@ let id_type_to_c = function
   |  Bool -> "bool "
   |  Str -> "char* "
   |  Void -> "void"
-  (* | List_t(ft) ->
-  | Group(s) ->  *)
+  (* | List_t(ft) -> *)
+  | Group(s) -> "struct " ^ s
 
 let rec field_to_c = function
     Var(v) -> prefix_name v.vname
-  (* | Fun(f) ->
-  | Grp(g) -> *)
+  | Fun(f) -> prefix_name
+      (match f with
+         BasicFunc(x) -> x.fname
+       | AssertFunc(x) -> x.aname)
+  | Grp(g) -> prefix_name g.gname
 
 let rec function_call_to_c = function
     BasicFunc(f) -> f.fname
@@ -57,22 +60,24 @@ let rec printf var = match var with
   | [el_string, typ] ->
   let arg =
     (match typ with
-         Bool -> "\"%s\", " ^ el_string ^" ? \"true\" : \"false\"";
+         Bool -> "\"%s\", " ^ el_string ^ " ? \"true\" : \"false\"";
        | Int -> "\"%d\", " ^ el_string
-       | Str -> "\"%s\" ," ^ el_string )
+       | Str -> "\"%s\", " ^ el_string )
   in
   "printf(" ^ arg ^ ")"
   | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr)
 
+let formal_to_c v =
+  id_type_to_c v.vtype ^ prefix_name v.vname
+
 let rec var_decl_to_c v =
-    id_type_to_c v.vtype ^
-    prefix_name v.vname ^
-    (match v.vinit with
-        None -> ""
-      | Some(e) ->
-          let detail, _ = e in
-          " = " ^ expression_to_c detail) ^
-    ";"
+  id_type_to_c v.vtype ^
+  prefix_name v.vname ^
+  (match v.vinit with
+      None -> ""
+    | Some(e) ->
+        let detail, _ = e in
+        " = " ^ expression_to_c detail) ^ ";"
 
 and expression_to_c = function
     IntLiteral(i) -> string_of_int i
@@ -88,16 +93,19 @@ and expression_to_c = function
       let d1 = expression_to_c d1
       and d2 = expression_to_c d2 in
       d1 ^ " " ^ binop_to_c op ^ " " ^ d2
-  (* | Assign(fd, e) -> "" *)
+  | Assign(fd, e) ->
+      let fd = field_to_c fd
+      and detail, _ = e in
+      fd ^ " = " ^ expression_to_c detail
   | Call(fd, el) ->
-        let e = List.map (fun (detail, _) -> detail) el in
-        let fname = function_call_to_c fd in
-        if fname = "print" then
-          let res = List.map (fun (detail, typ) -> expression_to_c detail, typ) el in
-          printf res
-        else
-          prefix_name fname ^ "(" ^
-          String.concat "," (List.map expression_to_c e) ^ ")"
+      let e = List.map (fun (detail, _) -> detail) el in
+      let fname = function_call_to_c fd in
+      if fname = "print" then
+        let res = List.map (fun (detail, typ) -> expression_to_c detail, typ) el in
+        printf res
+      else
+        field_to_c (Fun(fd)) ^ "(" ^
+        String.concat "," (List.map expression_to_c e) ^ ")"
   (* | Element(e1, e2) -> "" *)
   | Uminus(e) -> let detail, _ = e in "-(" ^ expression_to_c detail ^ ")"
   | Not(e) -> let detail, _ = e in "!(" ^ expression_to_c detail ^ ")"
@@ -123,48 +131,36 @@ let rec statement_to_c = function
                      "PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";\n"
   | While(e, s) -> "while (" ^ statement_to_c s ^ ")"
 
-let statements_to_c stmts =
-    String.concat "\n" (List.map statement_to_c stmts)
-
 let basic_func_to_c f =
     (id_type_to_c f.ftype) ^ " " ^ prefix_name f.fname ^ "(" ^
-    String.concat ", " (List.map var_decl_to_c f.formals) ^ ") {\n" ^
+    String.concat ", " (List.map formal_to_c f.formals) ^ ") {\n" ^
     String.concat "\n" (List.map var_decl_to_c f.locals) ^ "\n" ^
-    (statements_to_c f.body) ^ "\n" ^
+    String.concat "\n" (List.map statement_to_c f.body) ^ "\n" ^
     "}\n"
 
-let declare_turns = function
-    BasicFunc(f) ->
-      (id_type_to_c f.ftype) ^ " " ^
-      prefix_name f.fname ^ "(" ^
-      String.concat ", " (List.map var_decl_to_c f.formals) ^ ");"
-  | AssertFunc(f) -> ""
+let func_decl_to_c = function
+    BasicFunc(f) -> basic_func_to_c f
+  (* | AssertFunc(f) -> assert_func_to_c a *)
 
-let rec setup_vars_to_c = function
-    [] -> ""
-  | v :: rest ->
-      var_decl_to_c v ^ "\n" ^
-      setup_vars_to_c rest
-
-let setup_funcs_to_c f =
-  ""
-
-let setup_groups_to_c g =
+let group_decl_to_c g =
   ""
 
 let setup_to_c s =
   let v, f, g = s in
-  setup_vars_to_c v ^
-  setup_funcs_to_c f ^
-  setup_groups_to_c g
+  String.concat "\n" (List.map var_decl_to_c v) ^
+  String.concat "\n" (List.map func_decl_to_c f) ^
+  String.concat "\n" (List.map group_decl_to_c g)
 
-let rec turns_to_c = function
-    [] -> ""
-  | hd :: tl ->
-    ( match hd with
-        BasicFunc(f) -> basic_func_to_c f
-      | AssertFunc(f) -> ""
-    ) ^ turns_to_c tl
+let declare_turn = function
+    BasicFunc(f) ->
+      (id_type_to_c f.ftype) ^ " " ^
+      prefix_name f.fname ^ "(" ^
+      String.concat ", " (List.map var_decl_to_c f.formals) ^ ");"
+  (* | AssertFunc(f) -> "" *)
+
+let turns_to_c t =
+  String.concat "\n" (List.map declare_turn t) ^ "\n\n" ^
+  String.concat "\n" (List.map func_decl_to_c t)
 
 let senet_to_c (s, t) =
     "// @senet_header\n" ^
@@ -172,7 +168,6 @@ let senet_to_c (s, t) =
     "// @setup\n" ^
     setup_to_c s ^ "\n" ^
     "// @turns\n" ^
-    String.concat "\n" (List.map declare_turns t) ^ "\n\n" ^
     turns_to_c t ^ "\n" ^
     "// @senet_footer\n" ^
     senet_footer

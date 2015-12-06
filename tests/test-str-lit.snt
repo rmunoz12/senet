@@ -1,0 +1,11 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    str s = "abcdef";
+    print(s); print("\n");
+    end;
+}
+
+}

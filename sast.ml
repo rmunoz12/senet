@@ -248,15 +248,15 @@ let rec search_field_local_first scope actuals name =
               | None -> raise (SemError ("Function name " ^ name ^ " exists in scope " ^
                                "but actuals signature not matched")))
       | f :: rest ->
-        let formals = (match f with
-                            BasicFunc(x) -> x.formals
-                          | AssertFunc(x) -> x.aformals)
+        let n, formals =
+          (match f with
+             BasicFunc(x) -> x.fname, x.formals
+           | AssertFunc(x) -> x.aname, x.aformals)
         in
-        if List.length formals = List.length actuals then
-          if verify_args_signature formals actuals then
+        if n = name &&
+           List.length formals = List.length actuals &&
+           verify_args_signature formals actuals then
             f
-          else
-            helper rest
         else
           helper rest
     in
@@ -641,7 +641,12 @@ let rec check_for_begin(turns_section) = match turns_section with
         check_for_begin(rest)
   | Ast.AssertFunc(f) :: rest -> check_for_begin(rest)
 
-let check_formal env v =
+let require_no_init = function
+    Ast.NoInit -> ()
+  | Ast.ExprInit(e) ->
+      raise (SemError "Function formal arguments cannot have default values.")
+
+let check_vdcl_helper env v init_ok =
   let name = v.Ast.vname in
   let already_declared =
     List.exists (fun x -> x.vname = name) env.scope.variables
@@ -654,11 +659,19 @@ let check_formal env v =
         vtype = id_type_to_t v.Ast.vtype;
         vinit = check_init env v.Ast.vinit}
     in
-    env.scope.variables <- decl :: env.scope.variables;
     decl
 
-let check_local env v =
-  check_formal env v
+let check_formal env v =
+  let decl = check_vdcl_helper env v false in
+  let decl = {decl with vinit = None} in
+  require_no_init v.Ast.vinit;
+  env.scope.variables <- decl :: env.scope.variables;
+  decl
+
+let check_vdcl env v =
+  let decl = check_vdcl_helper env v true in
+  env.scope.variables <- decl :: env.scope.variables;
+  decl
 
 let verify_if_arg_types_equal new_fun f =
   let rec helper x y = match x, y with
@@ -728,7 +741,7 @@ let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
       { env with scope = scope';
         return_type = id_type_to_t f.Ast.ftype; } in
     let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
-    let ll = List.map (fun dcl -> check_local env' dcl) f.Ast.locals in
+    let ll = List.map (fun dcl -> check_vdcl env' dcl) f.Ast.locals in
     let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
     let fdecl =
       BasicFunc({ ftype = id_type_to_t f.Ast.ftype;
@@ -762,7 +775,7 @@ let check_assert_func env in_turn_section (f : Ast.assert_decl) =
       { env with scope = scope';
         return_type = Bool; } in
     let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
-    let ll = List.map (fun dcl -> check_local env' dcl) f.Ast.locals in
+    let ll = List.map (fun dcl -> check_vdcl env' dcl) f.Ast.locals in
     let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
     let fdecl =
       AssertFunc({ aname = f.Ast.fname;
@@ -781,9 +794,6 @@ let check_function env in_turn_section new_fun =
         check_basic_func env in_turn_section f
     | Ast.AssertFunc(f) ->
         check_assert_func env in_turn_section f
-
-let check_vdcl env v =
-  check_formal env v
 
 let find_init_func methods =
     List.find (fun x -> match x with
