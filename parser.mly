@@ -21,6 +21,7 @@
 %token ASSERT
 %token REMOVE PLACE
 %token SETUP TURNS FUNC
+%token THIS
 
 /* %nonassoc NOELSE */
 /* %nonassoc ELSE */
@@ -191,6 +192,7 @@ expr:
 
 field_expr:
     ID                     { Id($1) }
+  | THIS DOT ID            { FieldCall(This, $3) }
   | field_expr DOT ID      { FieldCall($1, $3) }
 
 expr_list:

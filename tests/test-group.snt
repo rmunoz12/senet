@@ -1,0 +1,24 @@
+@setup {
+
+group A() {
+    int x;
+
+    func void __init__() {
+        this.x = 2;
+    }
+};
+
+# group A obj;
+
+}
+
+@turns {
+
+func void begin() {
+    group A obj;
+    obj.__init__();
+    print(obj.x);
+    end;
+}
+
+}

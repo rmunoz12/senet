@@ -71,8 +71,12 @@ and string_of_expr_detail = function
       | And -> "and" | Or -> "or" ) ^ " " ^
       string_of_expression e2
   | Assign(f, e) -> string_of_field f ^ " = " ^ string_of_expression e
-  | Call(f, el) ->
-      string_of_field(Fun(f)) ^
+  | Call(vopt, f, el) ->
+      let par =
+        (match vopt with
+            None -> ""
+          | Some(v) -> v.vname) in
+      par ^ "." ^ string_of_field(Fun(f)) ^
       "(" ^ String.concat ", " (List.map string_of_expression el) ^ ")"
   | Noexpr -> "<Noexpr>"
   | StrLiteral(s) -> Ast.escaped_string s

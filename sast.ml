@@ -35,7 +35,7 @@ and expr_detail =
   | Field of field_expr
   | Binop of expression * op * expression
   | Assign of field_expr * expression
-  | Call of func_decl * expression list
+  | Call of var_decl option * func_decl * expression list
   | Element of expression * expression
   | Uminus of expression
   | Not of expression
@@ -48,8 +48,11 @@ and expression =
 
 and field_expr =
     Var of var_decl
+  | Attrib of var_decl * var_decl
   | Fun of func_decl
+  | Method of var_decl * func_decl
   | Grp of group_decl
+  | This
 
 and statement =
     Block of symbol_table * statement list
@@ -70,6 +73,7 @@ and basic_func_decl = {
     locals : var_decl list;
     body : statement list;
     turns_func : bool;
+    group_method : string
   }
 
 and assert_decl = {
@@ -77,7 +81,8 @@ and assert_decl = {
     aformals : var_decl list;
     alocals : var_decl list;
     abody : statement list;
-    a_turns_func : bool
+    a_turns_func : bool;
+    a_group_method : string
   }
 
 and func_decl =
@@ -107,10 +112,17 @@ and symbol_table = {
   mutable turns : string list
 }
 
+type partial_group_table = {
+  group_name : string;
+  par : group_decl option;
+  symbols : symbol_table
+}
+
 type translation_environment = {
   scope : symbol_table;
   return_type : t;
-  in_loop : bool
+  in_loop : bool;
+  partial_group_info : partial_group_table option
 }
 
 let rec string_of_t = function
@@ -187,7 +199,26 @@ let rec search_func_in_child (parent : group_decl) actuals name =
   in
   helper parent.methods
 
-let rec find_child (parent : group_decl) actuals name =
+let search_func_in_scope scope actuals name =
+  let rec helper = function
+      [] -> raise (SemError ("Function name " ^ name ^ " exists in group scope " ^
+                             "but actuals signature not matched"))
+    | f :: rest ->
+        let formals = (match f with
+                            BasicFunc(x) -> x.formals
+                          | AssertFunc(x) -> x.aformals)
+        in
+        if List.length formals = List.length actuals then
+          if verify_args_signature formals actuals then
+            f
+          else
+            helper rest
+        else
+          helper rest
+  in
+  helper scope.functions
+
+let rec find_child_in_group_def env (parent : group_decl) actuals name =
   if List.exists (fun v -> v.vname = name) parent.attributes then
     let vdcl = List.find (fun v -> v.vname = name) parent.attributes in
     Var(vdcl), vdcl.vtype
@@ -202,6 +233,65 @@ let rec find_child (parent : group_decl) actuals name =
     Fun(fdcl), f_typ
   else
     raise Not_found
+
+let rec find_child env (par_instance : var_decl) actuals name =
+  let class_name =
+    (match par_instance.vtype with
+       Group(s) -> s
+     | _ -> raise (SemError ("DOT operator does not work with non-group variable: " ^ par_instance.vname)))
+  in
+  let parent =
+    try
+      find_group env.scope class_name
+    with Not_found ->
+      raise (SemError ("Group definition not found: " ^ class_name))
+  in
+  let child, child_typ = find_child_in_group_def env parent actuals name in
+  (match child with
+      Var(v) -> Attrib(par_instance, v), child_typ
+    | Fun(f) -> Method(par_instance, f), child_typ
+    | _ -> raise (SemError ("Child is not a variable or function")))
+  (* if List.exists (fun v -> v.vname = name) parent.attributes then
+    let vdcl = List.find (fun v -> v.vname = name) parent.attributes in
+    Attrib(par_instance, vdcl), vdcl.vtype
+  else
+  if List.exists (fun f -> match f with
+                      BasicFunc(x) -> x.fname = name
+                    | AssertFunc(x) -> x.aname = name) parent.methods then
+    let fdcl = search_func_in_child parent actuals name in
+    let f_typ = (match fdcl with
+                     BasicFunc(x) -> x.ftype
+                   | AssertFunc(x) -> Bool) in
+    Method(par_instance, fdcl), f_typ
+  else
+    raise Not_found *)
+
+let find_this_child env actuals name =
+  let info =
+    (match env.partial_group_info with
+       None -> (raise (SemError "'this' field call outside of group definition"))
+     | Some(info) -> info) in
+  let this_dummy =
+    { vname = "this";
+      vtype = Group(info.group_name);
+      vinit = None } in
+  let scope = info.symbols in
+  if List.exists (fun v -> v.vname = name) scope.variables then
+    let vdcl = List.find (fun v -> v.vname = name) scope.variables in
+    Attrib(this_dummy, vdcl), vdcl.vtype
+  else
+  if List.exists (fun f -> match f with
+                    BasicFunc(x) -> x.fname = name
+                  | AssertFunc(x) -> x.aname = name) scope.functions then
+    let fdcl = search_func_in_scope scope actuals name in
+    let f_typ = (match fdcl with
+                   BasicFunc(x) -> x.ftype
+                 | AssertFunc(x) -> Bool) in
+      Method(this_dummy, fdcl), f_typ
+    else
+      (match info.par with
+          None -> raise Not_found
+        | Some(p) -> find_child_in_group_def env p actuals name)
 
 let rec search_func_in_parent scope actuals name =
   let rec helper = function
@@ -232,8 +322,8 @@ let rec search_field_local_first scope actuals name =
                    BasicFunc(b) -> b.fname = name
                  | AssertFunc(a) -> a.aname = name )
                 scope.functions
-  and fe_is_g =
-    List.exists (fun x -> x.gname = name) scope.groups
+  (* and fe_is_g =
+    List.exists (fun x -> x.gname = name) scope.groups *)
   in
   if fe_is_v then
     let vdecl =
@@ -262,11 +352,11 @@ let rec search_field_local_first scope actuals name =
     in
     let fdecl = helper scope.functions in
     Fun(fdecl)
-  else if fe_is_g then
+  (* else if fe_is_g then
     let gdecl =
       List.find (fun g -> g.gname = name) scope.groups
     in
-    Grp(gdecl)
+    Grp(gdecl) *)
   else
     match scope.parent with
         Some(parent) -> search_field_local_first parent actuals name
@@ -285,17 +375,33 @@ let rec check_field env actuals = function
         | Fun(x) -> (match x with
             BasicFunc(f) -> f.ftype
           | AssertFunc(a) -> Void)
-        | Grp(g) -> Group(g.gname)
+        (* | Grp(g) -> Group(g.gname) *)
+        | This -> raise (SemError("Internal error: 'this' keyword match with Ast.Id"))
+        | _ -> raise (SemError "Internal error: Ast.Id matched with Attrib or Method")
+        (* | FieldCall(f1, f2) ->
+            raise (SemError("Internal error: FieldCall matched with Ast.Id")) *)
       in
       dcl, typ
+  | Ast.This ->
+      let gname =
+        (match env.partial_group_info with
+            None -> raise (SemError("'this' keyword used outside of group declaration"))
+          | Some(info) -> info.group_name)
+      in
+      This, Group(gname)
   | Ast.FieldCall(fe, name) ->
     let parent, _ = check_field env [] fe in
       (match parent with
-          Grp(par) ->
+          Var(par) ->
             (try
-              find_child par actuals name
+              find_child env par actuals name
             with Not_found ->
               raise (SemError("Undeclared child identifier: " ^ name)))
+        | This ->
+            (try
+              find_this_child env actuals name
+            with Not_found ->
+              raise (SemError("Undeclared 'this' child identifier: " ^ name)))
         | _ ->
             raise (SemError("Parent is either a function or variable, not a group")))
 
@@ -399,15 +505,22 @@ let require_integer_list l msg = match l with
        | _ -> raise (SemError msg))
   | _, _ -> raise (SemError msg)
 
-let rec require_parent pname fe msg = match fe with
-    Grp(p) ->
-      if p.gname = pname then
-        ()
-      else
-        (match p.extends with
-           Some(gp) -> require_parent pname (Grp(gp)) msg
-         | _ -> raise (SemError msg))
-  | _ -> raise (SemError msg)
+let rec require_parent_helper pname gdcl msg =
+  if gdcl.gname = pname then
+    ()
+  else
+    (match gdcl.extends with
+       Some(gp) -> require_parent_helper pname gp msg
+     | _ -> raise (SemError msg))
+
+let rec require_parent env pname fe msg = match fe with
+    Var(v) ->
+      (match v.vtype with
+          Group(s) ->
+            let gdcl = find_group env.scope s in
+            require_parent_helper pname gdcl msg
+        | _ -> raise (SemError ("Variable is not a group: " ^ v.vname)))
+  | _ -> raise (SemError ("Field expr. is not a variable"))
 
 let rec verify_args_helper f_typ a_typ = match f_typ, a_typ with
     [], [] -> ()
@@ -485,9 +598,24 @@ let rec check_expr env = function
                     verify_args bf.formals actuals
                 | AssertFunc(af) ->
                     verify_args af.aformals actuals);
-             Call(f, actuals), typ
-         | Grp(g) -> raise (SemError ("Not callable: " ^ g.gname))
-         | Var(v) -> raise (SemError ("Not callable: " ^ v.vname)))
+             Call(None, f, actuals), typ
+         (* | Grp(g) -> raise (SemError ("Not callable: " ^ g.gname)) *)
+         | This -> raise (SemError ("Not callable: 'this'"))
+         | Var(v) -> raise (SemError ("Not callable: " ^ v.vname))
+         | Method(par, child) ->
+             let par_typ =
+              (match par.vtype with
+                  Group(s) -> s
+                | _ -> raise (SemError ("Method call with parent that is not a group")))
+             in
+             (* let par_class = find_group env.scope par_typ in *)
+             (match child with
+                  BasicFunc(bf) ->
+                    verify_args bf.formals actuals
+                | AssertFunc(af) ->
+                    verify_args af.aformals actuals);
+             Call(Some(par), child, actuals), typ)
+         (* | FieldCall(f1, f2) -> raise (SemError ("Iternal Error: FieldCall matched with Ast.Call"))) *)
   | Ast.Element(e1, e2) ->
       let e1 = check_expr env e1
       and e2 = check_expr env e2 in
@@ -510,16 +638,16 @@ let rec check_expr env = function
       let fd1, _ = check_field env [] fd1
       and fd2, _ = check_field env [] fd2
       and ll, ll_typ = check_listlit env ll in
-      require_parent "Board" fd1 "Board (sub)group expected";
-      require_parent "Piece" fd2 "Piece (sub)group expected";
+      require_parent env "Board" fd1 "Board (sub)group expected";
+      require_parent env "Piece" fd2 "Piece (sub)group expected";
       require_integer_list (ll, ll_typ) "List of integers expected";
       Remove(fd1, fd2, ll), Bool
   | Ast.Place(fd1, fd2, ll) ->
       let fd1, _ = check_field env [] fd1
       and fd2, _ = check_field env [] fd2
       and ll, ll_typ = check_listlit env ll in
-      require_parent "Piece" fd1 "Piece (sub)group expected";
-      require_parent "Board" fd2 "Board (sub)group expected";
+      require_parent env "Piece" fd1 "Piece (sub)group expected";
+      require_parent env "Board" fd2 "Board (sub)group expected";
       require_integer_list (ll, ll_typ) "List of integers expected";
       Remove(fd1, fd2, ll), Bool
 
@@ -570,7 +698,8 @@ let rec check_stmt env = function
           formals = [];
           locals = [];
           body = [];
-          turns_func = true }
+          turns_func = true;
+          group_method = "" }
       in
       let e = check_expr env e in
       require_int e "Must pass to an integer player.";
@@ -744,13 +873,15 @@ let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
     let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
     let ll = List.map (fun dcl -> check_vdcl env' dcl) f.Ast.locals in
     let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
+    let gname = (match env.partial_group_info with None -> "" | Some(g) -> g.group_name) in
     let fdecl =
       BasicFunc({ ftype = id_type_to_t f.Ast.ftype;
                   fname = f.Ast.fname;
                   formals = fl;
                   locals = ll;
                   body = sl;
-                  turns_func = in_turn_section })
+                  turns_func = in_turn_section;
+                  group_method = gname })
     in
     env.scope.functions <- fdecl :: env.scope.functions;
     fdecl
@@ -778,12 +909,14 @@ let check_assert_func env in_turn_section (f : Ast.assert_decl) =
     let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
     let ll = List.map (fun dcl -> check_vdcl env' dcl) f.Ast.locals in
     let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
+    let gname = (match env.partial_group_info with None -> "" | Some(g) -> g.group_name) in
     let fdecl =
       AssertFunc({ aname = f.Ast.fname;
                    aformals = fl;
                    alocals = ll;
                    abody = sl ;
-                   a_turns_func = in_turn_section })
+                   a_turns_func = in_turn_section;
+                   a_group_method = gname })
     in
     env.scope.functions <- fdecl :: env.scope.functions;
     fdecl
@@ -851,6 +984,24 @@ let rec verify_attributes par_attr = function
           None -> verify_attributes par_attr rest
         | Some(var) -> var :: verify_attributes par_attr rest)
 
+let check_attrib env v =
+  let decl = check_vdcl env v in
+  let scope =
+    (match env.partial_group_info with
+        None -> raise (SemError "Internal error: check_attrib called outside of group definition.")
+      | Some(info) -> info.symbols) in
+  scope.variables <- decl :: scope.variables;
+  decl
+
+let check_method env new_fun =
+  let fdcl = check_function env false new_fun in
+  let scope =
+    (match env.partial_group_info with
+        None -> raise (SemError "Internal error: check_attrib called outside of group definition.")
+      | Some(info) -> info.symbols) in
+  scope.functions <- fdcl :: scope.functions;
+  fdcl
+
 let rec check_group env g =
   let parent = match g.Ast.extends with
       Some(fe) ->
@@ -870,10 +1021,16 @@ let rec check_group env g =
         functions = [];
         groups = [];
         turns = [] } in
-    let env' =
-      { env with scope = scope';
-        return_type = Void; } in
-  let attribs = List.map (check_vdcl env') g.Ast.attributes in
+  let partial_scope = {scope' with parent = None} in
+  let info =
+    { group_name = g.Ast.gname;
+      symbols = partial_scope;
+      par = parent } in
+  let env' =
+    { env with scope = scope';
+      return_type = Void;
+      partial_group_info = Some(info) } in
+  let attribs = List.map (check_attrib env') g.Ast.attributes in
   let attribs =
     (match parent with
        Some(par) -> verify_attributes par.attributes attribs
@@ -909,7 +1066,8 @@ let built_in_funcs =
                             vinit = None}];
                locals = [];
                body = [];
-               turns_func = false });
+               turns_func = false;
+               group_method = "" });
   BasicFunc({ ftype = Void;
                fname = "print";
                formals = [{ vname = "print_arg";
@@ -917,7 +1075,8 @@ let built_in_funcs =
                             vinit = None}];
                locals = [];
                body = [];
-               turns_func = false });
+               turns_func = false;
+               group_method = "" });
   BasicFunc({ ftype = Void;
                fname = "print";
                formals = [{ vname = "print_arg";
@@ -925,7 +1084,8 @@ let built_in_funcs =
                             vinit = None}];
                locals = [];
                body = [];
-               turns_func = false })]
+               turns_func = false;
+               group_method = "" })]
 
 let rec gather_turn_names env = function
     [] -> ()
@@ -984,7 +1144,8 @@ let check_program (program : Ast.program) =
   let env =
     { scope = symbols;
       return_type = Void;
-      in_loop = false } in
+      in_loop = false;
+      partial_group_info = None } in
   let setup_section, turns_section = program in
   let setup_section = check_setup env setup_section in
   let turns_section = check_turns env turns_section in

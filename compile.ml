@@ -4,12 +4,12 @@ let prefix_name n =
   "snt_" ^ n
 
 let senet_header =
-    "#include <stdbool.h>" ^ "\n" ^
-    "#include <stdio.h>" ^ "\n" ^
-    "#include <stdlib.h>" ^ "\n" ^
-       "\n" ^
-    "void (*CUR_TURN)();" ^ "\n" ^
-    "int PLAYER_ON_MOVE;" ^ "\n"
+  "#include <stdbool.h>" ^ "\n" ^
+  "#include <stdio.h>" ^ "\n" ^
+  "#include <stdlib.h>" ^ "\n" ^
+     "\n" ^
+  "void (*CUR_TURN)();" ^ "\n" ^
+  "int PLAYER_ON_MOVE;" ^ "\n"
 
 let senet_footer =
   "int main() {\n" ^
@@ -42,7 +42,7 @@ let id_type_to_c = function
   |  Str -> "char* "
   |  Void -> "void"
   (* | List_t(ft) -> *)
-  | Group(s) -> "struct " ^ s
+  | Group(s) -> "struct " ^ prefix_name s ^ " "
 
 let rec field_to_c = function
     Var(v) -> prefix_name v.vname
@@ -51,6 +51,12 @@ let rec field_to_c = function
          BasicFunc(x) -> x.fname
        | AssertFunc(x) -> x.aname)
   | Grp(g) -> prefix_name g.gname
+  | Attrib(par, child) ->
+    let par_name, deref_op =
+      if par.vname = "this" then "this", "->"
+      else prefix_name par.vname, "." in
+    par_name ^ deref_op ^ prefix_name child.vname
+  | This -> "this"
 
 let rec function_call_to_c = function
     BasicFunc(f) -> f.fname
@@ -69,6 +75,10 @@ let rec printf var = match var with
 
 let formal_to_c v =
   id_type_to_c v.vtype ^ prefix_name v.vname
+
+let function_group = function
+    BasicFunc(f) -> f.group_method
+  | AssertFunc(f) -> f.a_group_method
 
 let rec var_decl_to_c v =
   id_type_to_c v.vtype ^
@@ -97,15 +107,31 @@ and expression_to_c = function
       let fd = field_to_c fd
       and detail, _ = e in
       fd ^ " = " ^ expression_to_c detail
-  | Call(fd, el) ->
+  | Call(vopt, fd, el) ->
       let e = List.map (fun (detail, _) -> detail) el in
+      let argc = List.length el in
       let fname = function_call_to_c fd in
       if fname = "print" then
         let res = List.map (fun (detail, typ) -> expression_to_c detail, typ) el in
         printf res
       else
-        field_to_c (Fun(fd)) ^ "(" ^
-        String.concat "," (List.map expression_to_c e) ^ ")"
+      let class_prefix = function_group fd in
+      let class_prefix =
+        if class_prefix <> "" then
+          prefix_name class_prefix ^ "_"
+        else
+          ""
+      in
+      let instance_addr =
+        (match vopt with
+            None -> ""
+          | Some(v) ->
+              "&" ^ prefix_name v.vname ^
+              (if argc > 0 then ", " else ""))
+       in
+      class_prefix ^
+      field_to_c (Fun(fd)) ^ "(" ^ instance_addr ^
+      String.concat "," (List.map expression_to_c e) ^ ")"
   (* | Element(e1, e2) -> "" *)
   | Uminus(e) -> let detail, _ = e in "-(" ^ expression_to_c detail ^ ")"
   | Not(e) -> let detail, _ = e in "!(" ^ expression_to_c detail ^ ")"
@@ -137,24 +163,53 @@ let rec statement_to_c = function
       "while (" ^ expression_to_c detail ^ ") {\n" ^
       statement_to_c s ^ "\n" ^ "}\n"
 
-let basic_func_to_c f =
-    (id_type_to_c f.ftype) ^ " " ^ prefix_name f.fname ^ "(" ^
+let basic_func_to_c gprefix f =
+    let self_arg =
+      if f.group_method <> "" then
+        "struct " ^ prefix_name f.group_method ^ " *this"
+      else
+        ""
+    in
+    let gprefix =
+      if gprefix = "" then "" else gprefix ^ "_"
+    in
+    (id_type_to_c f.ftype) ^ " " ^ gprefix ^ prefix_name f.fname ^ "(" ^
+    self_arg ^
     String.concat ", " (List.map formal_to_c f.formals) ^ ") {\n" ^
     String.concat "\n" (List.map var_decl_to_c f.locals) ^ "\n" ^
     String.concat "\n" (List.map statement_to_c f.body) ^ "\n" ^
     "}\n"
 
-let func_decl_to_c = function
-    BasicFunc(f) -> basic_func_to_c f
+let func_decl_to_c gprefix = function
+    BasicFunc(f) -> basic_func_to_c gprefix f
   (* | AssertFunc(f) -> assert_func_to_c a *)
 
+
+(*
+"group " ^ gdecl.gname ^ "(" ^
+      (match gdecl.extends with
+           Some(par) -> par.gname ^
+              (match gdecl.par_actuals with
+                  Some(acts) ->
+                    "(" ^ String.concat ", " (List.map string_of_expression acts) ^ ")"
+                | None -> "")
+         | None -> "") ^ ")\n{\n" ^
+  String.concat "" (List.map (fun v -> string_of_vdecl v ^ ";\n") gdecl.attributes) ^
+  String.concat "" (List.map string_of_fdecl gdecl.methods) ^
+  "};\n"
+ *)
+
 let group_decl_to_c g =
-  ""
+  let c_name = prefix_name g.gname in
+  "struct " ^ c_name ^  "{\n" ^
+  "  " ^ String.concat "\n  " (List.map var_decl_to_c g.attributes) ^ "\n" ^
+  "};\n\n" ^
+  String.concat "\n" (List.map (func_decl_to_c c_name) g.methods) ^ "\n"
 
 let setup_to_c s =
   let v, f, g = s in
   String.concat "\n" (List.map var_decl_to_c v) ^
-  String.concat "\n" (List.map func_decl_to_c f) ^
+  String.concat "\n" (List.map (func_decl_to_c "") f) ^
   String.concat "\n" (List.map group_decl_to_c g)
 
 let declare_turn = function
@@ -166,7 +221,7 @@ let declare_turn = function
 
 let turns_to_c t =
   String.concat "\n" (List.map declare_turn t) ^ "\n\n" ^
-  String.concat "\n" (List.map func_decl_to_c t)
+  String.concat "\n" (List.map (func_decl_to_c "") t)
 
 let senet_to_c (s, t) =
     "// @senet_header\n" ^

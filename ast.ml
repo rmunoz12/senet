@@ -26,6 +26,7 @@ type list_lit =
 
 type field_expr =
     Id of string
+  | This
   | FieldCall of field_expr * string
 
 type expr =
@@ -127,6 +128,7 @@ let rec string_of_list_lit = function
 
 let rec string_of_field = function
     Id(s) -> s
+  | This -> "this"
   | FieldCall(f,s) -> string_of_field f ^ "." ^ s
 
 let rec string_of_expr = function
