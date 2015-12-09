@@ -232,7 +232,9 @@ let rec find_child_in_group_def env (parent : group_decl) actuals name =
                    | AssertFunc(x) -> Bool) in
     Fun(fdcl), f_typ
   else
-    raise Not_found
+    (match parent.extends with
+        None -> raise Not_found
+      | Some(g) -> find_child_in_group_def env g actuals name)
 
 let rec find_child env (par_instance : var_decl) actuals name =
   let class_name =
@@ -291,7 +293,17 @@ let find_this_child env actuals name =
     else
       (match info.par with
           None -> raise Not_found
-        | Some(p) -> find_child_in_group_def env p actuals name)
+        | Some(p) ->
+            let child, child_typ =
+              try
+                find_child_in_group_def env p actuals name
+              with Not_found ->
+                raise (SemError ("Child of 'this' not found: " ^ name))
+            in
+            (match child with
+                Var(v) -> Attrib(this_dummy, v), child_typ
+              | Fun(f) -> Method(this_dummy, f), child_typ
+              | _ -> raise (SemError ("Child is not a variable or function"))))
 
 let rec search_func_in_parent scope actuals name =
   let rec helper = function
@@ -322,8 +334,8 @@ let rec search_field_local_first scope actuals name =
                    BasicFunc(b) -> b.fname = name
                  | AssertFunc(a) -> a.aname = name )
                 scope.functions
-  (* and fe_is_g =
-    List.exists (fun x -> x.gname = name) scope.groups *)
+  and fe_is_g =
+    List.exists (fun x -> x.gname = name) scope.groups
   in
   if fe_is_v then
     let vdecl =
@@ -352,11 +364,11 @@ let rec search_field_local_first scope actuals name =
     in
     let fdecl = helper scope.functions in
     Fun(fdecl)
-  (* else if fe_is_g then
+  else if fe_is_g then
     let gdecl =
       List.find (fun g -> g.gname = name) scope.groups
     in
-    Grp(gdecl) *)
+    Grp(gdecl)
   else
     match scope.parent with
         Some(parent) -> search_field_local_first parent actuals name
@@ -375,7 +387,7 @@ let rec check_field env actuals = function
         | Fun(x) -> (match x with
             BasicFunc(f) -> f.ftype
           | AssertFunc(a) -> Void)
-        (* | Grp(g) -> Group(g.gname) *)
+        | Grp(g) -> Group(g.gname)
         | This -> raise (SemError("Internal error: 'this' keyword match with Ast.Id"))
         | _ -> raise (SemError "Internal error: Ast.Id matched with Attrib or Method")
         (* | FieldCall(f1, f2) ->
@@ -1002,6 +1014,33 @@ let check_method env new_fun =
   scope.functions <- fdcl :: scope.functions;
   fdcl
 
+let add_parent_init parent par_actuals name methods = function
+    Some(init_fun) -> methods
+  | None ->
+    (match parent with
+        None -> raise (SemError "No parent but using parent __init__")
+      | Some(par) ->
+        let par_init = find_init_func par.methods in
+        let child_init =
+          (match par_init with
+              AssertFunc(f) -> raise (SemError "Assert Function used as parent __init__")
+            | BasicFunc(f) ->
+              let dcls =
+                (match par_actuals with
+                    Some(el) ->
+                      List.map2 (fun vdcl act -> {vdcl with vinit = Some(act)}) f.formals el
+                  | None -> [])
+              in
+              { ftype = f.ftype;
+                fname = "__init__";
+                formals = [];
+                locals = dcls;
+                body = f.body;
+                turns_func = false;
+                group_method = name })
+      in
+      BasicFunc(child_init) :: methods)
+
 let rec check_group env g =
   let parent = match g.Ast.extends with
       Some(fe) ->
@@ -1041,6 +1080,7 @@ let rec check_group env g =
   with Not_found ->
     None
   in
+  let methods = add_parent_init parent par_actuals g.Ast.gname methods init_opt in
   verify_extends parent par_actuals init_opt;
   let gdecl =
     { gname = g.Ast.gname;

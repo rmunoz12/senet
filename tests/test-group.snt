@@ -8,16 +8,18 @@ group A() {
     }
 };
 
-# group A obj;
+group A obj;
 
 }
 
 @turns {
 
 func void begin() {
-    group A obj;
+    # group A obj;
     obj.__init__();
-    print(obj.x);
+    print(obj.x); print("\n");
+    obj.x = obj.x + 1;
+    print(obj.x); print("\n");
     end;
 }
 

@@ -49,7 +49,13 @@ let string_of_field = function
       (match f with
          BasicFunc(x) -> x.fname
        | AssertFunc(x) -> x.aname)
+  | Attrib(v1, v2) -> v1.vname ^ "." ^ v2.vname
+  | Method(v, f) -> v.vname ^ "." ^
+      (match f with
+          BasicFunc(x) -> x.fname
+          | AssertFunc(x) -> x.aname)
   | Grp(g) -> g.gname
+  | This -> "this"
 
 let rec string_of_list_lit = function
     EmptyList -> "[]"

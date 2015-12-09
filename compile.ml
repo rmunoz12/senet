@@ -131,7 +131,7 @@ and expression_to_c = function
        in
       class_prefix ^
       field_to_c (Fun(fd)) ^ "(" ^ instance_addr ^
-      String.concat "," (List.map expression_to_c e) ^ ")"
+      String.concat ", " (List.map expression_to_c e) ^ ")"
   (* | Element(e1, e2) -> "" *)
   | Uminus(e) -> let detail, _ = e in "-(" ^ expression_to_c detail ^ ")"
   | Not(e) -> let detail, _ = e in "!(" ^ expression_to_c detail ^ ")"
@@ -175,6 +175,7 @@ let basic_func_to_c gprefix f =
     in
     (id_type_to_c f.ftype) ^ " " ^ gprefix ^ prefix_name f.fname ^ "(" ^
     self_arg ^
+    (if self_arg <> "" && List.length f.formals > 0 then ", " else "") ^
     String.concat ", " (List.map formal_to_c f.formals) ^ ") {\n" ^
     String.concat "\n" (List.map var_decl_to_c f.locals) ^ "\n" ^
     String.concat "\n" (List.map statement_to_c f.body) ^ "\n" ^
@@ -208,8 +209,8 @@ let group_decl_to_c g =
 
 let setup_to_c s =
   let v, f, g = s in
-  String.concat "\n" (List.map var_decl_to_c v) ^
-  String.concat "\n" (List.map (func_decl_to_c "") f) ^
+  String.concat "\n" (List.map var_decl_to_c v) ^ "\n\n" ^
+  String.concat "\n" (List.map (func_decl_to_c "") f) ^ "\n" ^
   String.concat "\n" (List.map group_decl_to_c g)
 
 let declare_turn = function
