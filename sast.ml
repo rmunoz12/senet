@@ -185,11 +185,13 @@ let rec search_func_in_child (parent : group_decl) actuals name =
       [] -> raise (SemError ("Function name " ^ name ^ " exists in parent methods " ^
                              "but actuals signature not matched"))
     | f :: rest ->
-        let formals = (match f with
-                            BasicFunc(x) -> x.formals
-                          | AssertFunc(x) -> x.aformals)
+        let fname, formals =
+          (match f with
+              BasicFunc(x) -> x.fname, x.formals
+            | AssertFunc(x) -> x.aname, x.aformals)
         in
-        if List.length formals = List.length actuals then
+        if name = fname &&
+           List.length formals = List.length actuals then
           if verify_args_signature formals actuals then
             f
           else
@@ -204,11 +206,13 @@ let search_func_in_scope scope actuals name =
       [] -> raise (SemError ("Function name " ^ name ^ " exists in group scope " ^
                              "but actuals signature not matched"))
     | f :: rest ->
-        let formals = (match f with
-                            BasicFunc(x) -> x.formals
-                          | AssertFunc(x) -> x.aformals)
+        let fname, formals =
+          (match f with
+              BasicFunc(x) -> x.fname, x.formals
+            | AssertFunc(x) -> x.aname, x.aformals)
         in
-        if List.length formals = List.length actuals then
+        if name = fname &&
+          List.length formals = List.length actuals then
           if verify_args_signature formals actuals then
             f
           else
@@ -614,12 +618,14 @@ let rec check_expr env = function
          (* | Grp(g) -> raise (SemError ("Not callable: " ^ g.gname)) *)
          | This -> raise (SemError ("Not callable: 'this'"))
          | Var(v) -> raise (SemError ("Not callable: " ^ v.vname))
+         | Attrib(v1, v2) -> raise (SemError ("Not callable: " ^ v1.vname ^ "." ^ v2.vname))
+         | Grp(g) -> raise (SemError ("Not callable: " ^ g.gname))
          | Method(par, child) ->
-             let par_typ =
+             (* let par_typ = *)
               (match par.vtype with
-                  Group(s) -> s
+                  Group(s) -> (* s *) ()
                 | _ -> raise (SemError ("Method call with parent that is not a group")))
-             in
+             (* in *) ;
              (* let par_class = find_group env.scope par_typ in *)
              (match child with
                   BasicFunc(bf) ->
@@ -972,7 +978,8 @@ let verify_extends parent par_actuals init_opt =
           | None ->
               match init_opt with
                   Some(init) -> ()
-                | None -> raise (SemError ("Constructor function not found")))
+                | None -> (* raise (SemError ("Constructor function not found"))) *)
+                          () )
     | None ->
         (match init_opt with
             Some(init) -> ()
@@ -997,7 +1004,7 @@ let rec verify_attributes par_attr = function
         | Some(var) -> var :: verify_attributes par_attr rest)
 
 let check_attrib env v =
-  let decl = check_vdcl env v in
+  let decl = check_vdcl_helper env v false in
   let scope =
     (match env.partial_group_info with
         None -> raise (SemError "Internal error: check_attrib called outside of group definition.")
@@ -1022,22 +1029,26 @@ let add_parent_init parent par_actuals name methods = function
       | Some(par) ->
         let par_init = find_init_func par.methods in
         let child_init =
-          (match par_init with
-              AssertFunc(f) -> raise (SemError "Assert Function used as parent __init__")
-            | BasicFunc(f) ->
-              let dcls =
-                (match par_actuals with
-                    Some(el) ->
-                      List.map2 (fun vdcl act -> {vdcl with vinit = Some(act)}) f.formals el
-                  | None -> [])
-              in
-              { ftype = f.ftype;
-                fname = "__init__";
-                formals = [];
-                locals = dcls;
-                body = f.body;
-                turns_func = false;
-                group_method = name })
+          (match par_actuals with
+            Some(el) ->
+            (match par_init with
+                AssertFunc(f) -> raise (SemError "Assert Function used as parent __init__")
+              | BasicFunc(f) ->
+                let dcls =
+                  List.map2 (fun vdcl act -> {vdcl with vinit = Some(act)}) f.formals el
+                in
+                { ftype = f.ftype;
+                  fname = "__init__";
+                  formals = [];
+                  locals = dcls;
+                  body = f.body;
+                  turns_func = false;
+                  group_method = name })
+          | None ->
+            (match par_init with
+                AssertFunc(f) -> raise (SemError "Assert Function used as parent __init__")
+              | BasicFunc(f) ->
+                { f with group_method = name }))
       in
       BasicFunc(child_init) :: methods)
 

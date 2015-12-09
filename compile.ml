@@ -61,6 +61,10 @@ let rec field_to_c = function
 let rec function_call_to_c = function
     BasicFunc(f) -> f.fname
 
+let function_group_method = function
+    BasicFunc(f) -> f.group_method
+  | AssertFunc(f) -> f.a_group_method
+
 let rec printf var = match var with
   | [] -> ""
   | [el_string, typ] ->
@@ -111,6 +115,7 @@ and expression_to_c = function
       let e = List.map (fun (detail, _) -> detail) el in
       let argc = List.length el in
       let fname = function_call_to_c fd in
+      let gname = function_group_method fd in
       if fname = "print" then
         let res = List.map (fun (detail, typ) -> expression_to_c detail, typ) el in
         printf res
@@ -126,6 +131,7 @@ and expression_to_c = function
         (match vopt with
             None -> ""
           | Some(v) ->
+              "(struct " ^ prefix_name gname ^ " *) " ^
               "&" ^ prefix_name v.vname ^
               (if argc > 0 then ", " else ""))
        in

@@ -1,0 +1,52 @@
+@setup {
+
+group A() {
+    int x;
+
+    func void __init__(int x) {
+        this.x = x;
+    }
+
+    func int test() {
+        return this.x + 5;
+    }
+
+};
+
+
+group B(A) {
+    int y;
+};
+
+group C(B) {
+    int z;
+};
+
+group A obj;
+group B obj2;
+group C obj3;
+
+}
+
+@turns {
+
+func void begin() {
+    int y;
+
+    obj.__init__(1);
+    obj2.__init__(2);
+    obj3.__init__(3);
+
+    print(obj.x); print("\n");
+    print(obj2.x); print("\n");
+    print(obj3.x); print("\n");
+
+    print(obj.test()); print("\n");
+    print(obj2.test()); print("\n");
+    print(obj3.test()); print("\n");
+
+    end;
+}
+
+}
+
