@@ -799,13 +799,22 @@ let check_vdcl_helper env v init_ok =
   let already_declared =
     List.exists (fun x -> x.vname = name) env.scope.variables
   in
+  let init = check_init env v.Ast.vinit in
+  let init =
+    (match init with
+        None -> init
+      | _ ->
+        if not init_ok then
+          raise (SemError ("Initiation not allowed here for variable: " ^ name))
+        else
+          init) in
   if already_declared then
     raise (SemError ("Variable name previously declared in scope: " ^ name))
   else
     let decl =
       { vname = name;
         vtype = id_type_to_t v.Ast.vtype;
-        vinit = check_init env v.Ast.vinit}
+        vinit = init }
     in
     decl
 

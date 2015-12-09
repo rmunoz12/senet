@@ -191,21 +191,6 @@ let func_decl_to_c gprefix = function
     BasicFunc(f) -> basic_func_to_c gprefix f
   (* | AssertFunc(f) -> assert_func_to_c a *)
 
-
-(*
-"group " ^ gdecl.gname ^ "(" ^
-      (match gdecl.extends with
-           Some(par) -> par.gname ^
-              (match gdecl.par_actuals with
-                  Some(acts) ->
-                    "(" ^ String.concat ", " (List.map string_of_expression acts) ^ ")"
-                | None -> "")
-         | None -> "") ^ ")\n{\n" ^
-  String.concat "" (List.map (fun v -> string_of_vdecl v ^ ";\n") gdecl.attributes) ^
-  String.concat "" (List.map string_of_fdecl gdecl.methods) ^
-  "};\n"
- *)
-
 let group_decl_to_c g =
   let c_name = prefix_name g.gname in
   "struct " ^ c_name ^  "{\n" ^
