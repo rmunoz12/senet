@@ -1,0 +1,38 @@
+@setup {
+
+group A() {
+    func void __init__() { }
+};
+
+group B(A) {
+    func str __repr__() {
+        return "Hello from class B!";
+    }
+};
+
+group C(B) {
+
+};
+
+group A no_repr;
+group B yes_repr;
+group C inherited_repr;
+
+}
+
+@turns {
+
+func void begin() {
+
+    print(1); print("\n");
+    print("abc"); print("\n");
+    print(True); print(" "); print(False); print("\n");
+    print(no_repr); print("\n");
+    print(no_repr.__repr__()); print("\n");
+    print(yes_repr); print("\n");
+    print(inherited_repr); print("\n");
+
+    end;
+}
+
+}

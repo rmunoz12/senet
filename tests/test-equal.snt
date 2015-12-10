@@ -5,6 +5,7 @@
 func void begin() {
     print(2 == 3); print("\n");
     print(2 == 2); print("\n");
+    print(2 == 2 == True); print("\n");
     end;
 }
 

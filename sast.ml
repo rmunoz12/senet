@@ -73,7 +73,8 @@ and basic_func_decl = {
     locals : var_decl list;
     body : statement list;
     turns_func : bool;
-    group_method : string
+    group_method : string;
+    f_is_built_in : bool
   }
 
 and assert_decl = {
@@ -82,7 +83,8 @@ and assert_decl = {
     alocals : var_decl list;
     abody : statement list;
     a_turns_func : bool;
-    a_group_method : string
+    a_group_method : string;
+    a_is_built_in : bool
   }
 
 and func_decl =
@@ -168,22 +170,42 @@ let rec find_group (scope : symbol_table) name =
       Some(parent) -> find_group parent name
     | _ -> raise Not_found
 
-let rec verify_args_signature formals actuals = match formals, actuals with
-    [], [] -> true
-  | f :: frest, a :: arest ->
-    let tf = f.vtype
-    and _, ta = a in
-    if tf = ta then
-      verify_args_signature frest arest
+let verify_args_signature fdcl formals actuals =
+  let rec helper check_types flist alist = match flist, alist with
+      [], [] -> true
+    | f :: frest, a :: arest ->
+      let tf = f.vtype
+      and _, ta = a in
+      if tf = ta || not check_types then
+        helper check_types frest arest
+      else
+        false
+    | _ :: _, [] -> false
+    | [], _ :: _ -> false
+  in
+  let fname, is_built_in =
+    (match fdcl with
+        BasicFunc(f) -> f.fname, f.f_is_built_in
+      | AssertFunc(f) -> f.aname, f.a_is_built_in)
+  in
+  let check_formal_types =
+    if fname = "print" && is_built_in then
+      let formal_type =
+        (match fdcl with
+            BasicFunc(f) -> List.hd f.formals
+          | _ -> raise (SemError ("Internal error: built-in print function cannot be an assert function")))
+      in
+      (match formal_type.vtype with
+          Group("") -> false
+        | _ -> true)
     else
-      false
-  | _ :: _, [] -> false
-  | [], _ :: _ -> false
+      true
+  in
+  helper check_formal_types formals actuals
 
 let rec search_func_in_child (parent : group_decl) actuals name =
   let rec helper = function
-      [] -> raise (SemError ("Function name " ^ name ^ " exists in parent methods " ^
-                             "but actuals signature not matched"))
+      [] -> raise Not_found
     | f :: rest ->
         let fname, formals =
           (match f with
@@ -192,7 +214,7 @@ let rec search_func_in_child (parent : group_decl) actuals name =
         in
         if name = fname &&
            List.length formals = List.length actuals then
-          if verify_args_signature formals actuals then
+          if verify_args_signature f formals actuals then
             f
           else
             helper rest
@@ -213,7 +235,7 @@ let search_func_in_scope scope actuals name =
         in
         if name = fname &&
           List.length formals = List.length actuals then
-          if verify_args_signature formals actuals then
+          if verify_args_signature f formals actuals then
             f
           else
             helper rest
@@ -230,11 +252,16 @@ let rec find_child_in_group_def env (parent : group_decl) actuals name =
   if List.exists (fun f -> match f with
                       BasicFunc(x) -> x.fname = name
                     | AssertFunc(x) -> x.aname = name) parent.methods then
-    let fdcl = search_func_in_child parent actuals name in
-    let f_typ = (match fdcl with
-                     BasicFunc(x) -> x.ftype
-                   | AssertFunc(x) -> Bool) in
-    Fun(fdcl), f_typ
+    try
+      let fdcl = search_func_in_child parent actuals name in
+      let f_typ = (match fdcl with
+                       BasicFunc(x) -> x.ftype
+                     | AssertFunc(x) -> Bool) in
+      Fun(fdcl), f_typ
+    with Not_found ->
+      (match parent.extends with
+          None -> raise Not_found
+        | Some(g) -> find_child_in_group_def env g actuals name)
   else
     (match parent.extends with
         None -> raise Not_found
@@ -252,25 +279,16 @@ let rec find_child env (par_instance : var_decl) actuals name =
     with Not_found ->
       raise (SemError ("Group definition not found: " ^ class_name))
   in
-  let child, child_typ = find_child_in_group_def env parent actuals name in
+  let child, child_typ =
+    try
+      find_child_in_group_def env parent actuals name
+    with Not_found ->
+        raise (SemError ("Child not found: " ^ name))
+  in
   (match child with
       Var(v) -> Attrib(par_instance, v), child_typ
     | Fun(f) -> Method(par_instance, f), child_typ
     | _ -> raise (SemError ("Child is not a variable or function")))
-  (* if List.exists (fun v -> v.vname = name) parent.attributes then
-    let vdcl = List.find (fun v -> v.vname = name) parent.attributes in
-    Attrib(par_instance, vdcl), vdcl.vtype
-  else
-  if List.exists (fun f -> match f with
-                      BasicFunc(x) -> x.fname = name
-                    | AssertFunc(x) -> x.aname = name) parent.methods then
-    let fdcl = search_func_in_child parent actuals name in
-    let f_typ = (match fdcl with
-                     BasicFunc(x) -> x.ftype
-                   | AssertFunc(x) -> Bool) in
-    Method(par_instance, fdcl), f_typ
-  else
-    raise Not_found *)
 
 let find_this_child env actuals name =
   let info =
@@ -294,20 +312,20 @@ let find_this_child env actuals name =
                    BasicFunc(x) -> x.ftype
                  | AssertFunc(x) -> Bool) in
       Method(this_dummy, fdcl), f_typ
-    else
-      (match info.par with
-          None -> raise Not_found
-        | Some(p) ->
-            let child, child_typ =
-              try
-                find_child_in_group_def env p actuals name
-              with Not_found ->
-                raise (SemError ("Child of 'this' not found: " ^ name))
-            in
-            (match child with
-                Var(v) -> Attrib(this_dummy, v), child_typ
-              | Fun(f) -> Method(this_dummy, f), child_typ
-              | _ -> raise (SemError ("Child is not a variable or function"))))
+  else
+    (match info.par with
+        None -> raise Not_found
+      | Some(p) ->
+          let child, child_typ =
+            try
+              find_child_in_group_def env p actuals name
+            with Not_found ->
+              raise (SemError ("Child of 'this' not found: " ^ name))
+          in
+          (match child with
+              Var(v) -> Attrib(this_dummy, v), child_typ
+            | Fun(f) -> Method(this_dummy, f), child_typ
+            | _ -> raise (SemError ("Child is not a variable or function"))))
 
 let rec search_func_in_parent scope actuals name =
   let rec helper = function
@@ -321,7 +339,7 @@ let rec search_func_in_parent scope actuals name =
                           | AssertFunc(x) -> x.aformals)
         in
         if List.length formals = List.length actuals then
-          if verify_args_signature formals actuals then
+          if verify_args_signature f formals actuals then
             f
           else
             helper rest
@@ -361,7 +379,7 @@ let rec search_field_local_first scope actuals name =
         in
         if n = name &&
            List.length formals = List.length actuals &&
-           verify_args_signature formals actuals then
+           verify_args_signature f formals actuals then
             f
         else
           helper rest
@@ -538,11 +556,13 @@ let rec require_parent env pname fe msg = match fe with
         | _ -> raise (SemError ("Variable is not a group: " ^ v.vname)))
   | _ -> raise (SemError ("Field expr. is not a variable"))
 
-let rec verify_args_helper f_typ a_typ = match f_typ, a_typ with
+let rec verify_args_helper f_typ a_typ check_types = match f_typ, a_typ with
     [], [] -> ()
   | f_hd :: f_rest, a_hd :: a_rest ->
       if f_hd = a_hd then
-        verify_args_helper f_rest a_rest
+        verify_args_helper f_rest a_rest check_types
+      else if not check_types then
+        ()
       else
         raise (SemError ("Formal type " ^ string_of_t f_hd ^ " " ^
                          "does not match actual type " ^ string_of_t a_hd))
@@ -551,11 +571,28 @@ let rec verify_args_helper f_typ a_typ = match f_typ, a_typ with
   | [], _ ->
       raise (SemError ("Formal and actual argument lengths do not match"))
 
-let verify_args formals actuals =
-  let f_typ = List.map (fun v -> v.vtype) formals
-  and a_typ = List.map (fun (_, typ) -> typ) actuals
+let verify_args fdcl formals actuals =
+  let f_typ = List.map (fun v -> v.vtype) formals in
+  let a_typ = List.map (fun (_, typ) -> typ) actuals in
+  let fname, is_built_in =
+    (match fdcl with
+        BasicFunc(f) -> f.fname, f.f_is_built_in
+      | AssertFunc(f) -> f.aname, f.a_is_built_in)
   in
-  verify_args_helper f_typ a_typ
+  if fname = "print" && is_built_in then
+    let formal_type =
+      (match fdcl with
+          BasicFunc(f) -> List.hd f.formals
+        | _ -> raise (SemError ("Internal error: built-in print function cannot be an assert function")))
+    in
+    let check_formal_types =
+      (match formal_type.vtype with
+          Group("") -> false
+        | _ -> true)
+    in
+    verify_args_helper f_typ a_typ check_formal_types
+  else
+    verify_args_helper f_typ a_typ true
 
 let rec check_expr env = function
     Ast.IntLiteral(i) -> IntLiteral(i), Int
@@ -611,11 +648,10 @@ let rec check_expr env = function
            Fun(f) ->
              (match f with
                   BasicFunc(bf) ->
-                    verify_args bf.formals actuals
+                    verify_args f bf.formals actuals
                 | AssertFunc(af) ->
-                    verify_args af.aformals actuals);
+                    verify_args f af.aformals actuals);
              Call(None, f, actuals), typ
-         (* | Grp(g) -> raise (SemError ("Not callable: " ^ g.gname)) *)
          | This -> raise (SemError ("Not callable: 'this'"))
          | Var(v) -> raise (SemError ("Not callable: " ^ v.vname))
          | Attrib(v1, v2) -> raise (SemError ("Not callable: " ^ v1.vname ^ "." ^ v2.vname))
@@ -624,16 +660,13 @@ let rec check_expr env = function
              (* let par_typ = *)
               (match par.vtype with
                   Group(s) -> (* s *) ()
-                | _ -> raise (SemError ("Method call with parent that is not a group")))
-             (* in *) ;
-             (* let par_class = find_group env.scope par_typ in *)
+                | _ -> raise (SemError ("Method call with parent that is not a group")));
              (match child with
                   BasicFunc(bf) ->
-                    verify_args bf.formals actuals
+                    verify_args child bf.formals actuals
                 | AssertFunc(af) ->
-                    verify_args af.aformals actuals);
+                    verify_args child af.aformals actuals);
              Call(Some(par), child, actuals), typ)
-         (* | FieldCall(f1, f2) -> raise (SemError ("Iternal Error: FieldCall matched with Ast.Call"))) *)
   | Ast.Element(e1, e2) ->
       let e1 = check_expr env e1
       and e2 = check_expr env e2 in
@@ -717,7 +750,8 @@ let rec check_stmt env = function
           locals = [];
           body = [];
           turns_func = true;
-          group_method = "" }
+          group_method = "";
+          f_is_built_in = false }
       in
       let e = check_expr env e in
       require_int e "Must pass to an integer player.";
@@ -887,6 +921,37 @@ let rec verify_if_func_declared new_fun = function
             else
               verify_if_func_declared new_fun rest)
 
+let rec verify_implicit_return_basic_fun name ftyp body =
+  let last_stmt =
+    try
+      List.hd (List.rev body)
+    with Failure("hd") ->
+      End (* empty body, so use non-Return dummy stmt *)
+  in
+  match last_stmt with
+    Return(e) ->
+      () (* Last statement is not an implicit return *)
+  | Block(scope, sl) ->
+      verify_implicit_return_basic_fun name ftyp sl
+  | If(e, s1, s2) ->
+      verify_implicit_return_basic_fun name ftyp [s1];
+      verify_implicit_return_basic_fun name ftyp [s2]
+  | For(vd, el, s) ->
+      verify_implicit_return_basic_fun name ftyp [s]
+  | While(e, s) ->
+      verify_implicit_return_basic_fun name ftyp [s]
+  | _ ->
+    (match ftyp with
+        Void -> ()
+      | _ -> raise (SemError ("function " ^ name ^ " implicit return " ^
+               "invalid type, expected: " ^  string_of_t ftyp)))
+
+let verify_implicit_return = function
+    AssertFunc(f) ->
+        () (* Implicit and explicit returns always Bool *)
+  | BasicFunc(f) ->
+        verify_implicit_return_basic_fun f.fname f.ftype f.body
+
 let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
     let scope' =
       { parent = Some(env.scope);
@@ -908,8 +973,10 @@ let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
                   locals = ll;
                   body = sl;
                   turns_func = in_turn_section;
-                  group_method = gname })
+                  group_method = gname;
+                  f_is_built_in = false })
     in
+    verify_implicit_return fdecl;
     env.scope.functions <- fdecl :: env.scope.functions;
     fdecl
 
@@ -943,7 +1010,8 @@ let check_assert_func env in_turn_section (f : Ast.assert_decl) =
                    alocals = ll;
                    abody = sl ;
                    a_turns_func = in_turn_section;
-                   a_group_method = gname })
+                   a_group_method = gname;
+                   a_is_built_in = false })
     in
     env.scope.functions <- fdecl :: env.scope.functions;
     fdecl
@@ -975,13 +1043,14 @@ let verify_extends parent par_actuals init_opt =
                     with Not_found ->
                       raise (SemError("Constructor function not found in parent"))
                     in
+                    let fdcl = par_init in
                     let par_init = match par_init with
                         BasicFunc(f) -> f
                       | AssertFunc(f) ->
                           raise (SemError("Parent constructor cannot be an assert function"))
                     in
                     if List.length par_init.formals = List.length el then
-                      verify_args par_init.formals el
+                      verify_args fdcl par_init.formals el
                     else
                       raise (SemError("Number of constrctur variables for parent's constructor does not match")))
           | None ->
@@ -1031,7 +1100,15 @@ let check_method env new_fun =
   fdcl
 
 let add_parent_init parent par_actuals name methods = function
-    Some(init_fun) -> methods
+    Some(init_fun) ->
+      (match init_fun with
+          BasicFunc(f) ->
+            if f.ftype = Void then
+              methods
+            else
+              raise (SemError ("Group " ^ name ^ " __init__ function has non-void type"))
+        | AssertFunc(f) ->
+            raise (SemError ("Group " ^ name ^ " __init__ function not a basic function")))
   | None ->
     (match parent with
         None -> raise (SemError "No parent but using parent __init__")
@@ -1052,7 +1129,8 @@ let add_parent_init parent par_actuals name methods = function
                   locals = dcls;
                   body = f.body;
                   turns_func = false;
-                  group_method = name })
+                  group_method = name;
+                  f_is_built_in = false })
           | None ->
             (match par_init with
                 AssertFunc(f) -> raise (SemError "Assert Function used as parent __init__")
@@ -1060,6 +1138,56 @@ let add_parent_init parent par_actuals name methods = function
                 { f with group_method = name }))
       in
       BasicFunc(child_init) :: methods)
+
+let verify_repr gname = function
+    BasicFunc(f) ->
+      if f.ftype <> Str then
+        raise (SemError ("Group " ^ gname ^ " __repr__() does not have Str return type"))
+      else if List.length f.formals > 0 then
+        raise (SemError ("Group " ^ gname ^ " __repr__() has more than 0 formals"))
+      else
+        ()
+  | AssertFunc(f) ->
+      raise (SemError ("Group " ^ gname ^ " __repr__() cannot be an assert function"))
+
+let rec find_repr gdcl =
+  try
+    List.find
+      (fun f ->
+        (match f with
+           BasicFunc(x) -> x.fname = "__repr__"
+         | AssertFunc(x) -> x.aname = "__repr__")) gdcl.methods
+  with Not_found ->
+    match gdcl.extends with
+        Some(par) -> find_repr par
+      | None -> raise Not_found
+
+let check_for_repr env gdcl =
+  try
+    (* search locally first *)
+    let repr = find_repr { gdcl with extends = None } in
+    verify_repr gdcl.gname repr;
+    gdcl
+  with Not_found ->
+  try
+    (* not in group, search any parents *)
+    let repr = find_repr gdcl in
+    verify_repr gdcl.gname repr;
+    { gdcl with methods = repr :: gdcl.methods }
+  with Not_found ->
+    let s = "<Group " ^ gdcl.gname ^ " instance>" in
+    let body = Return(StrLiteral(s), Str) in
+    let repr =
+      { ftype = Str;
+        fname = "__repr__";
+        formals = [];
+        locals = [];
+        body = [body];
+        turns_func = false;
+        group_method = gdcl.gname;
+        f_is_built_in = false }
+    in
+    { gdcl with methods = BasicFunc(repr) :: gdcl.methods }
 
 let rec check_group env g =
   let parent = match g.Ast.extends with
@@ -1109,6 +1237,7 @@ let rec check_group env g =
       attributes = attribs;
       methods = methods }
   in
+  let gdecl = check_for_repr env gdecl in
   env.scope.groups <- gdecl :: env.scope.groups;
   gdecl
 
@@ -1119,33 +1248,29 @@ let check_setup env setup_section =
   List.map (check_group env) groups
 
 let built_in_funcs =
-  [BasicFunc({ ftype = Void;
-               fname = "print";
-               formals = [{ vname = "print_arg";
-                            vtype = Str;
-                            vinit = None}];
-               locals = [];
-               body = [];
-               turns_func = false;
-               group_method = "" });
-  BasicFunc({ ftype = Void;
-               fname = "print";
-               formals = [{ vname = "print_arg";
-                            vtype = Bool;
-                            vinit = None}];
-               locals = [];
-               body = [];
-               turns_func = false;
-               group_method = "" });
-  BasicFunc({ ftype = Void;
-               fname = "print";
-               formals = [{ vname = "print_arg";
-                            vtype = Int;
-                            vinit = None}];
-               locals = [];
-               body = [];
-               turns_func = false;
-               group_method = "" })]
+  let s =
+    { vname = "print_arg";
+      vtype = Str;
+      vinit = None}
+  in
+  let b = { s with vtype = Bool } in
+  let i = { s with vtype = Int } in
+  let g = { s with vtype = Group("") } in
+  let print_str =
+    { ftype = Void;
+      fname = "print";
+      formals = [s];
+      locals = [];
+      body = [];
+      turns_func = false;
+      group_method = "";
+      f_is_built_in = true }
+  in
+  let print_bool = { print_str with formals = [b] } in
+  let print_int = { print_str with formals = [i] } in
+  let print_group = { print_str with formals = [g] } in
+  [BasicFunc(print_str); BasicFunc(print_bool); BasicFunc(print_int);
+   BasicFunc(print_group)]
 
 let rec gather_turn_names env = function
     [] -> ()

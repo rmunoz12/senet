@@ -56,6 +56,7 @@ let rec field_to_c = function
       if par.vname = "this" then "this", "->"
       else prefix_name par.vname, "." in
     par_name ^ deref_op ^ prefix_name child.vname
+  | Method(v, f) -> raise (SemError ("Internal error: Method matched in field_to_c(), use Call instead"))
   | This -> "this"
 
 let rec function_call_to_c = function
@@ -70,9 +71,12 @@ let rec printf var = match var with
   | [el_string, typ] ->
   let arg =
     (match typ with
-         Bool -> "\"%s\", " ^ el_string ^ " ? \"true\" : \"false\"";
+         Bool -> "\"%s\", " ^ el_string ^ " ? \"true\" : \"false\""
        | Int -> "\"%d\", " ^ el_string
-       | Str -> "\"%s\", " ^ el_string )
+       | Str -> "\"%s\", " ^ el_string
+       | Group(x) ->
+          prefix_name x ^ "_" ^ prefix_name "__repr__" ^
+          "((struct " ^ prefix_name x  ^ "*) "  ^ "&" ^ el_string ^ ")")
   in
   "printf(" ^ arg ^ ")"
   | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr)
