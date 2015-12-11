@@ -1,0 +1,15 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    str a = "abc";
+    str b = "def";
+
+    print(a + b); print("\n");
+
+    end;
+}
+
+}
+

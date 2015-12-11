@@ -613,10 +613,15 @@ let rec check_expr env = function
       and e2 = check_expr env e2 in
       if op = Ast.Add || op = Ast.Sub || op = Ast.Mult ||
          op = Ast.Div || op = Ast.Mod then
-            ((require_int e1 "Left operand must be integer";
-             require_int e2 "Right operand must be integer";
-             let op = ast_op_to_sast_op op in
-             Binop(e1, op, e2), Int))
+          let _, t1 = e1 and _, t2 = e2 in
+          let op = ast_op_to_sast_op op in
+          match t1, t2 with
+              Str, Str ->
+                Binop(e1, op, e2), Str
+            | Int, Int -> Binop(e1, op, e2), Int
+            | _, _ ->
+              raise (SemError ("Additiona operation requires two integer " ^
+                               "or two string operands."))
       else if op = Ast.Less || op = Ast.Leq ||
               op = Ast.Greater || op = Ast.Geq then
             ((require_int e1 "Left operand must be integer";

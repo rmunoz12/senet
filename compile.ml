@@ -13,6 +13,13 @@ let senet_header =
   "struct SENET_NONE {\n" ^
   "  } SENET_NONE;\n" ^
      "\n" ^
+  "char *SENET_STR_CONCAT(char* s1, char* s2) {\n" ^
+  "  char *temp = (char *) malloc(strlen(s1)+ strlen(s2) +1);\n" ^
+  "  strcpy(temp, s1);\n" ^
+  "  strcat(temp, s2);\n" ^
+  "  return temp;\n" ^
+  "}\n" ^
+    "\n" ^
   "void (*CUR_TURN)();" ^ "\n" ^
   "int PLAYER_ON_MOVE;" ^ "\n" ^
     "\n"
@@ -114,10 +121,12 @@ and expression_to_c = function
           let eval = match op with
               Equal -> "? 0 : 1"
             | Neq -> "? 1 : 0"
-            | _ ->
-              raise (SemError "Binop other than == or != has lhs and rhs with type Str")
+            | _ -> ""
           in
-          "(strcmp(" ^ d1 ^ ", " ^ d2 ^ ") " ^ eval ^ ")"
+          (match op with
+             Equal | Neq -> "(strcmp(" ^ d1 ^ ", " ^ d2 ^ ") " ^ eval ^ ")"
+           | Add -> "SENET_STR_CONCAT(" ^ d1 ^ ", " ^ d2 ^ ")"
+           | _ -> raise (SemError "Binop other than +, ==, or != has lhd and rhs with type Str"))
         | Void, Void ->
           let ans = match op with
               Equal -> True
@@ -136,7 +145,7 @@ and expression_to_c = function
                 Equal -> "? 1 : 0"
               | Neq -> "? 0 : 1"
               | _ ->
-                raise (SemError "Binop other than == or != has lhs and rhs with type Str")
+                raise (SemError "Binop other than == or != has lhs and rhs with type Group(T)")
             in
             let compare_attrib e1 e2 a =
               let e1, _ = e1 and e2, _ = e2 in
