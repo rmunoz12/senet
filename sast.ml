@@ -408,7 +408,7 @@ let rec check_field env actuals = function
           Var(v) -> v.vtype
         | Fun(x) -> (match x with
             BasicFunc(f) -> f.ftype
-          | AssertFunc(a) -> Void)
+          | AssertFunc(a) -> Bool)
         | Grp(g) -> Group(g.gname, None)
         | This -> raise (SemError("Internal error: 'this' keyword match with Ast.Id"))
         | _ -> raise (SemError "Internal error: Ast.Id matched with Attrib or Method")
@@ -990,6 +990,25 @@ let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
     env.scope.functions <- fdecl :: env.scope.functions;
     fdecl
 
+let rec verify_assert_func_stmt stmt =
+  let msg_bool = "Assert function expression statment or return statement" ^
+                 " must be of type boolean."
+  in
+  let msg_stmt = "Assert function statment cannot be " in
+  match stmt with
+      Block(scope, sl) -> List.iter verify_assert_func_stmt sl
+    | Expression(e) -> require_bool e msg_bool
+    | Return(e) -> require_bool e msg_bool
+    | Break -> ()
+    | Continue -> ()
+    | End -> raise (SemError (msg_stmt ^ "end."))
+    | Pass(_, _) -> raise (SemError (msg_stmt ^ "pass."))
+    | If(e, s1, s2) ->
+        verify_assert_func_stmt s1;
+        verify_assert_func_stmt s2
+    | For(vd, el, s) -> verify_assert_func_stmt s
+    | While(e, s) -> verify_assert_func_stmt s
+
 let check_assert_func env in_turn_section (f : Ast.assert_decl) =
   let already_declared =
     List.exists (fun x -> match x with
@@ -1013,6 +1032,9 @@ let check_assert_func env in_turn_section (f : Ast.assert_decl) =
     let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
     let ll = List.map (fun dcl -> check_vdcl env' dcl) f.Ast.locals in
     let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
+    let ret_stmt = Return(BoolLiteral(True), Bool) in
+    let sl = ret_stmt :: List.rev sl in
+    let sl = List. rev sl in
     let gname = (match env.partial_group_info with None -> "" | Some(g) -> g.group_name) in
     let fdecl =
       AssertFunc({ aname = f.Ast.fname;
@@ -1023,6 +1045,7 @@ let check_assert_func env in_turn_section (f : Ast.assert_decl) =
                    a_group_method = gname;
                    a_is_built_in = false })
     in
+    List.iter verify_assert_func_stmt sl;
     env.scope.functions <- fdecl :: env.scope.functions;
     fdecl
 
@@ -1307,8 +1330,7 @@ let rec gather_turn_names env = function
       env.scope.turns <- t.Ast.fname :: env.scope.turns;
       gather_turn_names env rest
   | Ast.AssertFunc(t) :: rest ->
-      env.scope.turns <- t.Ast.fname :: env.scope.turns;
-      gather_turn_names env rest
+      raise (SemError ("Assert function cannot be a turns function: " ^ t.Ast.fname ))
 
 let check_turns env turns_section =
   if check_for_begin(turns_section) = false then

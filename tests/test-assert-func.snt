@@ -1,0 +1,25 @@
+@setup {
+
+assert test() {
+    True;
+}
+
+assert test2() {
+    2 + 2 > 3;
+    4 - 2 < 0;
+    2 == 2;
+}
+
+
+}
+
+@turns {
+
+func void begin() {
+    print(True); print("\n");
+    print(test()); print("\n");
+    print(test2()); print("\n");
+    end;
+}
+
+}
