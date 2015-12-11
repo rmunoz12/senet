@@ -1,3 +1,4 @@
+open Types
 open Sast
 
 let prefix_name n =
@@ -318,7 +319,7 @@ let senet_to_c (s, t) =
     "// @senet_footer\n" ^
     senet_footer
 
-let translate (program : Sast.program) =
+let translate (program : Types.program) =
     let outfile = open_out "output.c" in
     let ctext = senet_to_c program in
     output_string outfile ctext
