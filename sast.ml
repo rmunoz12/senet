@@ -1182,6 +1182,25 @@ let check_for_repr env gdcl =
   try
     (* not in group, search any parents *)
     let repr = find_repr gdcl in
+    let built_in = match repr with
+        BasicFunc(f) -> f.f_is_built_in
+      | AssertFunc(f) -> raise (SemError ("Group " ^ gdcl.gname ^ " __repr__() cannot be an assert function"))
+    in
+    let repr =
+      if built_in then
+        let s = "<Group " ^ gdcl.gname ^ " instance>" in
+        let body = Return(StrLiteral(s), Str) in
+        BasicFunc({ ftype = Str;
+                    fname = "__repr__";
+                    formals = [];
+                    locals = [];
+                    body = [body];
+                    turns_func = false;
+                    group_method = gdcl.gname;
+                    f_is_built_in = true})
+      else
+        repr
+    in
     verify_repr gdcl.gname repr;
     { gdcl with methods = repr :: gdcl.methods }
   with Not_found ->
@@ -1195,7 +1214,7 @@ let check_for_repr env gdcl =
         body = [body];
         turns_func = false;
         group_method = gdcl.gname;
-        f_is_built_in = false }
+        f_is_built_in = true }
     in
     { gdcl with methods = BasicFunc(repr) :: gdcl.methods }
 

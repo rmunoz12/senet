@@ -14,9 +14,14 @@ group C(B) {
 
 };
 
+group D(A) {
+
+};
+
 group A no_repr;
 group B yes_repr;
 group C inherited_repr;
+group D inherited_repr_built_in;
 
 }
 
@@ -31,6 +36,7 @@ func void begin() {
     print(no_repr.__repr__()); print("\n");
     print(yes_repr); print("\n");
     print(inherited_repr); print("\n");
+    print(inherited_repr_built_in); print("\n");
 
     end;
 }
