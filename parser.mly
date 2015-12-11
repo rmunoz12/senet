@@ -23,6 +23,8 @@
 %token SETUP TURNS FUNC
 %token THIS
 
+/* lowest precedance */
+
 /* %nonassoc NOELSE */
 /* %nonassoc ELSE */
 %right ASSIGN
@@ -31,11 +33,13 @@
 %nonassoc NOT
 %left EQ NEQ
 %left LT GT LEQ GEQ
-%left PLUS MINUS MOD
-%left TIMES DIVIDE
+%left PLUS MINUS
+%left TIMES DIVIDE MOD
 %nonassoc UMINUS
 %nonassoc LBRACKET
 /* %left DOT */
+
+/* highest precedance */
 
 %start program
 %type <Ast.program> program
