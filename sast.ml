@@ -828,6 +828,10 @@ let require_no_init = function
   | Ast.ExprInit(e) ->
       raise (SemError "Function formal arguments cannot have default values.")
 
+let require_non_void v = match v.vtype with
+    Void -> raise (SemError (v.vname ^ " declared with void type"))
+  | _ -> ()
+
 let check_vdcl_helper env v init_ok =
   let name = v.Ast.vname in
   let already_declared =
@@ -850,6 +854,7 @@ let check_vdcl_helper env v init_ok =
         vtype = id_type_to_t v.Ast.vtype;
         vinit = init }
     in
+    require_non_void decl;
     decl
 
 let check_formal env v =

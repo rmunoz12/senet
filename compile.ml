@@ -7,9 +7,14 @@ let senet_header =
   "#include <stdbool.h>" ^ "\n" ^
   "#include <stdio.h>" ^ "\n" ^
   "#include <stdlib.h>" ^ "\n" ^
+  "#include <string.h>\n" ^
+     "\n" ^
+  "struct SENET_NONE {\n" ^
+  "  } SENET_NONE;\n" ^
      "\n" ^
   "void (*CUR_TURN)();" ^ "\n" ^
-  "int PLAYER_ON_MOVE;" ^ "\n"
+  "int PLAYER_ON_MOVE;" ^ "\n" ^
+    "\n"
 
 let senet_footer =
   "int main() {\n" ^
@@ -22,25 +27,16 @@ let senet_footer =
   "}\n"
 
 let binop_to_c = function
-   Add -> "+"
- | Sub -> "-"
- | Mult -> "*"
- | Div -> "/"
- | Equal -> "=="
- | Neq -> "!="
- | Less -> "<"
- | Leq -> "<="
- | Greater -> ">"
- | Geq -> ">="
- | Mod -> "%"
- | And -> "&&"
- | Or -> "||"
+   Add -> "+" | Sub -> "-" | Mult -> "*" | Div -> "/" | Mod -> "%"
+ | Less -> "<" | Leq -> "<=" | Greater -> ">" | Geq -> ">="
+ | And -> "&&" | Or -> "||"
+ | Equal -> "==" | Neq -> "!="
 
 let id_type_to_c = function
   |  Int -> "int "
   |  Bool -> "bool "
   |  Str -> "char* "
-  |  Void -> "void"
+  |  Void -> "void "
   (* | List_t(ft) -> *)
   | Group(s) -> "struct " ^ prefix_name s ^ " "
 
@@ -71,12 +67,13 @@ let rec printf var = match var with
   | [el_string, typ] ->
   let arg =
     (match typ with
-         Bool -> "\"%s\", " ^ el_string ^ " ? \"true\" : \"false\""
-       | Int -> "\"%d\", " ^ el_string
-       | Str -> "\"%s\", " ^ el_string
-       | Group(x) ->
-          prefix_name x ^ "_" ^ prefix_name "__repr__" ^
-          "((struct " ^ prefix_name x  ^ "*) "  ^ "&" ^ el_string ^ ")")
+       Bool -> "\"%s\", " ^ el_string ^ " ? \"true\" : \"false\""
+     | Int -> "\"%d\", " ^ el_string
+     | Str -> "\"%s\", " ^ el_string
+     | Group(x) ->
+        prefix_name x ^ "_" ^ prefix_name "__repr__" ^
+        "((struct " ^ prefix_name x  ^ "*) "  ^ "&" ^ el_string ^ ")"
+    | Void -> "\"None\"")
   in
   "printf(" ^ arg ^ ")"
   | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr)
@@ -103,14 +100,36 @@ and expression_to_c = function
   (* | ListLiteral(ll) -> "" *)
   | BoolLiteral(b) ->
         (match b with True -> "true" | False -> "false")
-  (* | VoidLiteral -> "" *)
+  | VoidLiteral -> "SENET_NONE"
   | Field(fd) -> field_to_c fd
   | Binop(e1, op, e2) ->
-      let d1, _ = e1
-      and d2, _ = e2 in
-      let d1 = expression_to_c d1
-      and d2 = expression_to_c d2 in
-      d1 ^ " " ^ binop_to_c op ^ " " ^ d2
+      let d1, t1 = e1 and d2, t2 = e2 in
+      let d1 = expression_to_c d1 and d2 = expression_to_c d2 in
+      (match t1, t2 with
+          Int, Int
+        | Bool, Bool ->
+            d1 ^ " " ^ binop_to_c op ^ " " ^ d2
+        | Str, Str ->
+          let eval = match op with
+              Equal -> "? 0 : 1"
+            | Neq -> "? 1 : 0"
+            | _ ->
+              raise (SemError "Binop other than == or != has lhs and rhs with type Str")
+          in
+          "(strcmp(" ^ d1 ^ ", " ^ d2 ^ ") " ^ eval ^ ")"
+        | Void, Void ->
+          let ans = match op with
+              Equal -> True
+            | Neq -> False
+            | _ ->
+              raise (SemError "Binop other than == or != has lhs and rhs with type Void")
+          in
+          expression_to_c (BoolLiteral(ans))
+        (* | Group(s1), Group(s2) ->
+        | List_t(t1), List_t(t2) -> *)
+        | _ , _ ->
+          raise (SemError ("Internal error: improper types in binop: " ^
+                           d1 ^ " " ^ binop_to_c op ^ " " ^ d2)))
   | Assign(fd, e) ->
       let fd = field_to_c fd
       and detail, _ = e in

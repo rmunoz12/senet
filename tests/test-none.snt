@@ -1,0 +1,23 @@
+@setup {
+
+group A() {
+
+    func void __init__() { }
+
+};
+
+group A test;
+
+}
+
+@turns {
+
+func void begin() {
+
+    print(None); print("\n");
+    print(None == None); print("\n");
+
+    end;
+}
+
+}
