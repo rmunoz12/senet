@@ -13,7 +13,7 @@ type t =
   | Str
   | Void
   | List_t of t
-  | Group of string
+  | Group of string * group_decl option  (* 2nd value filled in by Cast *)
 
 and list_lit =
     Elems of expression list
@@ -134,7 +134,7 @@ let rec string_of_t = function
   | Void -> "void"
   | List_t(vt) ->
       "list[" ^ string_of_t vt ^ "]"
-  | Group(s) -> s
+  | Group(s, _) -> s
 
 let rec id_type_to_t = function
     Ast.Int -> Int
@@ -142,7 +142,7 @@ let rec id_type_to_t = function
   | Ast.Str -> Str
   | Ast.Void -> Void
   | Ast.List(id_typ) -> List_t(id_type_to_t id_typ)
-  | Ast.Group(s) -> Group(s)
+  | Ast.Group(s) -> Group(s, None)
 
 let rec find_variable (scope : symbol_table) name =
   try
@@ -196,7 +196,7 @@ let verify_args_signature fdcl formals actuals =
           | _ -> raise (SemError ("Internal error: built-in print function cannot be an assert function")))
       in
       (match formal_type.vtype with
-          Group("") -> false
+          Group("", _) -> false
         | _ -> true)
     else
       true
@@ -270,7 +270,7 @@ let rec find_child_in_group_def env (parent : group_decl) actuals name =
 let rec find_child env (par_instance : var_decl) actuals name =
   let class_name =
     (match par_instance.vtype with
-       Group(s) -> s
+       Group(s, _) -> s
      | _ -> raise (SemError ("DOT operator does not work with non-group variable: " ^ par_instance.vname)))
   in
   let parent =
@@ -297,7 +297,7 @@ let find_this_child env actuals name =
      | Some(info) -> info) in
   let this_dummy =
     { vname = "this";
-      vtype = Group(info.group_name);
+      vtype = Group(info.group_name, None);
       vinit = None } in
   let scope = info.symbols in
   if List.exists (fun v -> v.vname = name) scope.variables then
@@ -409,7 +409,7 @@ let rec check_field env actuals = function
         | Fun(x) -> (match x with
             BasicFunc(f) -> f.ftype
           | AssertFunc(a) -> Void)
-        | Grp(g) -> Group(g.gname)
+        | Grp(g) -> Group(g.gname, None)
         | This -> raise (SemError("Internal error: 'this' keyword match with Ast.Id"))
         | _ -> raise (SemError "Internal error: Ast.Id matched with Attrib or Method")
         (* | FieldCall(f1, f2) ->
@@ -422,7 +422,7 @@ let rec check_field env actuals = function
             None -> raise (SemError("'this' keyword used outside of group declaration"))
           | Some(info) -> info.group_name)
       in
-      This, Group(gname)
+      This, Group(gname, None)
   | Ast.FieldCall(fe, name) ->
     let parent, _ = check_field env [] fe in
       (match parent with
@@ -550,7 +550,7 @@ let rec require_parent_helper pname gdcl msg =
 let rec require_parent env pname fe msg = match fe with
     Var(v) ->
       (match v.vtype with
-          Group(s) ->
+          Group(s, _) ->
             let gdcl = find_group env.scope s in
             require_parent_helper pname gdcl msg
         | _ -> raise (SemError ("Variable is not a group: " ^ v.vname)))
@@ -587,7 +587,7 @@ let verify_args fdcl formals actuals =
     in
     let check_formal_types =
       (match formal_type.vtype with
-          Group("") -> false
+          Group("", _) -> false
         | _ -> true)
     in
     verify_args_helper f_typ a_typ check_formal_types
@@ -659,7 +659,7 @@ let rec check_expr env = function
          | Method(par, child) ->
              (* let par_typ = *)
               (match par.vtype with
-                  Group(s) -> (* s *) ()
+                  Group(s, _) -> (* s *) ()
                 | _ -> raise (SemError ("Method call with parent that is not a group")));
              (match child with
                   BasicFunc(bf) ->
@@ -1260,7 +1260,7 @@ let built_in_funcs =
   in
   let b = { s with vtype = Bool } in
   let i = { s with vtype = Int } in
-  let g = { s with vtype = Group("") } in
+  let g = { s with vtype = Group("", None) } in
   let print_str =
     { ftype = Void;
       fname = "print";

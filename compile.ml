@@ -1,4 +1,5 @@
 open Sast
+open Cast
 
 let prefix_name n =
   "snt_" ^ n
@@ -38,7 +39,7 @@ let id_type_to_c = function
   |  Str -> "char* "
   |  Void -> "void "
   (* | List_t(ft) -> *)
-  | Group(s) -> "struct " ^ prefix_name s ^ " "
+  | Group(s, _) -> "struct " ^ prefix_name s ^ " "
 
 let rec field_to_c = function
     Var(v) -> prefix_name v.vname
@@ -70,7 +71,7 @@ let rec printf var = match var with
        Bool -> "\"%s\", " ^ el_string ^ " ? \"true\" : \"false\""
      | Int -> "\"%d\", " ^ el_string
      | Str -> "\"%s\", " ^ el_string
-     | Group(x) ->
+     | Group(x, _) ->
         prefix_name x ^ "_" ^ prefix_name "__repr__" ^
         "((struct " ^ prefix_name x  ^ "*) "  ^ "&" ^ el_string ^ ")"
     | Void -> "\"None\"")
