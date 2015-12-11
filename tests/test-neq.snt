@@ -4,9 +4,10 @@ group A() {
     int x;
     int y;
 
-    func void __init__(int x, int y) {
+    func group A __init__(int x, int y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 };
 

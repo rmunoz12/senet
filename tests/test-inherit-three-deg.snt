@@ -3,8 +3,9 @@
 group A() {
     int x;
 
-    func void __init__(int x) {
+    func group A __init__(int x) {
         this.x = x;
+        return this;
     }
 
     func int test() {

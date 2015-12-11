@@ -3,9 +3,10 @@
 group base() {
     int x;
     int y;
-    func void __init__(int x, int y) {
+    func group base __init__(int x, int y) {
         this.x = x;
         this.y = y;
+        return this;
     }
 };
 

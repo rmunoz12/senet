@@ -9,7 +9,7 @@ let rec string_of_t = function
   | Void -> "void"
   | List_t(vt) ->
       "list[" ^ string_of_t vt ^ "]"
-  | Group(s, _) -> s
+  | Group(s, _) -> "group " ^ s
 
 let rec id_type_to_t = function
     Ast.Int -> Int
@@ -535,7 +535,21 @@ let rec check_expr env = function
          | This -> raise (SemError ("Not callable: 'this'"))
          | Var(v) -> raise (SemError ("Not callable: " ^ v.vname))
          | Attrib(v1, v2) -> raise (SemError ("Not callable: " ^ v1.vname ^ "." ^ v2.vname))
-         | Grp(g) -> raise (SemError ("Not callable: " ^ g.gname))
+         | Grp(g) ->
+            let par =
+              { vname = g.gname ; vtype = Group(g.gname, None); vinit = None }
+            in
+            let init =
+              List.find (fun f -> match f with
+                            BasicFunc(x) -> x.fname = "__init__"
+                          | AssertFunc(_) -> false) g.methods
+            in
+            let formals = match init with
+                BasicFunc(x) -> x.formals
+              | AssertFunc(_) -> raise (SemError ("Internal error: __init__ is an assert function"))
+            in
+            verify_args init formals actuals;
+            Call(Some(par), init, actuals), Group(g.gname, None)
          | Method(par, child) ->
              (* let par_typ = *)
               (match par.vtype with
@@ -806,7 +820,7 @@ let rec verify_if_func_declared new_fun = function
             else
               verify_if_func_declared new_fun rest)
 
-let rec verify_implicit_return_basic_fun name ftyp body =
+let rec verify_implicit_return_basic_fun name ftyp body=
   let last_stmt =
     try
       List.hd (List.rev body)
@@ -1011,10 +1025,10 @@ let add_parent_init parent par_actuals name methods = function
     Some(init_fun) ->
       (match init_fun with
           BasicFunc(f) ->
-            if f.ftype = Void then
+            if f.ftype = Group(name, None) then
               methods
             else
-              raise (SemError ("Group " ^ name ^ " __init__ function has non-void type"))
+              raise (SemError ("Group " ^ name ^ " __init__ function has type not equal to itself"))
         | AssertFunc(f) ->
             raise (SemError ("Group " ^ name ^ " __init__ function not a basic function")))
   | None ->
@@ -1031,7 +1045,7 @@ let add_parent_init parent par_actuals name methods = function
                 let dcls =
                   List.map2 (fun vdcl act -> {vdcl with vinit = Some(act)}) f.formals el
                 in
-                { ftype = f.ftype;
+                { ftype = Group(name, None);
                   fname = "__init__";
                   formals = [];
                   locals = dcls;
@@ -1043,7 +1057,7 @@ let add_parent_init parent par_actuals name methods = function
             (match par_init with
                 AssertFunc(f) -> raise (SemError "Assert Function used as parent __init__")
               | BasicFunc(f) ->
-                { f with group_method = name }))
+                { f with ftype = Group(name, None); group_method = name }))
       in
       BasicFunc(child_init) :: methods)
 

@@ -201,7 +201,7 @@ expr_opt:
 
 field_expr:
     ID                     { Id($1) }
-  | THIS DOT ID            { FieldCall(This, $3) }
+  | THIS                   { This }
   | field_expr DOT ID      { FieldCall($1, $3) }
 
 expr_list:
