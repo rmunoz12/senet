@@ -184,11 +184,16 @@ expr:
   | field_expr ASSIGN expr   { Assign($1, $3) }
   | field_expr LPAREN actuals_opt RPAREN { Call($1, $3) }
   | expr LBRACKET expr RBRACKET { Element($1, $3) }
-  | LPAREN expr RPAREN { $2 }
+  | LPAREN expr_opt RPAREN { $2 }
   | MINUS expr %prec UMINUS { Uminus($2) }
   | NOT expr { Not($2) }
   | field_expr PLACE field_expr PLACE list_lit   { Place($1, $3, $5) }
   | field_expr REMOVE field_expr REMOVE list_lit { Remove($1, $3, $5) }
+
+expr_opt:
+    /* nothing */ { Noexpr }
+  | expr          { $1 }
+
 
 field_expr:
     ID                     { Id($1) }
