@@ -1,4 +1,35 @@
-@setup { }
+@setup {
+
+group base() {
+    int x;
+    int y;
+    func void __init__(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+};
+
+group A(base) {
+    int x;
+    int y;
+};
+
+group B(base) {
+    int x;
+    int y;
+};
+
+group C(base) {
+    int a;
+    int b;
+};
+
+group A a;
+group A aa;
+group B b;
+group C c;
+
+}
 
 @turns {
 
@@ -7,6 +38,10 @@ func void begin() {
     print(2 == 2); print("\n");
     print(2 == 2 == True); print("\n");
     print("abc" == "def"); print("\n");
+
+    a.__init__(100, 200);
+    aa.__init__(100, 200);
+    print(a == aa); print("\n");
     end;
 }
 

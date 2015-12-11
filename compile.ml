@@ -126,8 +126,31 @@ and expression_to_c = function
               raise (SemError "Binop other than == or != has lhs and rhs with type Void")
           in
           expression_to_c (BoolLiteral(ans))
-        (* | Group(s1), Group(s2) ->
-        | List_t(t1), List_t(t2) -> *)
+        | Group(_, gd1), Group(_, gd2) ->
+            let gd1, gd2 = match gd1, gd2 with
+                Some(x), Some(y) -> x, y
+              | _, _ ->
+                raise (SemError "Missing a group decl in expression type")
+            in
+            let eval = match op with
+                Equal -> "? 1 : 0"
+              | Neq -> "? 0 : 1"
+              | _ ->
+                raise (SemError "Binop other than == or != has lhs and rhs with type Str")
+            in
+            let compare_attrib e1 e2 a =
+              let e1, _ = e1 and e2, _ = e2 in
+              "(" ^ expression_to_c e1 ^ "." ^ prefix_name a.vname ^ " == " ^
+              expression_to_c e2 ^ "." ^ prefix_name a.vname ^ ")"
+            in
+            if gd1.gname == gd2.gname then
+              let attrib = gd1.attributes in
+              "(" ^ "(" ^
+              String.concat " && " (List.map (compare_attrib e1 e2) attrib) ^
+              ") " ^ eval ^ ")"
+            else
+              "false"
+        (* | List_t(t1), List_t(t2) -> *)
         | _ , _ ->
           raise (SemError ("Internal error: improper types in binop: " ^
                            d1 ^ " " ^ binop_to_c op ^ " " ^ d2)))
