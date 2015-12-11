@@ -214,22 +214,22 @@ actuals_list:
 
 list_lit:
     LBRACKET RBRACKET                  { EmptyList }
-  | LBRACKET list_elems RBRACKET       { Elems(List.rev $2) }
+  | LBRACKET list_elem RBRACKET       { Elems(List.rev $2) }
   | LBRACKET list_of_list_lit RBRACKET { List(List.rev $2) }
 
 list_of_list_lit:
     list_lit                        { [$1] }
   | list_of_list_lit COMMA list_lit { $3 :: $1 }
 
-list_elems:
-    INTLITERAL                  { [IntElem($1)] }
-  | STRLITERAL                  { [StrElem($1)] }
-  | bool_lit                    { [BoolElem($1)] }
-  | ID                          { [IdElem($1)] }
-  | list_elems COMMA INTLITERAL { IntElem($3) :: $1 }
-  | list_elems COMMA STRLITERAL { StrElem($3) :: $1 }
-  | list_elems COMMA bool_lit   { BoolElem($3) :: $1 }
-  | list_elems COMMA ID         { IdElem($3) :: $1 }
+list_elem:
+    INTLITERAL                 { [IntElem($1)] }
+  | STRLITERAL                 { [StrElem($1)] }
+  | bool_lit                   { [BoolElem($1)] }
+  | ID                         { [IdElem($1)] }
+  | list_elem COMMA INTLITERAL { IntElem($3) :: $1 }
+  | list_elem COMMA STRLITERAL { StrElem($3) :: $1 }
+  | list_elem COMMA bool_lit   { BoolElem($3) :: $1 }
+  | list_elem COMMA ID         { IdElem($3) :: $1 }
 
 bool_lit:
     TRUE  { True }
