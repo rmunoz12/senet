@@ -1,9 +1,10 @@
 @setup
 {
+group b (Rect(3,3)) {
 
-group b (Boards.Rect(3,3)) {
-    three_in_a_row(int player) {
-            for (l in {[[0,0], [1,0], [2,0]],
+# group b (Rect) {
+    func bool three_in_a_row(int player) {
+            for (int l in {[[0,0], [1,0], [2,0]],
                  [[0,1], [1,1], [2,1]],
                  [[0,2], [1,2], [2,2]],
                  [[0,0], [0,1], [0,1]],
@@ -12,9 +13,9 @@ group b (Boards.Rect(3,3)) {
                  [[0,0], [1,1], [2,2]],
                  [[0,2], [1,1], [2,0]]})  {
                 # Tests each line
-                if (this.owns(b.toi(l[0])) == player and
-                    this.owns(b.toi(l[1])) == player and
-                    this.owns(b.toi(l[2])) == player) {
+                if (this.owns(this.toi(l[0])) == player and
+                    this.owns(this.toi(l[1])) == player and
+                    this.owns(this.toi(l[2])) == player) {
                     return True;
                 }
                 # owns checks the owner of a piece at an index,
@@ -23,15 +24,15 @@ group b (Boards.Rect(3,3)) {
             return False;
         }
 
-        bool won (int player) { # checks if the player won
-            if three_in_a_row(player) {
+        func bool won (int player) { # checks if the player won
+            if (three_in_a_row(player)) {
                 return True;
             }
             return False;
         }
-        
-        bool draw() {
-            if this.full() {
+
+        func bool draw() {
+            if (this.full()) {
                 return True;
             }
             return False;
@@ -42,29 +43,30 @@ group b (Boards.Rect(3,3)) {
         }
     };
 
-    
+
 
 group Mark (Piece) {  # inherits from Piece
-    fixed = True;   # piece cannot be overwritten
+    bool fixed = True;   # piece cannot be overwritten
 
-    str repr () { 
+    func str repr () {
         if (this.owner == 0) { # this.owner is the id of the owner
-            return 'X';
+            return "X";
         } else {
-            return 'Y';
+            return "Y";
         }
     }
 };
 
 
-N_PLAYERS = 2; # number of players, this default of 1
- 
+int N_PLAYERS = 2; # number of players, this default of 1
 
-reset()
+# int ___@abc;
+
+func void reset()
 {
     str c;
     str c = "";
-    while(c != "y" && c != "n") {
+    while(c != "y" and c != "n") {
         print("Do you want to continue playing?\n");
         print("Type y to continue and n to exit\n");
         c = read(1);
@@ -82,14 +84,21 @@ reset()
 @turns
 {
 
-begin () {
+func void begin () {
+    int a;
+    int c;
+
     # this is basically just "while True" with only 1 phase
     # players input moves by typing coordinates, e.g. "11" or "02"
-    print("Input coordinates of square to place")
+    print("Input coordinates of square to place");
     print("in i.e. \"22\" or \"10\".\n"); # prompts the players
-    int a = stoi(read(1)); # reads one character and converts it to an int
-    int c = stoi(read(1));
-    if (Mark >> B [a,c]) {
+    # int a = stoi(read(1)); # reads one character and converts it to an int
+    # int c = stoi(read(1));
+    a = stoi(read(1)); # reads one character and converts it to an int
+    c = stoi(read(1));
+    if (Mark >> B >> [a,c]) {
+    # Mark >> B >> [a,c];
+    # if (b) {
         if (B.won(ON_MOVE)) { #ON_MOVE is the index of the player
             print("Player " + itos(ON_MOVE + 1) + " wins.\n");
             print("Congratulations!");
