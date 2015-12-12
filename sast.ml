@@ -287,8 +287,6 @@ let rec check_field env actuals = function
         | Grp(g) -> Group(g.gname, None)
         | This -> raise (SemError("Internal error: 'this' keyword match with Ast.Id"))
         | _ -> raise (SemError "Internal error: Ast.Id matched with Attrib or Method")
-        (* | FieldCall(f1, f2) ->
-            raise (SemError("Internal error: FieldCall matched with Ast.Id")) *)
       in
       dcl, typ
   | Ast.This ->
@@ -551,9 +549,8 @@ let rec check_expr env = function
             verify_args init formals actuals;
             Call(Some(par), init, actuals), Group(g.gname, None)
          | Method(par, child) ->
-             (* let par_typ = *)
               (match par.vtype with
-                  Group(s, _) -> (* s *) ()
+                  Group(s, _) -> ()
                 | _ -> raise (SemError ("Method call with parent that is not a group")));
              (match child with
                   BasicFunc(bf) ->
@@ -605,8 +602,15 @@ let rec verify_expr_list_type env typ = function
         raise (SemError ("List of expressions are not all of same type: " ^
                          string_of_t typ))
 
-let check_init env = function
-    Ast.ExprInit(e) -> Some(check_expr env e)
+let check_init env v_name v_typ = function
+    Ast.ExprInit(e) ->
+      let e = check_expr env e in
+      let _, typ = e in
+      if v_typ = typ then
+        Some(e)
+      else
+        raise (SemError ("Variable initiation type for identifer " ^ v_name ^
+                         " does not match, expected: " ^ string_of_t v_typ))
   | Ast.NoInit -> None
 
 let rec find_turn_name (scope : symbol_table) name =
@@ -674,14 +678,14 @@ let rec check_stmt env = function
       require_bool e "Predicate of if must be boolean";
       If(e, check_stmt env s1, check_stmt env s2)
   | Ast.For(vd, el, s) ->
+      let name, t_vd = vd.Ast.vname, id_type_to_t vd.Ast.vtype in
       let decl =
-      { vname = vd.Ast.vname;
-        vtype = id_type_to_t vd.Ast.vtype;
-        vinit = check_init env vd.Ast.vinit}
+      { vname = name;
+        vtype = t_vd;
+        vinit = check_init env name t_vd vd.Ast.vinit}
       and el = List.map (check_expr env) el in
       let _, t_el = List.hd el in
-      let t_vd = decl.vtype
-      and t_el = verify_expr_list_type env t_el el in
+      let t_el = verify_expr_list_type env t_el el in
       if t_vd <> t_el then
         raise (SemError ("For loop elements and loop variable must be " ^
                          "the same type. Variable type: " ^ string_of_t t_vd ^
@@ -752,7 +756,8 @@ let verify_not_redeclaring scope name =
 
 let check_vdcl_helper env v init_ok =
   let name = v.Ast.vname in
-  let init = check_init env v.Ast.vinit in
+  let t_vd = id_type_to_t v.Ast.vtype in
+  let init = check_init env name t_vd v.Ast.vinit in
   let init =
     (match init with
         None -> init
@@ -764,7 +769,7 @@ let check_vdcl_helper env v init_ok =
   in
   let decl =
     { vname = name;
-      vtype = id_type_to_t v.Ast.vtype;
+      vtype = t_vd;
       vinit = init }
   in
   verify_not_redeclaring env.scope v.Ast.vname;
@@ -931,8 +936,7 @@ let verify_extends parent par_actuals init_opt =
           | None ->
               match init_opt with
                   Some(init) -> ()
-                | None -> (* raise (SemError ("Constructor function not found"))) *)
-                          () )
+                | None -> () )
     | None ->
         (match init_opt with
             Some(init) -> ()
