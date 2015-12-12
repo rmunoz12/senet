@@ -726,7 +726,7 @@ let require_non_void v = match v.vtype with
     Void -> raise (SemError (v.vname ^ " declared with void type"))
   | _ -> ()
 
-let cannot_redeclare scope name =
+let verify_not_redeclaring scope name =
   let is_var_or_fun_in_scope =
     List.exists (fun x -> x.vname = name) scope.variables ||
     List.exists (fun x -> match x with
@@ -741,13 +741,14 @@ let cannot_redeclare scope name =
   in
   match gdcl_opt with
     Some(_) ->
-      raise (SemError ("Cannot redeclare a group definition name: " ^ name))
+      raise (SemError ("Cannot redeclare an identifier that is also a group " ^
+                       "definition name: " ^ name))
   | None ->
     if is_var_or_fun_in_scope then
-      raise (SemError ("Cannot redeclare variable matching with a variable or " ^
-                       "a function in current scope: " ^ name))
+      raise (SemError ("Cannot redeclare an indentifer matching with a " ^
+                       "variable or a function in current scope: " ^ name))
     else
-      false
+      ()
 
 let check_vdcl_helper env v init_ok =
   let name = v.Ast.vname in
@@ -766,7 +767,7 @@ let check_vdcl_helper env v init_ok =
       vtype = id_type_to_t v.Ast.vtype;
       vinit = init }
   in
-  ignore(cannot_redeclare env.scope v.Ast.vname);
+  verify_not_redeclaring env.scope v.Ast.vname;
   require_non_void decl;
   decl
 
@@ -781,87 +782,6 @@ let check_vdcl env v =
   let decl = check_vdcl_helper env v true in
   env.scope.variables <- decl :: env.scope.variables;
   decl
-
-let verify_if_arg_types_equal new_fun f =
-  let rec helper x y = match x, y with
-      [], [] ->
-        (match new_fun with
-            Ast.BasicFunc(nf) ->
-              raise (SemError ("Function name and type signature already declared: " ^
-                               nf.Ast.fname))
-          | Ast.AssertFunc(nf) ->
-              raise (SemError ("Function name and type signature already declared: " ^
-                               nf.Ast.fname)))
-    | a :: xrest, b :: yrest ->
-        let ta = a.Ast.vtype
-        and tb = b.vtype in
-        if id_type_to_t ta = tb then
-          helper xrest yrest
-        else
-          ()
-    | _, [] -> ()
-    | [], _ -> ()
-  in
-  match new_fun, f with
-      Ast.BasicFunc(nf), BasicFunc(bf) ->
-        helper nf.Ast.formals bf.formals
-    | Ast.AssertFunc(nf), AssertFunc(af) ->
-        helper nf.Ast.formals af.aformals
-    | Ast.BasicFunc(nf), _ ->
-        raise (SemError ("Declaring a basic function but an assert function " ^
-                         "with same name already exists: " ^ nf.Ast.fname))
-    | Ast.AssertFunc(nf), _ ->
-        raise (SemError ("Declaring an assert function but a basic function " ^
-                         "with same name already exists: " ^ nf.Ast.fname))
-
-let rec verify_if_func_signature_declared new_fun = function
-    [] -> ()
-  | hd :: rest ->
-      (match new_fun, hd with
-          Ast.BasicFunc(nf), BasicFunc(f) ->
-            if nf.Ast.fname = f.fname then
-              verify_if_arg_types_equal new_fun (BasicFunc(f))
-            else
-              verify_if_func_signature_declared new_fun rest
-        | Ast.AssertFunc(nf), AssertFunc(f) ->
-            if nf.Ast.fname = f.aname then
-              verify_if_arg_types_equal new_fun (AssertFunc(f))
-            else
-              verify_if_func_signature_declared new_fun rest
-        | Ast.BasicFunc(nf), AssertFunc(f) ->
-            if nf.Ast.fname = f.aname then
-              raise (SemError ("Function already declared in scope: " ^ f.aname))
-            else
-              verify_if_func_signature_declared new_fun rest
-        | Ast.AssertFunc(nf), BasicFunc(f) ->
-            if nf.Ast.fname = f.fname then
-              raise (SemError ("Function already declared in scope: " ^ f.fname))
-            else
-              verify_if_func_signature_declared new_fun rest)
-
-let verify_if_func_declared new_fun scope =
-  let name = match new_fun with
-      Ast.BasicFunc(f) -> f.Ast.fname
-    | Ast.AssertFunc(f) -> f.Ast.fname
-  in
-  let is_var_in_scope =
-    List.exists (fun x -> x.vname = name) scope.variables
-  in
-  let is_group_def_gname =
-    try
-      ignore(find_group scope name);
-      true
-    with Not_found ->
-      false
-  in
-  if is_var_in_scope then
-    raise (SemError ("Cannot redeclare function with name of a variable " ^
-                     "in scope: " ^ name))
-  else if is_group_def_gname then
-    raise (SemError ("Cannot redeclare function with name of a group " ^
-                     "definition: " ^ name))
-  else
-    verify_if_func_signature_declared new_fun scope.functions
 
 let rec verify_implicit_return_basic_fun name ftyp body=
   let last_stmt =
@@ -942,52 +862,42 @@ let rec verify_assert_func_stmt stmt =
     | While(e, s) -> verify_assert_func_stmt s
 
 let check_assert_func env in_turn_section (f : Ast.assert_decl) =
-  let already_declared =
-    List.exists (fun x -> match x with
-                   BasicFunc(b) -> b.fname = f.Ast.fname
-                 | AssertFunc(a) -> a.aname = f.Ast.fname )
-                env.scope.functions
+  let scope' =
+    { parent = Some(env.scope);
+      variables = [];
+      functions = [];
+      groups = [];
+      turns = [] } in
+  let env' =
+    { env with scope = scope';
+      return_type = Bool; } in
+  let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
+  let ll = List.map (fun dcl -> check_vdcl env' dcl) f.Ast.locals in
+  let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
+  let ret_stmt = Return(BoolLiteral(True), Bool) in
+  let sl = ret_stmt :: List.rev sl in
+  let sl = List. rev sl in
+  let gname = (match env.partial_group_info with None -> "" | Some(g) -> g.group_name) in
+  let fdecl =
+    AssertFunc({ aname = f.Ast.fname;
+                 aformals = fl;
+                 alocals = ll;
+                 abody = sl ;
+                 a_turns_func = in_turn_section;
+                 a_group_method = gname;
+                 a_is_built_in = false })
   in
-  if already_declared then
-    raise (SemError ("Function name previously declared in scope: " ^
-                     f.Ast.fname))
-  else
-    let scope' =
-      { parent = Some(env.scope);
-        variables = [];
-        functions = [];
-        groups = [];
-        turns = [] } in
-    let env' =
-      { env with scope = scope';
-        return_type = Bool; } in
-    let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
-    let ll = List.map (fun dcl -> check_vdcl env' dcl) f.Ast.locals in
-    let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
-    let ret_stmt = Return(BoolLiteral(True), Bool) in
-    let sl = ret_stmt :: List.rev sl in
-    let sl = List. rev sl in
-    let gname = (match env.partial_group_info with None -> "" | Some(g) -> g.group_name) in
-    let fdecl =
-      AssertFunc({ aname = f.Ast.fname;
-                   aformals = fl;
-                   alocals = ll;
-                   abody = sl ;
-                   a_turns_func = in_turn_section;
-                   a_group_method = gname;
-                   a_is_built_in = false })
-    in
-    List.iter verify_assert_func_stmt sl;
-    env.scope.functions <- fdecl :: env.scope.functions;
-    fdecl
+  List.iter verify_assert_func_stmt sl;
+  env.scope.functions <- fdecl :: env.scope.functions;
+  fdecl
 
-let check_function env in_turn_section new_fun =
-  verify_if_func_declared new_fun env.scope;
-  match new_fun with
-      Ast.BasicFunc(f) ->
-        check_basic_func env in_turn_section f
-    | Ast.AssertFunc(f) ->
-        check_assert_func env in_turn_section f
+let check_function env in_turn_section = function
+    Ast.BasicFunc(f) ->
+      verify_not_redeclaring env.scope f.Ast.fname;
+      check_basic_func env in_turn_section f
+  | Ast.AssertFunc(f) ->
+      verify_not_redeclaring env.scope f.Ast.fname;
+      check_assert_func env in_turn_section f
 
 let find_init_func methods =
     List.find (fun x -> match x with
@@ -1222,6 +1132,7 @@ let rec check_group env g =
       methods = methods }
   in
   let gdecl = check_for_repr env gdecl in
+  verify_not_redeclaring env.scope gdecl.gname;
   env.scope.groups <- gdecl :: env.scope.groups;
   gdecl
 

@@ -14,9 +14,6 @@
         }
     };
 
-    func str test() { return "test0"; }
-    func str test(int x) { return "test1"; }
-
 }
 
 @turns {
@@ -27,8 +24,7 @@ func void begin() {
 
     print(x); print("\n");
     print(a.x); print("\n");
-    print(test()); print("\n");
-    print(test(5)); print("\n");
+
     end;
 }
 
