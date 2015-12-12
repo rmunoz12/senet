@@ -57,11 +57,11 @@ let rec field_to_c = function
   | Grp(g) -> prefix_name g.gname
   | Attrib(par, child) ->
     let par_name, deref_op =
-      if par.vname = "this" then "this", "->"
+      if par.vname = "this" then "(*this)", "."
       else prefix_name par.vname, "." in
     par_name ^ deref_op ^ prefix_name child.vname
   | Method(v, f) -> raise (SemError ("Internal error: Method matched in field_to_c(), use Call instead"))
-  | This -> "this"
+  | This -> "(*this)"
 
 let rec function_call_to_c = function
     BasicFunc(f) -> f.fname
@@ -100,7 +100,7 @@ let rec var_decl_to_c v =
   (match v.vinit with
       None -> ""
     | Some(e) ->
-        let detail, _ = e in
+        let detail, typ = e in
         " = " ^ expression_to_c detail) ^ ";"
 
 and expression_to_c = function
@@ -288,7 +288,7 @@ let group_decl_to_c g =
   let c_name = prefix_name g.gname in
   "struct " ^ c_name ^  "{\n" ^
   "  " ^ String.concat "\n  " (List.map var_decl_to_c g.attributes) ^ "\n" ^
-  "};\n\n" ^
+  "} " ^ c_name ^ ";\n\n" ^
   String.concat "\n" (List.map (func_decl_to_c c_name) g.methods) ^ "\n"
 
 let setup_to_c s =

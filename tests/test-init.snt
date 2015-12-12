@@ -1,10 +1,37 @@
-@setup { }
+@setup {
+
+group A() {
+    str x;
+
+    func group A __init__(str x) {
+        this.x = x;
+        return this;
+    }
+
+    func void x() {
+
+    }
+};
+
+}
 
 @turns {
 
 func void begin() {
     int a = 2 + 3;
-    print(a);
+    int b = a = 5;
+    group A g1 = A("hello");
+    group A g2;
+    group A g3 = g2 = A("world");
+
+    print(a); print("\n");
+    print(g1.x + "\n");
+    print(g2.x + "\n");
+    print(g3.x + "\n");
+    g2.x = "!!!";
+    print(g2.x + "\n");
+
+
     end;
 }
 
