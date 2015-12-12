@@ -962,19 +962,26 @@ let rec verify_attributes par_attr = function
 
 let check_attrib env v =
   let decl = check_vdcl_helper env v false in
+  let name = decl.vname in
   let scope =
     (match env.partial_group_info with
         None -> raise (SemError "Internal error: check_attrib called outside of group definition.")
       | Some(info) -> info.symbols) in
+  verify_not_redeclaring scope name;
   scope.variables <- decl :: scope.variables;
   decl
 
 let check_method env new_fun =
   let fdcl = check_function env false new_fun in
+  let name = match fdcl with
+      BasicFunc(f) -> f.fname
+    | AssertFunc(f) -> f.aname
+  in
   let scope =
     (match env.partial_group_info with
         None -> raise (SemError "Internal error: check_attrib called outside of group definition.")
       | Some(info) -> info.symbols) in
+  verify_not_redeclaring scope name;
   scope.functions <- fdcl :: scope.functions;
   fdcl
 
@@ -1120,7 +1127,7 @@ let rec check_group env g =
     (match parent with
        Some(par) -> verify_attributes par.attributes attribs
      | None -> attribs) in
-  let methods = List.map (check_function env' false) g.Ast.methods in
+  let methods = List.map (check_method env') g.Ast.methods in
   let init_opt = try
     Some(find_init_func methods)
   with Not_found ->

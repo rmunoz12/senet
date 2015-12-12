@@ -9,7 +9,7 @@
             return this;
         }
 
-        func void x() {
+        func void y() {
 
         }
     };
