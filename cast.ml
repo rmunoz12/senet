@@ -159,16 +159,24 @@ and tag_groups_grp g gd =
   in
   { gd with attributes = a; methods = m; par_actuals = pa; extends = ex }
 
-let group_eval (program : program) =
+let tag_program program =
   let setup, turns = program in
   let v, f, g = setup in
-  let g = order_attrib g in
   let v = List.map (tag_groups_vdcl g) v in
   let f = List.map (tag_groups_func g) f in
   let g = List.map (tag_groups_grp g) g in
   let turns = List.map (tag_groups_func g) turns in
   let setup = v, f, g in
   let program = setup, turns in
+  program
+
+let build_cast (program : Types.program) =
+  let setup, turns = program in
+  let v, f, g = setup in
+  let g = order_attrib g in
+  let setup = v, f, g in
+  let program = setup, turns in
+  let program = tag_program program in
   program
 
 (**

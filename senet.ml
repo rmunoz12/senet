@@ -41,10 +41,10 @@ let _ =
                in ignore(checked_program);
                   print_string ("Success!\n")
       | Groupeval -> let checked_program = Sast.check_program program in
-                     let checked_program = Cast.group_eval checked_program in
+                     let checked_program = Cast.build_cast checked_program in
                      print_string (Cast.string_of_program checked_program)
       | Compile -> let checked_program = Sast.check_program program in
-                   Compile.translate (Cast.group_eval checked_program)
+                   Compile.translate (Cast.build_cast checked_program)
 
   with Scanner.LexError(msg,lb) ->
           print_string (string_of_error msg lb); print_newline ()
