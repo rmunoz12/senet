@@ -167,79 +167,127 @@ let tag_program program =
   let turns = List.map (tag_groups_func g) turns in
   (v, f, g), turns
 
-(* let rec fix_ll scope = function
-    Elems(el) ->
-      let el = List.map (fix_ll_expr scope) el in
-      let ll_count = List.map count_ll_in_scope scope.variables
-      let new_vd = {vname = "__ll__"; vtype = t; vinit = None}
-      scope.variables <-
-  (* | List(ll_list) ->  *)
-  (* | EmptyList ->  *)
+(* let ll_name = function
+    Elems(ll, name) -> name
+  | List(ll_list, name) -> name
+  | EmptyList -> "__ll__emptylist" *)
 
-and fix_ll_expr scope = function
-    ListLiteral(ll) ->
-      let ll = List.map (fix_ll scope) ll in
-      ListLiteral(ll)
+let rec get_ll_type = function
+    Elems(el, _) ->
+      let _, typ = List.hd el in
+      typ
+  | List(ll_list, _) -> get_ll_type (List.hd ll_list)
+  | EmptyList -> List_t(Void)
+
+let rec fix_ll vars = function
+    Elems(el, name) ->
+      let vars = List.fold_left fix_ll_expr vars el in
+      let _, typ = List.hd el in
+      let typ = List_t(typ) in
+      let vdcl =
+        { vname = name;
+          vtype = typ;
+          vinit = Some(ListLiteral(Elems(el, name)), typ) }
+      in
+      vdcl :: vars
+  | List(ll_list, name) ->
+      let vars = List.fold_left fix_ll vars ll_list in
+      let typ = get_ll_type (List.hd ll_list) in
+      let vdcl =
+        { vname = name;
+          vtype = typ;
+          vinit = Some(ListLiteral(List(ll_list, name)), typ) }
+      in
+      vdcl :: vars
+  | EmptyList -> vars
+
+and fix_ll_expr vars (expr_detail, expr_typ) = match expr_detail with
+    ListLiteral(ll) -> fix_ll vars ll
   | Binop(e1, op, e2) ->
-      let e1 = fix_ll_expr scope e1 in
-      let e2 = fix_ll_expr scope e2 in
-      Binop(e1, op , e2)
-  | Assign(fe, e) -> Assign(fe, fix_ll_expr scope e)
-  | Call(vd_opt, fd, el) -> Call(vd_opt, fd, List.map (fix_ll_expr scope) el)
-  | Element(e1, e2) ->  Element(fix_ll_expr scope e1, fix_ll_expr scope e2)
-  | Remove(fe1, fe2, ll) -> Remove(fe1, fe2, fix_ll_expr scope ll)
-  | Place(fe1, fe2, ll) -> Place(fe1, fe2, fix_ll_expr scope ll)
-  | Uminus(e) -> Uminus(fix_ll_expr scope e)
-  | Not(e) -> Not(fix_ll_expr scope e)
-(*   | IntLiteral(i) ->
-  | StrLiteral(s) ->
-  | BoolLiteral(bl) ->
-  | VoidLiteral ->
-  | Field(fe) ->
-  | Noexpr ->  *)
-  | _ as x -> x
+      let vars = fix_ll_expr vars e1 in
+      let vars = fix_ll_expr vars e2 in
+      vars
+  | Assign(fe, e) -> fix_ll_expr vars e
+  | Call(vd_opt, fd, el) -> List.fold_left fix_ll_expr vars el
+  | Element(e1, e2) ->
+      let vars = fix_ll_expr vars e1 in
+      let vars = fix_ll_expr vars e2 in
+      vars
+  | Remove(fe1, fe2, ll) -> fix_ll vars ll
+  | Place(fe1, fe2, ll) -> fix_ll vars ll
+  | Uminus(e) -> fix_ll_expr vars e
+  | Not(e) -> fix_ll_expr vars e
+  | _ -> vars
 
-
-
-let rec fix_ll_stmt scope = function
-    Block(scope, sl) -> Block(scope, List.map (fix_ll_stmt scope) sl)
-  | Expression(e) -> Expression(fix_ll_expr scope e)
-  | Return(e) -> Return(fix_ll_expr scope e)
-  | Pass(fd, e) -> Pass(fd, fix_ll_expr scope e)
+let rec fix_ll_stmt vars = function
+    Block(_, sl) -> List.fold_left fix_ll_stmt vars sl
+  | Expression(e) -> fix_ll_expr vars e
+  | Return(e) -> fix_ll_expr vars e
+  | Pass(fd, e) -> fix_ll_expr vars e
   | If(e, s1, s2) ->
-      let e = fix_ll_expr scope e in
-      let s1 = List.map (fix_ll_stmt scope) s1 in
-      let s2 = List.map (fix_ll_stmt scope) s2 in
-      If(e, s1, s2)
+      let vars = fix_ll_expr vars e in
+      let vars = fix_ll_stmt vars s1 in
+      let vars = fix_ll_stmt vars s2 in
+      vars
   | For(vd, el, s) ->
-      let el = List.map (fix_ll_expr scope) el in
-      let s = fix_ll_stmt scope s in
-      For(vd, el, s)
-  | While(vd, e, s) ->
-      let e = fix_ll_expr scope e in
-      let s = fix_ll_stmt scope s in
-      While(vd, e, s)
-  | _ as x -> x
+      let vars = List.fold_left fix_ll_expr vars el in
+      let vars = fix_ll_stmt vars s in
+      vars
+  | While(e, s) ->
+      let vars = fix_ll_expr vars e in
+      let vars = fix_ll_stmt vars s in
+      vars
+  | _ -> vars
 
-let fix_ll_fdcl scope = function
-    BasicFunc(f) -> {f with body = List.map (fix_ll_stmt f.locals) f.body}
-  | AssertFunc(f) -> {f with abody = List.map (fix_ll_stmt f.alocals) f.abody}
+let fix_ll_vdcl vars v = match v.vinit with
+    None -> vars
+  | Some(e) -> (match e with
+      ListLiteral(ll), _ ->
+        let vdcl, vars = match ll with
+            Elems(el, name) ->
+              { v with vname = name }, vars
+          | List(ll_list, name) ->
+              let vars = List.fold_left fix_ll vars ll_list in
+              { v with vname = name; }, vars
+          | EmptyList ->
+              v, vars
+        in
+        vdcl :: vars
+    | _ -> vars)
+
+let fix_ll_vdcls vars =
+  let new_vars = List.fold_left fix_ll_vdcl [] vars in
+  new_vars @ vars
+
+let fix_ll_fdcl = function
+    BasicFunc(f) ->
+      let new_vars = List.fold_left fix_ll_vdcl [] f.locals in
+      let new_vars = List.fold_left fix_ll_stmt new_vars f.body in
+      BasicFunc({ f with locals = new_vars @ f.locals })
+  | AssertFunc(f) ->
+      let new_vars = List.fold_left fix_ll_vdcl [] f.alocals in
+      let new_vars = List.fold_left fix_ll_stmt new_vars f.abody in
+      AssertFunc({ f with alocals = new_vars @ f.alocals })
+
+let fix_ll_gdcl g =
+  let new_vars = List.fold_left fix_ll_vdcl [] g.attributes in
+  let g = { g with attributes = new_vars @ g.attributes } in
+  let m = List.map fix_ll_fdcl g.methods in
+  { g with methods = m }
 
 let correct_listlit program =
-  let scope =
-    { parent = None;
-      variables = [];
-      functions = [];
-      groups = []];
-      turns = [] } in
   let (v, f, g), turns = program in
-  let f = List.map fix_ll_fdcl scope f in
-  (v, f, g), turns *)
+  let v = fix_ll_vdcls v in
+  let f = List.map fix_ll_fdcl f in
+  let g = List.map fix_ll_gdcl g in
+  let turns = List.map fix_ll_fdcl turns in
+  (v, f, g), turns
 
 let build_cast (program : Types.program) =
   let (v, f, g), turns = program in
   let g = order_attrib g in
   let program = tag_program ((v, f, g), turns) in
+  let program = correct_listlit program in
   program
 
 (**

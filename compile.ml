@@ -19,6 +19,16 @@ let senet_header =
   "  strcat(temp, s2);\n" ^
   "  return temp;\n" ^
   "}\n" ^
+    (* "\n" ^
+  "char *string_of_sen_int_list(int x[], int n) {\n" ^
+  "  char *ret = \"\";" ^
+  "  for (int i = 0; i < n; ++i) {\n" ^
+  "    if (i > 0) {\n" ^
+  "      ret = SENET_STR_CONCAT(ret, \", \");\n" ^
+  "    }\n" ^
+  "    ret = SENET_STR_CONCAT(ret, x[i]);\n" ^
+  "  return ret;\n" ^
+  "}\n" ^ *)
     "\n" ^
   "void (*CUR_TURN)();" ^ "\n" ^
   "int PLAYER_ON_MOVE;" ^ "\n" ^
@@ -45,7 +55,7 @@ let id_type_to_c = function
   |  Bool -> "bool "
   |  Str -> "char* "
   |  Void -> "void "
-  (* | List_t(ft) -> *)
+  | List_t(typ) -> "struct Sen_node "
   | Group(s, _) -> "struct " ^ prefix_name s ^ " "
 
 let rec field_to_c = function
@@ -71,47 +81,58 @@ let function_group_method = function
     BasicFunc(f) -> f.group_method
   | AssertFunc(f) -> f.a_group_method
 
-let rec printf var = match var with
-  | [] -> ""
-  | [el_string, typ] ->
-  let arg =
-    (match typ with
-       Bool -> "\"%s\", " ^ el_string ^ " ? \"true\" : \"false\""
-     | Int -> "\"%d\", " ^ el_string
-     | Str -> "\"%s\", " ^ el_string
-     | Group(x, _) ->
-        prefix_name x ^ "_" ^ prefix_name "__repr__" ^
-        "((struct " ^ prefix_name x  ^ "*) "  ^ "&" ^ el_string ^ ")"
-    | Void -> "\"None\"")
-  in
-  "printf(" ^ arg ^ ")"
-  | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr)
+let rec printf (detail, typ) =
+  let e_c_string = expression_to_c detail in
+  match typ with
+     Bool -> "printf(\"%s\", " ^ e_c_string ^ " ? \"true\" : \"false\""  ^ ")"
+   | Int -> "printf(\"%d\", " ^ e_c_string  ^ ")"
+   | Str -> "printf(\"%s\", " ^ e_c_string  ^ ")"
+   | Group(x, _) ->
+      "printf(" ^ prefix_name x ^ "_" ^ prefix_name "__repr__" ^
+      "((struct " ^ prefix_name x  ^ "*) "  ^ "&" ^ e_c_string ^ ")" ^ ")"
+  | Void -> "printf(" ^"\"None\""  ^ ")"
+  | List_t(l_typ) ->
+      "printf([); " ^
+      (* (match detail with
+          ListLit -> ) *)
+      "string_of_sen_int_list(" ^ expression_to_c detail ^ ", " ^ "3" ^ ")" ^
+      "printf(]); "
+  (* in
+  "printf(" ^ arg ^ ")" *)
+  (* | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr) *)
 
-let formal_to_c v =
+and formal_to_c v =
   id_type_to_c v.vtype ^ prefix_name v.vname
 
-let function_group = function
+and function_group = function
     BasicFunc(f) -> f.group_method
   | AssertFunc(f) -> f.a_group_method
 
-let rec var_decl_to_c v =
+and var_decl_to_c v =
   id_type_to_c v.vtype ^
   prefix_name v.vname ^
-  (match v.vinit with
-      None -> ""
-    | Some(e) ->
+  (match v.vtype, v.vinit with
+      _, None -> ""
+    | List_t(_), Some(e) ->
+        let detail, _ = e in
+        let name = expression_to_c detail in
+        if String.sub name 0 6 = "__ll__" then
+          "make_sen_node()"
+        else
+          name
+    | _, Some(e) ->
         let detail, typ = e in
         " = " ^ expression_to_c detail) ^ ";"
 
-and list_lit_to_c ll = function
-    Elems(el, name) -> ""
+and list_lit_to_c = function
+    Elems(el, name) -> name
   (* | List(ll_list, name) -> *)
-  | EmptyList -> ""
+  (* | EmptyList -> "" *)
 
 and expression_to_c = function
     IntLiteral(i) -> string_of_int i
   | StrLiteral(s) -> Ast.escaped_string s
-  (* | ListLiteral(ll) -> list_lit_to_c ll *)
+  | ListLiteral(ll) -> list_lit_to_c ll
   | BoolLiteral(b) ->
         (match b with True -> "true" | False -> "false")
   | VoidLiteral -> "SENET_NONE"
@@ -179,8 +200,11 @@ and expression_to_c = function
       let fname = function_call_to_c fd in
       let gname = function_group_method fd in
       if fname = "print" then
-        let res = List.map (fun (detail, typ) -> expression_to_c detail, typ) el in
-        printf res
+        (* print takes one argument, discard remainder *)
+        let e = List.hd el in
+        (* let e_c_string = expression_to_c e in *)
+        (* printf e e_c_string *)
+        printf e
       else
       let class_prefix = function_group fd in
       let class_prefix =
