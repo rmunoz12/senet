@@ -1133,7 +1133,11 @@ let rec check_group env g =
         (match par with
             Grp(p) -> Some(p)
           | _ -> raise (SemError ("Parent is not a group")))
-    | None -> None
+    | None ->
+        if g.Ast.gname = "Object" then
+          None
+        else
+          raise (SemError "Must inherit from Object or another group")
   in
   let par_actuals = match g.Ast.par_actuals with
       Some(el) -> Some(List.map (check_expr env) el)
@@ -1236,7 +1240,7 @@ let check_program (program : Ast.program) =
     { parent = None ;
       variables = Stdlib.vars;
       functions = Stdlib.funcs;
-      groups = [];
+      groups = Stdlib.grps;
       turns = [] } in
   let env =
     { scope = symbols;
