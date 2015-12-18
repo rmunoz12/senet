@@ -15,7 +15,6 @@ type t =
 
 and list_lit =
     Elems of expression list * string
-  | List of list_lit list * string
   | EmptyList
 
 and var_decl = {

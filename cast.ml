@@ -53,7 +53,6 @@ let rec tag_groups_field g = function
 
 and tag_groups_listlit g = function
     Elems(el, name) -> Elems(List.map (tag_groups_expr g) el, name)
-  | List(ll_list, name) -> List(List.map (tag_groups_listlit g) ll_list, name)
   | EmptyList -> EmptyList
 
 and tag_groups_expr g e =
@@ -171,7 +170,6 @@ let rec get_ll_type = function
     Elems(el, _) ->
       let _, typ = List.hd el in
       typ
-  | List(ll_list, _) -> get_ll_type (List.hd ll_list)
   | EmptyList -> List_t(Void)
 
 let fix_ll_lit_expr vars e =
@@ -197,15 +195,6 @@ let rec fix_ll vars = function
         { vname = name;
           vtype = typ;
           vinit = Some(ListLiteral(Elems(el, name)), typ) }
-      in
-      vdcl :: vars
-  | List(ll_list, name) ->
-      let vars = List.fold_left fix_ll vars ll_list in
-      let typ = get_ll_type (List.hd ll_list) in
-      let vdcl =
-        { vname = name;
-          vtype = typ;
-          vinit = Some(ListLiteral(List(ll_list, name)), typ) }
       in
       vdcl :: vars
   | EmptyList -> vars
@@ -256,9 +245,6 @@ let fix_ll_vdcl vars v = match v.vinit with
             Elems(el, name) ->
               let vars = List.fold_left fix_ll_lit_expr vars el in
               [{ v with vname = name }], vars
-          | List(ll_list, name) ->
-              let vars = List.fold_left fix_ll vars ll_list in
-              [{ v with vname = name; }], vars
           | EmptyList ->
               [], vars
         in
@@ -333,8 +319,6 @@ let rec string_of_list_lit = function
     EmptyList -> "[]"
   | Elems(e, n) ->
         "[" ^ String.concat ", " (List.map string_of_expression e) ^ "]"
-  | List(l, n) ->
-        "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
 
 and string_of_expr_detail = function
     IntLiteral(l, name) -> string_of_int l

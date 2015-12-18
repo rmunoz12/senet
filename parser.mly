@@ -219,11 +219,6 @@ actuals_list:
 list_lit:
     LBRACKET RBRACKET                  { EmptyList }
   | LBRACKET list_elem RBRACKET        { Elems(List.rev $2) }
-  | LBRACKET list_of_list_lit RBRACKET { List(List.rev $2) }
-
-list_of_list_lit:
-    list_lit                        { [$1] }
-  | list_of_list_lit COMMA list_lit { $3 :: $1 }
 
 list_elem:
     INTLITERAL                 { [IntElem($1)] }

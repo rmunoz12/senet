@@ -1,14 +1,6 @@
 open Types
 open Sast
 
-(* <<<<<<< HEAD
-
-let id_type_to_c ft = match ft with
-  |  Int -> "Sen_int *"
-  |  Bool -> "Sen_bool *"
-  |  Str -> "Sen_str *"
-  |  _ -> "void"
-======= *)
 let prefix_name n =
   "snt_" ^ n
 
@@ -58,7 +50,6 @@ let id_type_to_c = function
   | Void -> "void "
   | List_t(typ) -> "struct Sen_list "
   | Group(s, _) -> "struct " ^ prefix_name s ^ " "
-(* >>>>>>> de73297d967f518e7c463fb57cac4913f53340a8 *)
 
 let rec field_to_c = function
     Var(v) -> prefix_name v.vname
@@ -100,7 +91,6 @@ let rec printf (detail, typ) =
     in
     match l_typ with
         Group(x, g) ->
-          (* let *)
           "printGroupList(&" ^ list_id ^ ", " ^
           prefix_name x ^ "_" ^ prefix_name "__repr__" ^ ")"
       | _ ->
@@ -134,7 +124,6 @@ and push_ll_to_new_list list_id = function
         ", (void *) &" ^ ll_elem_to_c detail ^ ")"
       in
       String.concat ";\n" (List.map push_elem_to_new_list el)
-  (* | List(ll_list, name) -> *)
   | EmptyList -> ""
 
 and push_to_new_list list_id (det, typ) = match det with
@@ -156,10 +145,7 @@ and var_decl_to_c v = match v.vtype, v.vinit with
         ";\n" ^
         "new_Sen_list(&" ^ prefix_name name ^
         ", sizeof(" ^ id_type_to_c typ ^ "));\n" ^
-        push_to_new_list name e ^ ";" (* ^
-        id_type_to_c v.vtype ^ ";" *) (* ^
-        prefix_name v.vname ^
-        " = " ^ prefix_name name ^ ";" *)
+        push_to_new_list name e ^ ";"
       else
         " = " ^ prefix_name name ^ ";")
   | _, Some(e) ->
@@ -169,8 +155,7 @@ and var_decl_to_c v = match v.vtype, v.vinit with
       " = " ^ expression_to_c detail ^ ";"
 
 and list_lit_to_c = function
-    Elems(el, name) -> (* prefix_name *) name
-  (* | List(ll_list, name) -> *)
+    Elems(el, name) -> name
   | EmptyList -> "SEN_EMPTY_LIST"
 
 and expression_to_c = function

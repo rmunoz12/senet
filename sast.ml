@@ -364,12 +364,6 @@ let rec verify_list_of_list_type env typ = function
       else
         raise (SemError ("List elements are not all of same type: " ^
                          string_of_t typ))
-  | (List(ll, name), b) :: rest ->
-      if b = typ then
-        verify_list_of_list_type env typ rest
-      else
-        raise (SemError ("List elements are not all of same type: " ^
-                         string_of_t typ))
   | (EmptyList, b) :: rest ->
       verify_list_of_list_type env typ rest
 
@@ -380,13 +374,6 @@ let rec check_listlit env = function
       let typ = verify_elems_list_type env typ el in
       let name = create_ll_name env.scope in
       Elems(el,name), List_t(typ)
-  | Ast.List(ll_list) ->
-      let list_of_list_with_typ = List.map (check_listlit env) ll_list in
-      let first_list, typ = List.hd list_of_list_with_typ in
-      let typ = verify_list_of_list_type env typ list_of_list_with_typ in
-      let list_of_list = List.map (fun (l, _) -> l) list_of_list_with_typ in
-      let name = create_ll_name env.scope in
-      List(list_of_list, name), List_t(typ)
   | Ast.EmptyList ->
       EmptyList, List_t(Void)
 
