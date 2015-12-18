@@ -52,23 +52,24 @@ Sen_array *copy_array (Sen_array *);
 Sen_object *access_array (Sen_array *, Sen_int *);
 Sen_array *concat_array (Sen_array *, Sen_array *);
 
-#define CONCAT_ARRAY(x,y) ({\
-    __auto_type __temp__ = x;\
-    __temp__->classp->tablep->concat((Sen_array *)__temp__, (Sen_array *)y);\
+#define CONCAT_ARRAY(x,y) ({                                            \
+            __auto_type __temp__ = x;                                   \
+            __temp__->classp->tablep->concat((Sen_array *)temp, (Sen_array *)y); \
         })
 
 //#define CONSTRUCT_ARRAY(x) ((Sen_array *) construct_array(x))
-#define CONSTRUCT_ARRAY(array, length) ({                  \
-            __auto_type input_arr = array;                         \
-            __auto_type __temp_arr__ = construct_array(length);    \
-            __temp_arr__->len=length;                              \
-            for (int i=0; i<length; i++) {                          \
-                __auto_type __temp_elem__ = input_arr[i];           \
-                __temp_arr__->arr[i] = (Sen_object *) COPY(__temp_elem__);\
-                if (!__temp_elem__->bound) {                        \
-                    DESTRUCT(__temp_elem__);                        \
-                }                                                   \
-            }                                                       \
-            __temp_arr__;                                           \
+#define CONSTRUCT_ARRAY(array, length) ({                               \
+            __auto_type input_arr = array;                              \
+            __auto_type __temp_arr__ = construct_array(length);         \
+            __temp_arr__->len=length;                                   \
+            for (int i=0; i<length; i++) {                              \
+                __auto_type __temp_elem__ = input_arr[i];               \
+                __temp_arr__->arr[i] = (Sen_object *) COPY(input_arr[i]);         \
+                __temp_arr__->bound = true;\
+                if (!__temp_elem__->bound) {                            \
+                    DESTRUCT(__temp_elem__);                            \
+                }                                                       \
+            }                                                           \
+            __temp_arr__;                                               \
         })
 #endif
