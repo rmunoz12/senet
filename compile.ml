@@ -26,13 +26,13 @@ let senet_header =
   "}\n" ^
     "\n" ^
   "void (*CUR_TURN)();" ^ "\n" ^
-  "int PLAYER_ON_MOVE;" ^ "\n" ^
+  "int snt_PLAYER_ON_MOVE;" ^ "\n" ^
     "\n"
 
 let senet_footer =
   "int main() {\n" ^
   "  CUR_TURN = &snt_begin;\n" ^
-  "  PLAYER_ON_MOVE = 0;\n" ^
+  "  snt_PLAYER_ON_MOVE = 0;\n" ^
   "  while (true) {\n" ^
   "    CUR_TURN();\n" ^
   "  }\n" ^
@@ -242,7 +242,7 @@ let rec statement_to_c = function
   | End -> "exit(0);"
   | Pass(e,s) -> let detaill, _ = s in
                      "CUR_TURN = &" ^ prefix_name (function_call_to_c e) ^ ";\n" ^
-                     "PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";"
+                     "snt_PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";"
   | While(e, s) ->
       let detail, _ = e in
       "while (" ^ expression_to_c detail ^ ") {\n" ^

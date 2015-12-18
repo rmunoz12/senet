@@ -3,7 +3,7 @@
 @turns {
 
 func void begin() {
-    if (False) {
+    if (PLAYER_ON_MOVE == 1) {
         end;
     } else {
         print("passing\n");
@@ -12,7 +12,7 @@ func void begin() {
 }
 
 func void ending() {
-    end;
+    pass (begin, 1);
 }
 
 }
