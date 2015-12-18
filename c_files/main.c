@@ -1,7 +1,6 @@
 #include "headers/all_headers.h"
 
 int main() {
-    /*
     __auto_type x = CONSTRUCT_INT(100);
     x->bound = true;
     __auto_type f = CONSTRUCT_INT(50);
@@ -24,7 +23,6 @@ int main() {
     printf("%d %d\n", x->bound, f->bound);
     DESTRUCT(x);
     DESTRUCT(f);
-    */
     __auto_type s = CONSTRUCT_STRING("tttestingggg ");
     s->bound=true;
     __auto_type ss = CONSTRUCT_STRING("hooray!!\n");
@@ -41,12 +39,29 @@ int main() {
     Sen_array *arr = CONSTRUCT_ARRAY(((Sen_int*[]){CONSTRUCT_INT(1900), CONSTRUCT_INT(50)}), 2);
     arr->bound = true;
     //Sen_array *arr = CONSTRUCT_ARRAY(arr_, 2);
+    __auto_type xx = CONSTRUCT_INT(123);
+    xx->bound=true;
+    __auto_type yy = COPY(xx);
+    PRINT(yy);
+    PRINT(xx);
+    DESTRUCT(xx);
     printf("%d %d asdsad\n", ((Sen_int *)((arr->arr)[0]))->val, arr->len);
+    printf("OKAY\n");
+    __auto_type xxx = arr->arr[1];
+    PRINT(((Sen_int *)xxx));
+    printf("\nOKAY\n");
+    PRINT(xxx);
+    printf("\nOKAY\n");
+
+    printf("OKAY\n");
     PRINT((arr->arr)[1]);
+    printf("OKAY\n");
+    //DESTRUCT(xxx);
     Sen_board *board = CONSTRUCT_BOARD(arr);
     printf("%d %d\n", ((Sen_int *)((arr->arr)[0]))->val, arr->len);
-    DESTRUCT(arr);
-    printf("OKAY\n");
+    //DESTRUCT(arr);
+    printf("OKAYFINALS\n");
+
     //DESTRUCT(board);
     //printf("OKAY\n");
     return 0;

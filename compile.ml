@@ -2,14 +2,6 @@ open Types
 open Sast
 
 (* <<<<<<< HEAD
-let setup_to_c s =
-    "#include <stdbool.h>" ^ "\n" ^
-    "#include <stdio.h>" ^ "\n" ^
-    "#include <stdlib.h>" ^ "\n" ^
-       "\n" ^
-    "void (*CUR_TURN)();" ^ "\n" ^
-    "int PLAYER_ON_MOVE;" ^ "\n" ^
-    "" ^ "\n"
 
 let id_type_to_c ft = match ft with
   |  Int -> "Sen_int *"
@@ -21,16 +13,13 @@ let prefix_name n =
   "snt_" ^ n
 
 let senet_header =
-  "#include <stdbool.h>" ^ "\n" ^
-  "#include <stdio.h>" ^ "\n" ^
-  "#include <stdlib.h>" ^ "\n" ^
-  "#include <string.h>\n" ^
+  "#include \"c_files/headers/all_headers.h\"" ^"\n" ^
      "\n" ^
   "struct SENET_NONE {\n" ^
   "  } SENET_NONE;\n" ^
      "\n" ^
   "char *SENET_STR_CONCAT(char* s1, char* s2) {\n" ^
-  "  char *temp = (char *) malloc(strlen(s1)+ strlen(s2) +1);\n" ^
+  "  char *temp = (char * ) malloc(strlen(s1)+ strlen(s2) +1);\n" ^
   "  strcpy(temp, s1);\n" ^
   "  strcat(temp, s2);\n" ^
   "  return temp;\n" ^
@@ -103,6 +92,17 @@ let rec printf var = match var with
   in
   "printf(" ^ arg ^ ")"
   | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr)
+
+(*
+  | [] -> ""
+  | [el_string, typ] ->
+  let arg =
+    | Void -> "printf(\"None\")"
+    | _ -> "PRINT(" ^ el_string ^ ")"
+  in
+  arg ^ ";\n"
+  | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr)
+*)
 
 (* <<<<<<< HEAD
 let rec expression_to_c = function

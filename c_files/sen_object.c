@@ -27,6 +27,7 @@ Sen_object_vtable Sen_object_vtable_ = {
 };
 
 Sen_object_class Sen_object_class_ = {
+    NULL,
     &Sen_object_vtable_
 };
 
