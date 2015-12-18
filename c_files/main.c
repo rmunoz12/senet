@@ -1,7 +1,6 @@
 #include "headers/all_headers.h"
 
 int main() {
-    /*
     __auto_type x = CONSTRUCT_INT(100);
     x->bound = true;
     __auto_type f = CONSTRUCT_INT(50);
@@ -24,7 +23,6 @@ int main() {
     printf("%d %d\n", x->bound, f->bound);
     DESTRUCT(x);
     DESTRUCT(f);
-    */
     __auto_type s = CONSTRUCT_STRING("tttestingggg ");
     s->bound=true;
     __auto_type ss = CONSTRUCT_STRING("hooray!!\n");
@@ -53,16 +51,17 @@ int main() {
     PRINT(((Sen_int *)xxx));
     printf("\nOKAY\n");
     PRINT(xxx);
-    printf("OKAY\n");
-   /*
+    printf("\nOKAY\n");
+
     printf("OKAY\n");
     PRINT((arr->arr)[1]);
     printf("OKAY\n");
+    //DESTRUCT(xxx);
     Sen_board *board = CONSTRUCT_BOARD(arr);
     printf("%d %d\n", ((Sen_int *)((arr->arr)[0]))->val, arr->len);
-    DESTRUCT(arr);
-    printf("OKAY\n");
-    */
+    //DESTRUCT(arr);
+    printf("OKAYFINALS\n");
+
     //DESTRUCT(board);
     //printf("OKAY\n");
     return 0;

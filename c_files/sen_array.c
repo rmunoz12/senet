@@ -38,12 +38,13 @@ void destruct_array(Sen_array *self) {
 Sen_array *copy_array(Sen_array *other) {
     Sen_array *ret = construct_array(other->len);
     for (int i=0; i<ret->len; i++) {
-        printf("%d %d\n", other->len, ((Sen_int *)(other->arr[i]))->val);
-        printf("OKAY1\n");
+        //printf("%d %d\n", other->len, ((Sen_int *)(other->arr[i]))->val);
+        //printf("OKAY1\n");
         ret->arr[i] = COPY(((other->arr)[i]));
-        printf("OKAY2\n");
+        ret->arr[i]->bound=true;
+        //printf("OKAY2\n");
     }
-    printf("OKAY1\n");
+    //printf("OKAY1\n");
     return ret;
 }
 
@@ -71,6 +72,3 @@ Sen_array_class Sen_array_class_ = {
     &Sen_object_class_,
     &Sen_array_vtable_,
 };
-
-
-

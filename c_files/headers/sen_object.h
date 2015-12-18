@@ -23,6 +23,7 @@ struct Sen_object_vtable {
 //static Sen_object_vtable _Sen_object_vtable;
 
 struct Sen_object_class {
+    void * superp;
     Sen_object_vtable *tablep;
 };
 
@@ -55,5 +56,4 @@ Sen_object * copy_object (Sen_object *);
             typeof(self) __temp__ = self;                               \
             (typeof (__temp__)) __temp__->classp->tablep->copy(__temp__); \
         })
-
 #endif
