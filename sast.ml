@@ -312,9 +312,21 @@ let rec check_field env actuals = function
         | _ ->
             raise (SemError("Parent is either a function or variable, not a group")))
 
+let create_ll_name scope =
+  scope.ll_count <- scope.ll_count + 1;
+  "__ll__" ^ string_of_int scope.ll_count
+
+let create_elem_name scope =
+  scope.elem_count <- scope.elem_count + 1;
+  "__elem__" ^ string_of_int scope.elem_count
+
 let rec check_single_elem env = function
-    Ast.IntElem(i) -> IntLiteral(i), Int
-  | Ast.StrElem(s) -> StrLiteral(s), Str
+    Ast.IntElem(i) ->
+      let name = create_elem_name env.scope in
+      IntLiteral(i, name), Int
+  | Ast.StrElem(s) ->
+      let name = create_elem_name env.scope in
+      StrLiteral(s, name), Str
   | Ast.IdElem(s) ->
       let vdecl = try
         find_variable env.scope s
@@ -324,9 +336,10 @@ let rec check_single_elem env = function
       let typ = vdecl.vtype in
       Field(Var(vdecl)), typ
   | Ast.BoolElem(b) ->
+      let name = create_elem_name env.scope in
       (match b with
-          Ast.True -> BoolLiteral(True), Bool
-        | Ast.False -> BoolLiteral(False), Bool)
+          Ast.True -> BoolLiteral(True, name), Bool
+        | Ast.False -> BoolLiteral(False, name), Bool)
 
 let rec check_elems_list env = function
     [] -> []
@@ -359,10 +372,6 @@ let rec verify_list_of_list_type env typ = function
                          string_of_t typ))
   | (EmptyList, b) :: rest ->
       verify_list_of_list_type env typ rest
-
-let create_ll_name scope =
-  scope.ll_count <- scope.ll_count + 1;
-  "__ll__" ^ string_of_int scope.ll_count
 
 let rec check_listlit env = function
     Ast.Elems(elems_list) ->
@@ -474,15 +483,15 @@ let verify_args fdcl formals actuals =
     verify_args_helper f_typ a_typ true
 
 let rec check_expr env = function
-    Ast.IntLiteral(i) -> IntLiteral(i), Int
-  | Ast.StrLiteral(s) -> StrLiteral(s), Str
+    Ast.IntLiteral(i) -> IntLiteral(i, ""), Int
+  | Ast.StrLiteral(s) -> StrLiteral(s, ""), Str
   | Ast.ListLiteral(ll) ->
       let l, typ = check_listlit env ll in
       ListLiteral(l), typ
   | Ast.BoolLiteral(b) ->
       (match b with
-          Ast.True -> BoolLiteral(True), Bool
-        | Ast.False -> BoolLiteral(False), Bool)
+          Ast.True -> BoolLiteral(True, ""), Bool
+        | Ast.False -> BoolLiteral(False, ""), Bool)
   | Ast.VoidLiteral -> VoidLiteral, Void
   | Ast.Field(fe) ->
       let f, typ = check_field env [] fe in
@@ -635,7 +644,8 @@ let rec check_stmt env = function
           functions = [];
           groups = [];
           turns = [];
-          ll_count = 0 } in
+          ll_count = 0;
+          elem_count = 0 } in
       let env' =
         { env with scope = scope'; } in
       let sl = List.map (fun s -> check_stmt env' s) sl in
@@ -704,7 +714,8 @@ let rec check_stmt env = function
           functions = [];
           groups = [];
           turns = [];
-          ll_count = 0 } in
+          ll_count = 0;
+          elem_count = 0 } in
         let env' = { env with scope = scope'; in_loop = true } in
         scope'.variables <- decl :: scope'.variables;
         For(decl, el, check_stmt env' s)
@@ -716,7 +727,8 @@ let rec check_stmt env = function
           functions = [];
           groups = [];
           turns = [];
-          ll_count = 0 } in
+          ll_count = 0;
+          elem_count = 0 } in
       let env' = { env with scope = scope'; in_loop = true } in
       require_bool e "While loop predicate must be Boolean";
       While(e, check_stmt env' s)
@@ -835,7 +847,8 @@ let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
         functions = [];
         groups = [];
         turns = [];
-        ll_count = 0 } in
+        ll_count = 0;
+        elem_count = 0 } in
     let env' =
       { env with scope = scope';
         return_type = id_type_to_t f.Ast.ftype; } in
@@ -883,14 +896,15 @@ let check_assert_func env in_turn_section (f : Ast.assert_decl) =
       functions = [];
       groups = [];
       turns = [];
-      ll_count = 0 } in
+      ll_count = 0;
+      elem_count = 0 } in
   let env' =
     { env with scope = scope';
       return_type = Bool; } in
   let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
   let ll = List.map (fun dcl -> check_vdcl env' dcl) f.Ast.locals in
   let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
-  let ret_stmt = Return(BoolLiteral(True), Bool) in
+  let ret_stmt = Return(BoolLiteral(True, ""), Bool) in
   let sl = ret_stmt :: List.rev sl in
   let sl = List. rev sl in
   let gname = (match env.partial_group_info with None -> "" | Some(g) -> g.group_name) in
@@ -1076,7 +1090,7 @@ let check_for_repr env gdcl =
     let repr =
       if built_in then
         let s = "<Group " ^ gdcl.gname ^ " instance>" in
-        let body = Return(StrLiteral(s), Str) in
+        let body = Return(StrLiteral(s, ""), Str) in
         BasicFunc({ ftype = Str;
                     fname = "__repr__";
                     formals = [];
@@ -1092,7 +1106,7 @@ let check_for_repr env gdcl =
     { gdcl with methods = repr :: gdcl.methods }
   with Not_found ->
     let s = "<Group " ^ gdcl.gname ^ " instance>" in
-    let body = Return(StrLiteral(s), Str) in
+    let body = Return(StrLiteral(s, ""), Str) in
     let repr =
       { ftype = Str;
         fname = "__repr__";
@@ -1124,7 +1138,8 @@ let rec check_group env g =
         functions = [];
         groups = [];
         turns = [];
-        ll_count = 0 } in
+        ll_count = 0;
+        elem_count = 0 } in
   let partial_scope = {scope' with parent = None} in
   let info =
     { group_name = g.Ast.gname;
@@ -1218,7 +1233,8 @@ let check_program (program : Ast.program) =
       functions = Stdlib.funcs;
       groups = [];
       turns = [];
-      ll_count = 0 } in
+      ll_count = 0;
+      elem_count = 0 } in
   let env =
     { scope = symbols;
       return_type = Void;

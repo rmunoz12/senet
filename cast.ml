@@ -10,12 +10,6 @@
 open Types
 open Sast
 
-type counter = {
-  mutable count : int
-}
-
-let literals = { count = 0 }
-
 let rec get_attributes g = match g.extends with
     None -> g.attributes
   | Some(par) ->
@@ -186,23 +180,17 @@ let fix_ll_lit_expr vars e =
     { vname = ""; vtype = typ; vinit = Some(e) }
   in
   match detail with
-    IntLiteral(i) ->
-      literals.count <- literals.count + 1;
-      { v_base with vname = "__elem__" ^ string_of_int literals.count } :: vars
-  | StrLiteral(s) ->
-      literals.count <- literals.count + 1;
-      { v_base with vname = "__elem__" ^ string_of_int literals.count } :: vars
+    IntLiteral(i, name) -> { v_base with vname = name } :: vars
+  | StrLiteral(s, name) -> { v_base with vname = name } :: vars
   (* | ListLiteral(ll) ->
       literals.count <- literals.count + 1;
       { v_base with vname = "__elem__" ^ literals.count; vtype = Int } :: vars *)
-  | BoolLiteral(bl) ->
-      literals.count <- literals.count + 1;
-      { v_base with vname = "__elem__" ^ string_of_int literals.count } :: vars
+  | BoolLiteral(bl, name) -> { v_base with vname = name } :: vars
   | _ -> vars
 
 let rec fix_ll vars = function
     Elems(el, name) ->
-      let vars = List.fold_left fix_ll_expr vars el in
+      let vars = List.fold_left fix_ll_lit_expr vars el in
       let _, typ = List.hd el in
       let typ = List_t(typ) in
       let vdcl =
@@ -348,7 +336,7 @@ let rec string_of_list_lit = function
         "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
 
 and string_of_expr_detail = function
-    IntLiteral(l) -> string_of_int l
+    IntLiteral(l, name) -> string_of_int l
   | Field(f) -> string_of_field f
   | Binop(e1, o, e2) ->
       string_of_expression e1 ^ " " ^
@@ -368,13 +356,13 @@ and string_of_expr_detail = function
       par ^ "." ^ string_of_field(Fun(f)) ^
       "(" ^ String.concat ", " (List.map string_of_expression el) ^ ")"
   | Noexpr -> "<Noexpr>"
-  | StrLiteral(s) -> Ast.escaped_string s
+  | StrLiteral(s, name) -> Ast.escaped_string s
   | Uminus(e) -> "-" ^ string_of_expression e
   | Not(e) -> "not" ^ string_of_expression e
   | Element(e1, e2) ->
     string_of_expression e1 ^ "[" ^ string_of_expression e2 ^ "]"
   | ListLiteral(l) -> string_of_list_lit l
-  | BoolLiteral(b) -> (match b with True -> "True" | False -> "False")
+  | BoolLiteral(b, name) -> (match b with True -> "True" | False -> "False")
   | VoidLiteral -> "None"
   | Place(f1, f2, l) ->
       string_of_field f1 ^ " >> " ^ string_of_field f2 ^ " >> " ^

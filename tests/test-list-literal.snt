@@ -5,8 +5,11 @@
 func void begin() {
     # print([]); print("\n");
     int x = 1; int y = 2; int z = 3;
-    # print([1, 2, 3]); print("\n");
     print([x, y, z]); print("\n");
+
+    print([3, 4, 5]); print("\n");
+
+    print(["abc", "def"]); print("\n");
     end;
 }
 

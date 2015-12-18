@@ -62,8 +62,8 @@ void printInt(void *n) {
    printf("%d", *(int *)n);
 }
 
-void printChar(char *n) {
-   printf("%c", *(char *)n);
+void printStr(void *n) {
+   printf("%s", *(char **)n);
 }
 
 /* Function to print Sen_nodes in a given linked list. fpitr is used

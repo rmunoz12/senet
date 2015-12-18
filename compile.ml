@@ -89,7 +89,8 @@ let rec printf (detail, typ) =
       "string_of_sen_int_list(" ^ expression_to_c detail ^ ", " ^ "3" ^ ")" ^
       "printf(]); " *) *)
       let func = match l_typ with
-        Int -> "printInt"
+          Int -> "printInt"
+        | Str -> "printStr"
       in
       "printList(&" ^ prefix_name e_c_string ^ ", " ^ func ^ ")"
   (* in
@@ -103,13 +104,19 @@ and function_group = function
     BasicFunc(f) -> f.group_method
   | AssertFunc(f) -> f.a_group_method
 
+and ll_elem_to_c = function
+    IntLiteral(_, name)
+  | StrLiteral(_, name)
+  | BoolLiteral(_, name) -> prefix_name name
+  | _ as detail -> expression_to_c detail
+
 and push_ll_to_new_list list_id = function
     Elems(el, _) ->
       let push_elem_to_new_list (detail, typ) =
         "push(&" ^ prefix_name list_id ^
-        ", (void *) &" ^ expression_to_c detail ^ ");\n"
+        ", (void *) &" ^ ll_elem_to_c detail ^ ")"
       in
-      String.concat "" (List.map push_elem_to_new_list el)
+      String.concat ";\n" (List.map push_elem_to_new_list el)
   (* | List(ll_list, name) -> *)
   (* | EmptyList -> "" *)
 
@@ -142,10 +149,10 @@ and list_lit_to_c = function
   (* | EmptyList -> "" *)
 
 and expression_to_c = function
-    IntLiteral(i) -> string_of_int i
-  | StrLiteral(s) -> Ast.escaped_string s
+    IntLiteral(i, name) -> string_of_int i
+  | StrLiteral(s, name) -> Ast.escaped_string s
   | ListLiteral(ll) -> list_lit_to_c ll
-  | BoolLiteral(b) ->
+  | BoolLiteral(b, name) ->
         (match b with True -> "true" | False -> "false")
   | VoidLiteral -> "SENET_NONE"
   | Field(fd) -> field_to_c fd
@@ -173,7 +180,7 @@ and expression_to_c = function
             | _ ->
               raise (SemError "Binop other than == or != has lhs and rhs with type Void")
           in
-          expression_to_c (BoolLiteral(ans))
+          expression_to_c (BoolLiteral(ans, ""))
         | Group(_, gd1), Group(_, gd2) ->
             let gd1, gd2 = match gd1, gd2 with
                 Some(x), Some(y) -> x, y

@@ -25,10 +25,10 @@ and var_decl = {
 }
 
 and expr_detail =
-    IntLiteral of int
-  | StrLiteral of string
+    IntLiteral of int * string
+  | StrLiteral of string * string
   | ListLiteral of list_lit
-  | BoolLiteral of bool_lit
+  | BoolLiteral of bool_lit * string
   | VoidLiteral
   | Field of field_expr
   | Binop of expression * op * expression
@@ -110,7 +110,8 @@ and symbol_table = {
   mutable functions : func_decl list;
   mutable groups : group_decl list;
   mutable turns : string list;
-  mutable ll_count : int
+  mutable ll_count : int;
+  mutable elem_count : int
 }
 
 type partial_group_table = {
