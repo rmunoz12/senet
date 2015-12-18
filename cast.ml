@@ -10,6 +10,12 @@
 open Types
 open Sast
 
+type counter = {
+  mutable count : int
+}
+
+let literals = { count = 0 }
+
 let rec get_attributes g = match g.extends with
     None -> g.attributes
   | Some(par) ->
@@ -167,17 +173,32 @@ let tag_program program =
   let turns = List.map (tag_groups_func g) turns in
   (v, f, g), turns
 
-(* let ll_name = function
-    Elems(ll, name) -> name
-  | List(ll_list, name) -> name
-  | EmptyList -> "__ll__emptylist" *)
-
 let rec get_ll_type = function
     Elems(el, _) ->
       let _, typ = List.hd el in
       typ
   | List(ll_list, _) -> get_ll_type (List.hd ll_list)
   | EmptyList -> List_t(Void)
+
+let fix_ll_lit_expr vars e =
+  let detail, typ = e in
+  let v_base =
+    { vname = ""; vtype = typ; vinit = Some(e) }
+  in
+  match detail with
+    IntLiteral(i) ->
+      literals.count <- literals.count + 1;
+      { v_base with vname = "__elem__" ^ string_of_int literals.count } :: vars
+  | StrLiteral(s) ->
+      literals.count <- literals.count + 1;
+      { v_base with vname = "__elem__" ^ string_of_int literals.count } :: vars
+  (* | ListLiteral(ll) ->
+      literals.count <- literals.count + 1;
+      { v_base with vname = "__elem__" ^ literals.count; vtype = Int } :: vars *)
+  | BoolLiteral(bl) ->
+      literals.count <- literals.count + 1;
+      { v_base with vname = "__elem__" ^ string_of_int literals.count } :: vars
+  | _ -> vars
 
 let rec fix_ll vars = function
     Elems(el, name) ->
@@ -240,7 +261,7 @@ let rec fix_ll_stmt vars = function
   | _ -> vars
 
 let fix_ll_vdcl vars v = match v.vinit with
-    None -> vars
+    None -> v :: vars
   | Some(e) -> (match e with
       ListLiteral(ll), _ ->
         let vdcl, vars = match ll with
@@ -253,31 +274,31 @@ let fix_ll_vdcl vars v = match v.vinit with
               v, vars
         in
         vdcl :: vars
-    | _ -> vars)
+    | _ -> v :: vars)
 
 let fix_ll_vdcls vars =
   let new_vars = List.fold_left fix_ll_vdcl [] vars in
-  new_vars @ vars
+  new_vars (* @ vars *)
 
 let fix_ll_fdcl = function
     BasicFunc(f) ->
       let new_vars = List.fold_left fix_ll_vdcl [] f.locals in
       let new_vars = List.fold_left fix_ll_stmt new_vars f.body in
-      BasicFunc({ f with locals = new_vars @ f.locals })
+      BasicFunc({ f with locals = List.rev new_vars (* @ f.locals *) })
   | AssertFunc(f) ->
       let new_vars = List.fold_left fix_ll_vdcl [] f.alocals in
       let new_vars = List.fold_left fix_ll_stmt new_vars f.abody in
-      AssertFunc({ f with alocals = new_vars @ f.alocals })
+      AssertFunc({ f with alocals = List.rev new_vars (* @ f.alocals *) })
 
 let fix_ll_gdcl g =
   let new_vars = List.fold_left fix_ll_vdcl [] g.attributes in
-  let g = { g with attributes = new_vars @ g.attributes } in
+  let g = { g with attributes = List.rev new_vars (* @ g.attributes *) } in
   let m = List.map fix_ll_fdcl g.methods in
   { g with methods = m }
 
 let correct_listlit program =
   let (v, f, g), turns = program in
-  let v = fix_ll_vdcls v in
+  let v = List.rev (fix_ll_vdcls v) in
   let f = List.map fix_ll_fdcl f in
   let g = List.map fix_ll_gdcl g in
   let turns = List.map fix_ll_fdcl turns in

@@ -9,6 +9,7 @@ let senet_header =
   "#include <stdio.h>" ^ "\n" ^
   "#include <stdlib.h>" ^ "\n" ^
   "#include <string.h>\n" ^
+  "#include \"temp/sen_linked_list.h\"\n" ^
      "\n" ^
   "struct SENET_NONE {\n" ^
   "  } SENET_NONE;\n" ^
@@ -19,16 +20,6 @@ let senet_header =
   "  strcat(temp, s2);\n" ^
   "  return temp;\n" ^
   "}\n" ^
-    (* "\n" ^
-  "char *string_of_sen_int_list(int x[], int n) {\n" ^
-  "  char *ret = \"\";" ^
-  "  for (int i = 0; i < n; ++i) {\n" ^
-  "    if (i > 0) {\n" ^
-  "      ret = SENET_STR_CONCAT(ret, \", \");\n" ^
-  "    }\n" ^
-  "    ret = SENET_STR_CONCAT(ret, x[i]);\n" ^
-  "  return ret;\n" ^
-  "}\n" ^ *)
     "\n" ^
   "void (*CUR_TURN)();" ^ "\n" ^
   "int PLAYER_ON_MOVE;" ^ "\n" ^
@@ -51,11 +42,11 @@ let binop_to_c = function
  | Equal -> "==" | Neq -> "!="
 
 let id_type_to_c = function
-  |  Int -> "int "
-  |  Bool -> "bool "
-  |  Str -> "char* "
-  |  Void -> "void "
-  | List_t(typ) -> "struct Sen_node "
+    Int -> "int "
+  | Bool -> "bool "
+  | Str -> "char* "
+  | Void -> "void "
+  | List_t(typ) -> "struct Sen_list "
   | Group(s, _) -> "struct " ^ prefix_name s ^ " "
 
 let rec field_to_c = function
@@ -92,11 +83,15 @@ let rec printf (detail, typ) =
       "((struct " ^ prefix_name x  ^ "*) "  ^ "&" ^ e_c_string ^ ")" ^ ")"
   | Void -> "printf(" ^"\"None\""  ^ ")"
   | List_t(l_typ) ->
-      "printf([); " ^
+      (* (* "printf([); " ^
       (* (match detail with
           ListLit -> ) *)
       "string_of_sen_int_list(" ^ expression_to_c detail ^ ", " ^ "3" ^ ")" ^
-      "printf(]); "
+      "printf(]); " *) *)
+      let func = match l_typ with
+        Int -> "printInt"
+      in
+      "printList(&" ^ prefix_name e_c_string ^ ", " ^ func ^ ")"
   (* in
   "printf(" ^ arg ^ ")" *)
   (* | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr) *)
@@ -108,16 +103,33 @@ and function_group = function
     BasicFunc(f) -> f.group_method
   | AssertFunc(f) -> f.a_group_method
 
+and push_ll_to_new_list list_id = function
+    Elems(el, _) ->
+      let push_elem_to_new_list (detail, typ) =
+        "push(&" ^ prefix_name list_id ^
+        ", (void *) &" ^ expression_to_c detail ^ ");\n"
+      in
+      String.concat "" (List.map push_elem_to_new_list el)
+  (* | List(ll_list, name) -> *)
+  (* | EmptyList -> "" *)
+
+and push_to_new_list list_id (det, typ) = match det with
+    ListLiteral(ll) -> push_ll_to_new_list list_id ll
+  | _ -> raise (SemError "Unsupported expression type to push to a new list literal")
+
 and var_decl_to_c v =
   id_type_to_c v.vtype ^
   prefix_name v.vname ^
   (match v.vtype, v.vinit with
       _, None -> ""
-    | List_t(_), Some(e) ->
+    | List_t(typ), Some(e) ->
         let detail, _ = e in
         let name = expression_to_c detail in
         if String.sub name 0 6 = "__ll__" then
-          "make_sen_node()"
+          ";\n" ^
+          "new_Sen_list(&" ^ prefix_name name ^
+          ", sizeof(" ^ id_type_to_c typ ^ "));\n" ^
+          push_to_new_list name e
         else
           name
     | _, Some(e) ->
@@ -125,7 +137,7 @@ and var_decl_to_c v =
         " = " ^ expression_to_c detail) ^ ";"
 
 and list_lit_to_c = function
-    Elems(el, name) -> name
+    Elems(el, name) -> (* prefix_name *) name
   (* | List(ll_list, name) -> *)
   (* | EmptyList -> "" *)
 
