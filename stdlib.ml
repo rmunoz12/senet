@@ -26,7 +26,7 @@ let funcs =
    BasicFunc(print_group)]
 
 let vars =
-  let init = IntLiteral(0) in
+  let init = IntLiteral(0, "") in
   let v = { vname = "PLAYER_ON_MOVE" ; vinit = Some(init, Int) ; vtype = Int } in
   [v]
 
