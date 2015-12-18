@@ -14,8 +14,8 @@ type t =
   | Group of string * group_decl option  (* 2nd value filled in by Cast *)
 
 and list_lit =
-    Elems of expression list
-  | List of list_lit list
+    Elems of expression list * string
+  | List of list_lit list * string
   | EmptyList
 
 and var_decl = {
@@ -109,13 +109,14 @@ and symbol_table = {
   mutable variables : var_decl list;
   mutable functions : func_decl list;
   mutable groups : group_decl list;
-  mutable turns : string list
+  mutable turns : string list;
+  mutable ll_count : int
 }
 
 type partial_group_table = {
   group_name : string;
   par : group_decl option;
-  symbols : symbol_table
+  symbols : symbol_table;
 }
 
 type translation_environment = {

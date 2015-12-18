@@ -103,10 +103,15 @@ let rec var_decl_to_c v =
         let detail, typ = e in
         " = " ^ expression_to_c detail) ^ ";"
 
+and list_lit_to_c ll = function
+    Elems(el, name) -> ""
+  (* | List(ll_list, name) -> *)
+  | EmptyList -> ""
+
 and expression_to_c = function
     IntLiteral(i) -> string_of_int i
   | StrLiteral(s) -> Ast.escaped_string s
-  (* | ListLiteral(ll) -> "" *)
+  (* | ListLiteral(ll) -> list_lit_to_c ll *)
   | BoolLiteral(b) ->
         (match b with True -> "true" | False -> "false")
   | VoidLiteral -> "SENET_NONE"

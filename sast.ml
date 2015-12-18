@@ -345,13 +345,13 @@ let rec verify_elems_list_type env typ = function
 
 let rec verify_list_of_list_type env typ = function
     [] -> typ
-  | (Elems(expr_list), b) :: rest ->
+  | (Elems(expr_list, name), b) :: rest ->
       if b = typ then
         verify_list_of_list_type env typ rest
       else
         raise (SemError ("List elements are not all of same type: " ^
                          string_of_t typ))
-  | (List(ll), b) :: rest ->
+  | (List(ll, name), b) :: rest ->
       if b = typ then
         verify_list_of_list_type env typ rest
       else
@@ -360,18 +360,24 @@ let rec verify_list_of_list_type env typ = function
   | (EmptyList, b) :: rest ->
       verify_list_of_list_type env typ rest
 
+let create_ll_name scope =
+  scope.ll_count <- scope.ll_count + 1;
+  "__ll__" ^ string_of_int scope.ll_count
+
 let rec check_listlit env = function
     Ast.Elems(elems_list) ->
       let el = check_elems_list env elems_list in
       let e, typ = List.hd el in
       let typ = verify_elems_list_type env typ el in
-      Elems(el), List_t(typ)
+      let name = create_ll_name env.scope in
+      Elems(el,name), List_t(typ)
   | Ast.List(ll_list) ->
       let list_of_list_with_typ = List.map (check_listlit env) ll_list in
       let first_list, typ = List.hd list_of_list_with_typ in
       let typ = verify_list_of_list_type env typ list_of_list_with_typ in
       let list_of_list = List.map (fun (l, _) -> l) list_of_list_with_typ in
-      List(list_of_list), List_t(typ)
+      let name = create_ll_name env.scope in
+      List(list_of_list, name), List_t(typ)
   | Ast.EmptyList ->
       EmptyList, List_t(Void)
 
@@ -628,7 +634,8 @@ let rec check_stmt env = function
           variables = [];
           functions = [];
           groups = [];
-          turns = [] } in
+          turns = [];
+          ll_count = 0 } in
       let env' =
         { env with scope = scope'; } in
       let sl = List.map (fun s -> check_stmt env' s) sl in
@@ -696,7 +703,8 @@ let rec check_stmt env = function
           variables = [];
           functions = [];
           groups = [];
-          turns = [] } in
+          turns = [];
+          ll_count = 0 } in
         let env' = { env with scope = scope'; in_loop = true } in
         scope'.variables <- decl :: scope'.variables;
         For(decl, el, check_stmt env' s)
@@ -707,7 +715,8 @@ let rec check_stmt env = function
           variables = [];
           functions = [];
           groups = [];
-          turns = [] } in
+          turns = [];
+          ll_count = 0 } in
       let env' = { env with scope = scope'; in_loop = true } in
       require_bool e "While loop predicate must be Boolean";
       While(e, check_stmt env' s)
@@ -825,7 +834,8 @@ let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
         variables = [];
         functions = [];
         groups = [];
-        turns = [] } in
+        turns = [];
+        ll_count = 0 } in
     let env' =
       { env with scope = scope';
         return_type = id_type_to_t f.Ast.ftype; } in
@@ -872,7 +882,8 @@ let check_assert_func env in_turn_section (f : Ast.assert_decl) =
       variables = [];
       functions = [];
       groups = [];
-      turns = [] } in
+      turns = [];
+      ll_count = 0 } in
   let env' =
     { env with scope = scope';
       return_type = Bool; } in
@@ -1112,7 +1123,8 @@ let rec check_group env g =
         variables = [];
         functions = [];
         groups = [];
-        turns = [] } in
+        turns = [];
+        ll_count = 0 } in
   let partial_scope = {scope' with parent = None} in
   let info =
     { group_name = g.Ast.gname;
@@ -1205,7 +1217,8 @@ let check_program (program : Ast.program) =
       variables = [];
       functions = Stdlib.funcs;
       groups = [];
-      turns = [] } in
+      turns = [];
+      ll_count = 0 } in
   let env =
     { scope = symbols;
       return_type = Void;

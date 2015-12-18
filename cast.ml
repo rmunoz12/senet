@@ -52,8 +52,8 @@ let rec tag_groups_field g = function
   | This -> This
 
 and tag_groups_listlit g = function
-    Elems(el) -> Elems(List.map (tag_groups_expr g) el)
-  | List(ll_list) -> List(List.map (tag_groups_listlit g) ll_list)
+    Elems(el, name) -> Elems(List.map (tag_groups_expr g) el, name)
+  | List(ll_list, name) -> List(List.map (tag_groups_listlit g) ll_list, name)
   | EmptyList -> EmptyList
 
 and tag_groups_expr g e =
@@ -160,23 +160,86 @@ and tag_groups_grp g gd =
   { gd with attributes = a; methods = m; par_actuals = pa; extends = ex }
 
 let tag_program program =
-  let setup, turns = program in
-  let v, f, g = setup in
+  let (v, f, g), turns = program in
   let v = List.map (tag_groups_vdcl g) v in
   let f = List.map (tag_groups_func g) f in
   let g = List.map (tag_groups_grp g) g in
   let turns = List.map (tag_groups_func g) turns in
-  let setup = v, f, g in
-  let program = setup, turns in
-  program
+  (v, f, g), turns
+
+(* let rec fix_ll scope = function
+    Elems(el) ->
+      let el = List.map (fix_ll_expr scope) el in
+      let ll_count = List.map count_ll_in_scope scope.variables
+      let new_vd = {vname = "__ll__"; vtype = t; vinit = None}
+      scope.variables <-
+  (* | List(ll_list) ->  *)
+  (* | EmptyList ->  *)
+
+and fix_ll_expr scope = function
+    ListLiteral(ll) ->
+      let ll = List.map (fix_ll scope) ll in
+      ListLiteral(ll)
+  | Binop(e1, op, e2) ->
+      let e1 = fix_ll_expr scope e1 in
+      let e2 = fix_ll_expr scope e2 in
+      Binop(e1, op , e2)
+  | Assign(fe, e) -> Assign(fe, fix_ll_expr scope e)
+  | Call(vd_opt, fd, el) -> Call(vd_opt, fd, List.map (fix_ll_expr scope) el)
+  | Element(e1, e2) ->  Element(fix_ll_expr scope e1, fix_ll_expr scope e2)
+  | Remove(fe1, fe2, ll) -> Remove(fe1, fe2, fix_ll_expr scope ll)
+  | Place(fe1, fe2, ll) -> Place(fe1, fe2, fix_ll_expr scope ll)
+  | Uminus(e) -> Uminus(fix_ll_expr scope e)
+  | Not(e) -> Not(fix_ll_expr scope e)
+(*   | IntLiteral(i) ->
+  | StrLiteral(s) ->
+  | BoolLiteral(bl) ->
+  | VoidLiteral ->
+  | Field(fe) ->
+  | Noexpr ->  *)
+  | _ as x -> x
+
+
+
+let rec fix_ll_stmt scope = function
+    Block(scope, sl) -> Block(scope, List.map (fix_ll_stmt scope) sl)
+  | Expression(e) -> Expression(fix_ll_expr scope e)
+  | Return(e) -> Return(fix_ll_expr scope e)
+  | Pass(fd, e) -> Pass(fd, fix_ll_expr scope e)
+  | If(e, s1, s2) ->
+      let e = fix_ll_expr scope e in
+      let s1 = List.map (fix_ll_stmt scope) s1 in
+      let s2 = List.map (fix_ll_stmt scope) s2 in
+      If(e, s1, s2)
+  | For(vd, el, s) ->
+      let el = List.map (fix_ll_expr scope) el in
+      let s = fix_ll_stmt scope s in
+      For(vd, el, s)
+  | While(vd, e, s) ->
+      let e = fix_ll_expr scope e in
+      let s = fix_ll_stmt scope s in
+      While(vd, e, s)
+  | _ as x -> x
+
+let fix_ll_fdcl scope = function
+    BasicFunc(f) -> {f with body = List.map (fix_ll_stmt f.locals) f.body}
+  | AssertFunc(f) -> {f with abody = List.map (fix_ll_stmt f.alocals) f.abody}
+
+let correct_listlit program =
+  let scope =
+    { parent = None;
+      variables = [];
+      functions = [];
+      groups = []];
+      turns = [] } in
+  let (v, f, g), turns = program in
+  let f = List.map fix_ll_fdcl scope f in
+  (v, f, g), turns *)
 
 let build_cast (program : Types.program) =
-  let setup, turns = program in
-  let v, f, g = setup in
+  let (v, f, g), turns = program in
   let g = order_attrib g in
-  let setup = v, f, g in
-  let program = setup, turns in
-  let program = tag_program program in
+  let program = tag_program ((v, f, g), turns) in
   program
 
 (**
@@ -210,9 +273,9 @@ let string_of_field = function
 
 let rec string_of_list_lit = function
     EmptyList -> "[]"
-  | Elems(e) ->
+  | Elems(e, n) ->
         "[" ^ String.concat ", " (List.map string_of_expression e) ^ "]"
-  | List(l) ->
+  | List(l, n) ->
         "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
 
 and string_of_expr_detail = function
