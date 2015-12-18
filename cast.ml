@@ -255,14 +255,14 @@ let fix_ll_vdcl vars v = match v.vinit with
         let vdcl, vars = match ll with
             Elems(el, name) ->
               let vars = List.fold_left fix_ll_lit_expr vars el in
-              { v with vname = name }, vars
+              [{ v with vname = name }], vars
           | List(ll_list, name) ->
               let vars = List.fold_left fix_ll vars ll_list in
-              { v with vname = name; }, vars
+              [{ v with vname = name; }], vars
           | EmptyList ->
-              v, vars
+              [], vars
         in
-        v :: vdcl :: vars
+        v :: vdcl @ vars
     | _ -> v :: vars)
 
 let fix_ll_vdcls vars =

@@ -24,6 +24,7 @@ func void begin() {
     group A obj1 = A("obj1");
     group A obj2 = A("obj2");
     group A obj3 = A("obj3");
+    list[group A] g = [obj1, obj2, obj3];
 
     print([]); print("\n");
     print([x, y, z]); print("\n");
@@ -35,6 +36,7 @@ func void begin() {
     print(b); print("\n");
 
     print([obj1, obj2, obj3]); print("\n");
+    print(g); print("\n");
 
 
     end;

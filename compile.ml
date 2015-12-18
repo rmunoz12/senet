@@ -135,7 +135,7 @@ and push_ll_to_new_list list_id = function
       in
       String.concat ";\n" (List.map push_elem_to_new_list el)
   (* | List(ll_list, name) -> *)
-  (* | EmptyList -> "" *)
+  | EmptyList -> ""
 
 and push_to_new_list list_id (det, typ) = match det with
     ListLiteral(ll) -> push_ll_to_new_list list_id ll

@@ -1,0 +1,16 @@
+@setup {
+
+}
+
+@turns {
+
+func void begin() {
+    list[void] x = [];
+
+    print([]); print("\n");
+    print(x); print("\n");
+
+    end;
+}
+
+}

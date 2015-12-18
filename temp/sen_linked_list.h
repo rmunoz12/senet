@@ -88,7 +88,7 @@ void printGroupList(Sen_list *list, char *(*fptr)(void *)) {
   Sen_node *n = list->tail;
   printf("[");
     while (i < list->len) {
-    printf((*fptr)(n->data));
+    printf("%s", (*fptr)(n->data));
     n = n->prev;
     ++i;
     if (i < list->len) {
