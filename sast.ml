@@ -1,131 +1,6 @@
+open Types
+
 exception SemError of string
-
-type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq
-        | Mod | And | Or
-
-type bool_lit =
-    True
-  | False
-
-type t =
-    Int
-  | Bool
-  | Str
-  | Void
-  | List_t of t
-  | Group of string * group_decl option  (* 2nd value filled in by Cast *)
-
-and list_lit =
-    Elems of expression list
-  | List of list_lit list
-  | EmptyList
-
-and var_decl = {
-    vname : string;
-    vtype : t;
-    vinit : expression option
-}
-
-and expr_detail =
-    IntLiteral of int
-  | StrLiteral of string
-  | ListLiteral of list_lit
-  | BoolLiteral of bool_lit
-  | VoidLiteral
-  | Field of field_expr
-  | Binop of expression * op * expression
-  | Assign of field_expr * expression
-  | Call of var_decl option * func_decl * expression list
-  | Element of expression * expression
-  | Uminus of expression
-  | Not of expression
-  | Noexpr
-  | Remove of field_expr * field_expr * list_lit
-  | Place of field_expr * field_expr * list_lit
-
-and expression =
-    expr_detail * t
-
-and field_expr =
-    Var of var_decl
-  | Attrib of var_decl * var_decl
-  | Fun of func_decl
-  | Method of var_decl * func_decl
-  | Grp of group_decl
-  | This
-
-and statement =
-    Block of symbol_table * statement list
-  | Expression of expression
-  | Return of expression
-  | Break
-  | Continue
-  | End
-  | Pass of func_decl * expression
-  | If of expression * statement * statement
-  | For of var_decl * expression list * statement
-  | While of expression * statement
-
-and basic_func_decl = {
-    ftype : t;
-    fname : string;
-    formals : var_decl list;
-    locals : var_decl list;
-    body : statement list;
-    turns_func : bool;
-    group_method : string;
-    f_is_built_in : bool
-  }
-
-and assert_decl = {
-    aname : string;
-    aformals : var_decl list;
-    alocals : var_decl list;
-    abody : statement list;
-    a_turns_func : bool;
-    a_group_method : string;
-    a_is_built_in : bool
-  }
-
-and func_decl =
-    BasicFunc of basic_func_decl
-  | AssertFunc of assert_decl
-
-and group_decl = {
-    gname : string;
-    extends : group_decl option;
-    par_actuals : expression list option;
-    attributes : var_decl list;
-    methods : func_decl list;
-  }
-
-and setup = var_decl list * func_decl list * group_decl list
-
-and turns = func_decl list
-
-and program = setup * turns
-
-
-and symbol_table = {
-  parent : symbol_table option;
-  mutable variables : var_decl list;
-  mutable functions : func_decl list;
-  mutable groups : group_decl list;
-  mutable turns : string list
-}
-
-type partial_group_table = {
-  group_name : string;
-  par : group_decl option;
-  symbols : symbol_table
-}
-
-type translation_environment = {
-  scope : symbol_table;
-  return_type : t;
-  in_loop : bool;
-  partial_group_info : partial_group_table option
-}
 
 let rec string_of_t = function
     Int -> "int"
@@ -134,7 +9,7 @@ let rec string_of_t = function
   | Void -> "void"
   | List_t(vt) ->
       "list[" ^ string_of_t vt ^ "]"
-  | Group(s, _) -> s
+  | Group(s, _) -> "group " ^ s
 
 let rec id_type_to_t = function
     Ast.Int -> Int
@@ -408,12 +283,10 @@ let rec check_field env actuals = function
           Var(v) -> v.vtype
         | Fun(x) -> (match x with
             BasicFunc(f) -> f.ftype
-          | AssertFunc(a) -> Void)
+          | AssertFunc(a) -> Bool)
         | Grp(g) -> Group(g.gname, None)
         | This -> raise (SemError("Internal error: 'this' keyword match with Ast.Id"))
         | _ -> raise (SemError "Internal error: Ast.Id matched with Attrib or Method")
-        (* | FieldCall(f1, f2) ->
-            raise (SemError("Internal error: FieldCall matched with Ast.Id")) *)
       in
       dcl, typ
   | Ast.This ->
@@ -660,11 +533,24 @@ let rec check_expr env = function
          | This -> raise (SemError ("Not callable: 'this'"))
          | Var(v) -> raise (SemError ("Not callable: " ^ v.vname))
          | Attrib(v1, v2) -> raise (SemError ("Not callable: " ^ v1.vname ^ "." ^ v2.vname))
-         | Grp(g) -> raise (SemError ("Not callable: " ^ g.gname))
+         | Grp(g) ->
+            let par =
+              { vname = g.gname ; vtype = Group(g.gname, None); vinit = None }
+            in
+            let init =
+              List.find (fun f -> match f with
+                            BasicFunc(x) -> x.fname = "__init__"
+                          | AssertFunc(_) -> false) g.methods
+            in
+            let formals = match init with
+                BasicFunc(x) -> x.formals
+              | AssertFunc(_) -> raise (SemError ("Internal error: __init__ is an assert function"))
+            in
+            verify_args init formals actuals;
+            Call(Some(par), init, actuals), Group(g.gname, None)
          | Method(par, child) ->
-             (* let par_typ = *)
               (match par.vtype with
-                  Group(s, _) -> (* s *) ()
+                  Group(s, _) -> ()
                 | _ -> raise (SemError ("Method call with parent that is not a group")));
              (match child with
                   BasicFunc(bf) ->
@@ -716,8 +602,15 @@ let rec verify_expr_list_type env typ = function
         raise (SemError ("List of expressions are not all of same type: " ^
                          string_of_t typ))
 
-let check_init env = function
-    Ast.ExprInit(e) -> Some(check_expr env e)
+let check_init env v_name v_typ = function
+    Ast.ExprInit(e) ->
+      let e = check_expr env e in
+      let _, typ = e in
+      if v_typ = typ then
+        Some(e)
+      else
+        raise (SemError ("Variable initiation type for identifer " ^ v_name ^
+                         " does not match, expected: " ^ string_of_t v_typ))
   | Ast.NoInit -> None
 
 let rec find_turn_name (scope : symbol_table) name =
@@ -785,14 +678,14 @@ let rec check_stmt env = function
       require_bool e "Predicate of if must be boolean";
       If(e, check_stmt env s1, check_stmt env s2)
   | Ast.For(vd, el, s) ->
+      let name, t_vd = vd.Ast.vname, id_type_to_t vd.Ast.vtype in
       let decl =
-      { vname = vd.Ast.vname;
-        vtype = id_type_to_t vd.Ast.vtype;
-        vinit = check_init env vd.Ast.vinit}
+      { vname = name;
+        vtype = t_vd;
+        vinit = check_init env name t_vd vd.Ast.vinit}
       and el = List.map (check_expr env) el in
       let _, t_el = List.hd el in
-      let t_vd = decl.vtype
-      and t_el = verify_expr_list_type env t_el el in
+      let t_el = verify_expr_list_type env t_el el in
       if t_vd <> t_el then
         raise (SemError ("For loop elements and loop variable must be " ^
                          "the same type. Variable type: " ^ string_of_t t_vd ^
@@ -837,12 +730,34 @@ let require_non_void v = match v.vtype with
     Void -> raise (SemError (v.vname ^ " declared with void type"))
   | _ -> ()
 
+let verify_not_redeclaring scope name =
+  let is_var_or_fun_in_scope =
+    List.exists (fun x -> x.vname = name) scope.variables ||
+    List.exists (fun x -> match x with
+                   BasicFunc(f) -> f.fname = name
+                 | AssertFunc(f) -> f.aname = name) scope.functions
+  in
+  let gdcl_opt =
+    try
+      Some(find_group scope name)
+    with Not_found ->
+      None
+  in
+  match gdcl_opt with
+    Some(_) ->
+      raise (SemError ("Cannot redeclare an identifier that is also a group " ^
+                       "definition name: " ^ name))
+  | None ->
+    if is_var_or_fun_in_scope then
+      raise (SemError ("Cannot redeclare an indentifer matching with a " ^
+                       "variable or a function in current scope: " ^ name))
+    else
+      ()
+
 let check_vdcl_helper env v init_ok =
   let name = v.Ast.vname in
-  let already_declared =
-    List.exists (fun x -> x.vname = name) env.scope.variables
-  in
-  let init = check_init env v.Ast.vinit in
+  let t_vd = id_type_to_t v.Ast.vtype in
+  let init = check_init env name t_vd v.Ast.vinit in
   let init =
     (match init with
         None -> init
@@ -850,17 +765,16 @@ let check_vdcl_helper env v init_ok =
         if not init_ok then
           raise (SemError ("Initiation not allowed here for variable: " ^ name))
         else
-          init) in
-  if already_declared then
-    raise (SemError ("Variable name previously declared in scope: " ^ name))
-  else
-    let decl =
-      { vname = name;
-        vtype = id_type_to_t v.Ast.vtype;
-        vinit = init }
-    in
-    require_non_void decl;
-    decl
+          init)
+  in
+  let decl =
+    { vname = name;
+      vtype = t_vd;
+      vinit = init }
+  in
+  verify_not_redeclaring env.scope v.Ast.vname;
+  require_non_void decl;
+  decl
 
 let check_formal env v =
   let decl = check_vdcl_helper env v false in
@@ -874,64 +788,7 @@ let check_vdcl env v =
   env.scope.variables <- decl :: env.scope.variables;
   decl
 
-let verify_if_arg_types_equal new_fun f =
-  let rec helper x y = match x, y with
-      [], [] ->
-        (match new_fun with
-            Ast.BasicFunc(nf) ->
-              raise (SemError ("Function name and type signature already declared: " ^
-                               nf.Ast.fname))
-          | Ast.AssertFunc(nf) ->
-              raise (SemError ("Function name and type signature already declared: " ^
-                               nf.Ast.fname)))
-    | a :: xrest, b :: yrest ->
-        let ta = a.Ast.vtype
-        and tb = b.vtype in
-        if id_type_to_t ta = tb then
-          helper xrest yrest
-        else
-          ()
-    | _, [] -> ()
-    | [], _ -> ()
-  in
-  match new_fun, f with
-      Ast.BasicFunc(nf), BasicFunc(bf) ->
-        helper nf.Ast.formals bf.formals
-    | Ast.AssertFunc(nf), AssertFunc(af) ->
-        helper nf.Ast.formals af.aformals
-    | Ast.BasicFunc(nf), _ ->
-        raise (SemError ("Declaring a basic function but an assert function " ^
-                         "with same name already exists: " ^ nf.Ast.fname))
-    | Ast.AssertFunc(nf), _ ->
-        raise (SemError ("Declaring an assert function but a basic function " ^
-                         "with same name already exists: " ^ nf.Ast.fname))
-
-let rec verify_if_func_declared new_fun = function
-    [] -> ()
-  | hd :: rest ->
-      (match new_fun, hd with
-          Ast.BasicFunc(nf), BasicFunc(f) ->
-            if nf.Ast.fname = f.fname then
-              verify_if_arg_types_equal new_fun (BasicFunc(f))
-            else
-              verify_if_func_declared new_fun rest
-        | Ast.AssertFunc(nf), AssertFunc(f) ->
-            if nf.Ast.fname = f.aname then
-              verify_if_arg_types_equal new_fun (AssertFunc(f))
-            else
-              verify_if_func_declared new_fun rest
-        | Ast.BasicFunc(nf), AssertFunc(f) ->
-            if nf.Ast.fname = f.aname then
-              raise (SemError ("Function already declared in scope: " ^ f.aname))
-            else
-              verify_if_func_declared new_fun rest
-        | Ast.AssertFunc(nf), BasicFunc(f) ->
-            if nf.Ast.fname = f.fname then
-              raise (SemError ("Function already declared in scope: " ^ f.fname))
-            else
-              verify_if_func_declared new_fun rest)
-
-let rec verify_implicit_return_basic_fun name ftyp body =
+let rec verify_implicit_return_basic_fun name ftyp body=
   let last_stmt =
     try
       List.hd (List.rev body)
@@ -990,49 +847,62 @@ let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
     env.scope.functions <- fdecl :: env.scope.functions;
     fdecl
 
-let check_assert_func env in_turn_section (f : Ast.assert_decl) =
-  let already_declared =
-    List.exists (fun x -> match x with
-                   BasicFunc(b) -> b.fname = f.Ast.fname
-                 | AssertFunc(a) -> a.aname = f.Ast.fname )
-                env.scope.functions
+let rec verify_assert_func_stmt stmt =
+  let msg_bool = "Assert function expression statment or return statement" ^
+                 " must be of type boolean."
   in
-  if already_declared then
-    raise (SemError ("Function name previously declared in scope: " ^
-                     f.Ast.fname))
-  else
-    let scope' =
-      { parent = Some(env.scope);
-        variables = [];
-        functions = [];
-        groups = [];
-        turns = [] } in
-    let env' =
-      { env with scope = scope';
-        return_type = Bool; } in
-    let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
-    let ll = List.map (fun dcl -> check_vdcl env' dcl) f.Ast.locals in
-    let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
-    let gname = (match env.partial_group_info with None -> "" | Some(g) -> g.group_name) in
-    let fdecl =
-      AssertFunc({ aname = f.Ast.fname;
-                   aformals = fl;
-                   alocals = ll;
-                   abody = sl ;
-                   a_turns_func = in_turn_section;
-                   a_group_method = gname;
-                   a_is_built_in = false })
-    in
-    env.scope.functions <- fdecl :: env.scope.functions;
-    fdecl
+  let msg_stmt = "Assert function statment cannot be " in
+  match stmt with
+      Block(scope, sl) -> List.iter verify_assert_func_stmt sl
+    | Expression(e) -> require_bool e msg_bool
+    | Return(e) -> require_bool e msg_bool
+    | Break -> ()
+    | Continue -> ()
+    | End -> raise (SemError (msg_stmt ^ "end."))
+    | Pass(_, _) -> raise (SemError (msg_stmt ^ "pass."))
+    | If(e, s1, s2) ->
+        verify_assert_func_stmt s1;
+        verify_assert_func_stmt s2
+    | For(vd, el, s) -> verify_assert_func_stmt s
+    | While(e, s) -> verify_assert_func_stmt s
 
-let check_function env in_turn_section new_fun =
-  verify_if_func_declared new_fun env.scope.functions;
-  match new_fun with
-      Ast.BasicFunc(f) ->
-        check_basic_func env in_turn_section f
-    | Ast.AssertFunc(f) ->
-        check_assert_func env in_turn_section f
+let check_assert_func env in_turn_section (f : Ast.assert_decl) =
+  let scope' =
+    { parent = Some(env.scope);
+      variables = [];
+      functions = [];
+      groups = [];
+      turns = [] } in
+  let env' =
+    { env with scope = scope';
+      return_type = Bool; } in
+  let fl = List.map (fun v -> check_formal env' v) f.Ast.formals in
+  let ll = List.map (fun dcl -> check_vdcl env' dcl) f.Ast.locals in
+  let sl = List.map (fun s -> check_stmt env' s) f.Ast.body in
+  let ret_stmt = Return(BoolLiteral(True), Bool) in
+  let sl = ret_stmt :: List.rev sl in
+  let sl = List. rev sl in
+  let gname = (match env.partial_group_info with None -> "" | Some(g) -> g.group_name) in
+  let fdecl =
+    AssertFunc({ aname = f.Ast.fname;
+                 aformals = fl;
+                 alocals = ll;
+                 abody = sl ;
+                 a_turns_func = in_turn_section;
+                 a_group_method = gname;
+                 a_is_built_in = false })
+  in
+  List.iter verify_assert_func_stmt sl;
+  env.scope.functions <- fdecl :: env.scope.functions;
+  fdecl
+
+let check_function env in_turn_section = function
+    Ast.BasicFunc(f) ->
+      verify_not_redeclaring env.scope f.Ast.fname;
+      check_basic_func env in_turn_section f
+  | Ast.AssertFunc(f) ->
+      verify_not_redeclaring env.scope f.Ast.fname;
+      check_assert_func env in_turn_section f
 
 let find_init_func methods =
     List.find (fun x -> match x with
@@ -1066,8 +936,7 @@ let verify_extends parent par_actuals init_opt =
           | None ->
               match init_opt with
                   Some(init) -> ()
-                | None -> (* raise (SemError ("Constructor function not found"))) *)
-                          () )
+                | None -> () )
     | None ->
         (match init_opt with
             Some(init) -> ()
@@ -1093,19 +962,26 @@ let rec verify_attributes par_attr = function
 
 let check_attrib env v =
   let decl = check_vdcl_helper env v false in
+  let name = decl.vname in
   let scope =
     (match env.partial_group_info with
         None -> raise (SemError "Internal error: check_attrib called outside of group definition.")
       | Some(info) -> info.symbols) in
+  verify_not_redeclaring scope name;
   scope.variables <- decl :: scope.variables;
   decl
 
 let check_method env new_fun =
   let fdcl = check_function env false new_fun in
+  let name = match fdcl with
+      BasicFunc(f) -> f.fname
+    | AssertFunc(f) -> f.aname
+  in
   let scope =
     (match env.partial_group_info with
         None -> raise (SemError "Internal error: check_attrib called outside of group definition.")
       | Some(info) -> info.symbols) in
+  verify_not_redeclaring scope name;
   scope.functions <- fdcl :: scope.functions;
   fdcl
 
@@ -1113,10 +989,10 @@ let add_parent_init parent par_actuals name methods = function
     Some(init_fun) ->
       (match init_fun with
           BasicFunc(f) ->
-            if f.ftype = Void then
+            if f.ftype = Group(name, None) then
               methods
             else
-              raise (SemError ("Group " ^ name ^ " __init__ function has non-void type"))
+              raise (SemError ("Group " ^ name ^ " __init__ function has type not equal to itself"))
         | AssertFunc(f) ->
             raise (SemError ("Group " ^ name ^ " __init__ function not a basic function")))
   | None ->
@@ -1133,7 +1009,7 @@ let add_parent_init parent par_actuals name methods = function
                 let dcls =
                   List.map2 (fun vdcl act -> {vdcl with vinit = Some(act)}) f.formals el
                 in
-                { ftype = f.ftype;
+                { ftype = Group(name, None);
                   fname = "__init__";
                   formals = [];
                   locals = dcls;
@@ -1145,7 +1021,7 @@ let add_parent_init parent par_actuals name methods = function
             (match par_init with
                 AssertFunc(f) -> raise (SemError "Assert Function used as parent __init__")
               | BasicFunc(f) ->
-                { f with group_method = name }))
+                { f with ftype = Group(name, None); group_method = name }))
       in
       BasicFunc(child_init) :: methods)
 
@@ -1251,7 +1127,7 @@ let rec check_group env g =
     (match parent with
        Some(par) -> verify_attributes par.attributes attribs
      | None -> attribs) in
-  let methods = List.map (check_function env' false) g.Ast.methods in
+  let methods = List.map (check_method env') g.Ast.methods in
   let init_opt = try
     Some(find_init_func methods)
   with Not_found ->
@@ -1267,6 +1143,7 @@ let rec check_group env g =
       methods = methods }
   in
   let gdecl = check_for_repr env gdecl in
+  verify_not_redeclaring env.scope gdecl.gname;
   env.scope.groups <- gdecl :: env.scope.groups;
   gdecl
 
@@ -1276,39 +1153,13 @@ let check_setup env setup_section =
   List.map (check_function env false) funcs,
   List.map (check_group env) groups
 
-let built_in_funcs =
-  let s =
-    { vname = "print_arg";
-      vtype = Str;
-      vinit = None}
-  in
-  let b = { s with vtype = Bool } in
-  let i = { s with vtype = Int } in
-  let g = { s with vtype = Group("", None) } in
-  let print_str =
-    { ftype = Void;
-      fname = "print";
-      formals = [s];
-      locals = [];
-      body = [];
-      turns_func = false;
-      group_method = "";
-      f_is_built_in = true }
-  in
-  let print_bool = { print_str with formals = [b] } in
-  let print_int = { print_str with formals = [i] } in
-  let print_group = { print_str with formals = [g] } in
-  [BasicFunc(print_str); BasicFunc(print_bool); BasicFunc(print_int);
-   BasicFunc(print_group)]
-
 let rec gather_turn_names env = function
     [] -> ()
   | Ast.BasicFunc(t) :: rest ->
       env.scope.turns <- t.Ast.fname :: env.scope.turns;
       gather_turn_names env rest
   | Ast.AssertFunc(t) :: rest ->
-      env.scope.turns <- t.Ast.fname :: env.scope.turns;
-      gather_turn_names env rest
+      raise (SemError ("Assert function cannot be a turns function: " ^ t.Ast.fname ))
 
 let check_turns env turns_section =
   if check_for_begin(turns_section) = false then
@@ -1352,7 +1203,7 @@ let check_program (program : Ast.program) =
   let symbols =
     { parent = None ;
       variables = [];
-      functions = built_in_funcs;
+      functions = Stdlib.funcs;
       groups = [];
       turns = [] } in
   let env =

@@ -2,7 +2,7 @@
 
 group A() {
 
-    func void __init__() { }
+    func group A __init__() { return this; }
 
 };
 

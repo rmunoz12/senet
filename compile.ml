@@ -1,5 +1,5 @@
+open Types
 open Sast
-open Cast
 
 <<<<<<< HEAD
 let setup_to_c s =
@@ -74,14 +74,15 @@ let rec field_to_c = function
   | Grp(g) -> prefix_name g.gname
   | Attrib(par, child) ->
     let par_name, deref_op =
-      if par.vname = "this" then "this", "->"
+      if par.vname = "this" then "(*this)", "."
       else prefix_name par.vname, "." in
     par_name ^ deref_op ^ prefix_name child.vname
   | Method(v, f) -> raise (SemError ("Internal error: Method matched in field_to_c(), use Call instead"))
-  | This -> "this"
+  | This -> "(*this)"
 
 let rec function_call_to_c = function
     BasicFunc(f) -> f.fname
+  | AssertFunc(f) -> f.aname
 
 let function_group_method = function
     BasicFunc(f) -> f.group_method
@@ -120,7 +121,7 @@ let rec var_decl_to_c v =
   (match v.vinit with
       None -> ""
     | Some(e) ->
-        let detail, _ = e in
+        let detail, typ = e in
         " = " ^ expression_to_c detail) ^ ";"
 
 and expression_to_c = function
@@ -247,6 +248,24 @@ let rec statement_to_c = function
       "while (" ^ expression_to_c detail ^ ") {\n" ^
       statement_to_c s ^ "\n" ^ "}\n"
 
+let rec assert_stmt_to_c = function
+    Block(scope, sl) ->
+      "  " ^ String.concat "\n  " (List.map assert_stmt_to_c sl)
+  | Expression(e) ->
+      let detail, _ = e in
+      "if (!(" ^ expression_to_c detail ^ ")) { return false; }\n"
+  | If(e, s1, s2) ->
+      let e, _  = e in
+      "if (" ^ expression_to_c e ^ " ) {\n" ^
+      assert_stmt_to_c s1 ^ "\n} " ^
+      "else {\n" ^ assert_stmt_to_c s2 ^ "}\n"
+  (* | For(vd, el, s) -> *)
+  | While(e, s) ->
+      let detail, _ = e in
+      "while (" ^ expression_to_c detail ^ ") {\n" ^
+      assert_stmt_to_c s ^ "\n" ^ "}\n"
+  | _ as s -> statement_to_c s
+
 let basic_func_to_c gprefix f =
     let self_arg =
       if f.group_method <> "" then
@@ -265,15 +284,33 @@ let basic_func_to_c gprefix f =
     String.concat "\n" (List.map statement_to_c f.body) ^ "\n" ^
     "}\n"
 
+let assert_func_to_c gprefix f =
+  let self_arg =
+      if f.a_group_method <> "" then
+        "struct " ^ prefix_name f.a_group_method ^ " *this"
+      else
+        ""
+    in
+    let gprefix =
+      if gprefix = "" then "" else gprefix ^ "_"
+    in
+    (id_type_to_c Bool) ^ " " ^ gprefix ^ prefix_name f.aname ^ "(" ^
+    self_arg ^
+    (if self_arg <> "" && List.length f.aformals > 0 then ", " else "") ^
+    String.concat ", " (List.map formal_to_c f.aformals) ^ ") {\n" ^
+    String.concat "\n" (List.map var_decl_to_c f.alocals) ^ "\n" ^
+    String.concat "\n" (List.map assert_stmt_to_c f.abody) ^ "\n" ^
+    "}\n"
+
 let func_decl_to_c gprefix = function
     BasicFunc(f) -> basic_func_to_c gprefix f
-  (* | AssertFunc(f) -> assert_func_to_c a *)
+  | AssertFunc(f) -> assert_func_to_c gprefix f
 
 let group_decl_to_c g =
   let c_name = prefix_name g.gname in
   "struct " ^ c_name ^  "{\n" ^
   "  " ^ String.concat "\n  " (List.map var_decl_to_c g.attributes) ^ "\n" ^
-  "};\n\n" ^
+  "} " ^ c_name ^ ";\n\n" ^
   String.concat "\n" (List.map (func_decl_to_c c_name) g.methods) ^ "\n"
 
 let setup_to_c s =
@@ -287,7 +324,8 @@ let declare_turn = function
       (id_type_to_c f.ftype) ^ " " ^
       prefix_name f.fname ^ "(" ^
       String.concat ", " (List.map var_decl_to_c f.formals) ^ ");"
-  (* | AssertFunc(f) -> "" *)
+  | AssertFunc(f) -> raise (SemError ("Assert function declared in turns: " ^
+                                      f.aname))
 
 let turns_to_c t =
   String.concat "\n" (List.map declare_turn t) ^ "\n\n" ^
@@ -303,7 +341,7 @@ let senet_to_c (s, t) =
     "// @senet_footer\n" ^
     senet_footer
 
-let translate (program : Sast.program) =
+let translate (program : Types.program) =
     let outfile = open_out "output.c" in
     let ctext = senet_to_c program in
     output_string outfile ctext

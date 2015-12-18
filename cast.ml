@@ -7,6 +7,7 @@
   * Also, the second argument to Group is filled in with Some(gdcl).
   *)
 
+open Types
 open Sast
 
 let rec get_attributes g = match g.extends with
