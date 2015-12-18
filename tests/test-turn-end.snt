@@ -1,0 +1,18 @@
+@setup { int x = 0; }
+
+@turns {
+
+func void begin() {
+    if (False) {
+        end;
+    } else {
+        print("passing\n");
+        pass(ending, 1);
+    }
+}
+
+func void ending() {
+    end;
+}
+
+}

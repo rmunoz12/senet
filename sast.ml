@@ -813,11 +813,43 @@ let rec verify_implicit_return_basic_fun name ftyp body=
       | _ -> raise (SemError ("function " ^ name ^ " implicit return " ^
                "invalid type, expected: " ^  string_of_t ftyp)))
 
+let rec verify_return_pass_end_turn_fun name body =
+  let error_on_return_stmt = function
+      Return(_) ->
+        raise (SemError ("Return statement in turn function: " ^ name))
+    | _ -> ()
+  in
+  let last_stmt =
+    try
+      List.hd (List.rev body)
+    with Failure("hd") ->
+      raise (SemError ("Turn function " ^ name ^
+             " does not end with 'end' or 'pass' statement."))
+  in
+  List.iter error_on_return_stmt body;
+  match last_stmt with
+      Pass(fd, e) -> ()
+    | End -> ()
+    | Block(scope, sl) ->
+        verify_return_pass_end_turn_fun name sl
+    | If(e, s1, s2) ->
+        verify_return_pass_end_turn_fun name [s1];
+        verify_return_pass_end_turn_fun name [s2]
+    | For(vd, el, s) ->
+        verify_return_pass_end_turn_fun name [s]
+    | While(e, s) ->
+        verify_return_pass_end_turn_fun name [s]
+    | _ -> raise (SemError ("Turn function " ^ name ^
+                  " does not end with 'end' or 'pass' statement."))
+
 let verify_implicit_return = function
     AssertFunc(f) ->
         () (* Implicit and explicit returns always Bool *)
   | BasicFunc(f) ->
-        verify_implicit_return_basic_fun f.fname f.ftype f.body
+        if f.turns_func then
+          verify_return_pass_end_turn_fun f.fname f.body
+        else
+          verify_implicit_return_basic_fun f.fname f.ftype f.body
 
 let check_basic_func env in_turn_section (f : Ast.basic_func_decl) =
     let scope' =
