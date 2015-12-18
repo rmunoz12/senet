@@ -254,6 +254,7 @@ let fix_ll_vdcl vars v = match v.vinit with
       ListLiteral(ll), _ ->
         let vdcl, vars = match ll with
             Elems(el, name) ->
+              let vars = List.fold_left fix_ll_lit_expr vars el in
               { v with vname = name }, vars
           | List(ll_list, name) ->
               let vars = List.fold_left fix_ll vars ll_list in
@@ -261,7 +262,7 @@ let fix_ll_vdcl vars v = match v.vinit with
           | EmptyList ->
               v, vars
         in
-        vdcl :: vars
+        v :: vdcl :: vars
     | _ -> v :: vars)
 
 let fix_ll_vdcls vars =

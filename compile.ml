@@ -100,7 +100,11 @@ let rec printf (detail, typ) =
         | Bool -> "printBool"
         | Void -> "printEmptyList"
       in
-      "printList(&" ^ prefix_name e_c_string ^ ", " ^ func ^ ")"
+      "printList(&" ^
+         (match detail with
+            Field(_) -> e_c_string
+          | _ -> prefix_name e_c_string) ^
+       ", " ^ func ^ ")"
 
 and formal_to_c v =
   id_type_to_c v.vtype ^ prefix_name v.vname
@@ -129,24 +133,32 @@ and push_to_new_list list_id (det, typ) = match det with
     ListLiteral(ll) -> push_ll_to_new_list list_id ll
   | _ -> raise (SemError "Unsupported expression type to push to a new list literal")
 
-and var_decl_to_c v =
-  id_type_to_c v.vtype ^
-  prefix_name v.vname ^
-  (match v.vtype, v.vinit with
-      _, None -> ""
-    | List_t(typ), Some(e) ->
-        let detail, _ = e in
-        let name = expression_to_c detail in
-        if String.sub name 0 6 = "__ll__" then
-          ";\n" ^
-          "new_Sen_list(&" ^ prefix_name name ^
-          ", sizeof(" ^ id_type_to_c typ ^ "));\n" ^
-          push_to_new_list name e
-        else
-          name
-    | _, Some(e) ->
-        let detail, typ = e in
-        " = " ^ expression_to_c detail) ^ ";"
+and var_decl_to_c v = match v.vtype, v.vinit with
+    _, None ->
+      id_type_to_c v.vtype ^
+      prefix_name v.vname ^ ";"
+  | List_t(typ), Some(e) ->
+      let detail, _ = e in
+      let name = expression_to_c detail in
+      id_type_to_c v.vtype ^
+      prefix_name v.vname ^
+      (if v.vname != "" && String.length v.vname > 5 &&
+          String.sub v.vname 0 6 = "__ll__" &&
+          String.sub name 0 6 = "__ll__" then
+        ";\n" ^
+        "new_Sen_list(&" ^ prefix_name name ^
+        ", sizeof(" ^ id_type_to_c typ ^ "));\n" ^
+        push_to_new_list name e ^ ";" (* ^
+        id_type_to_c v.vtype ^ ";" *) (* ^
+        prefix_name v.vname ^
+        " = " ^ prefix_name name ^ ";" *)
+      else
+        " = " ^ prefix_name name ^ ";")
+  | _, Some(e) ->
+      let detail, typ = e in
+      id_type_to_c v.vtype ^
+      prefix_name v.vname ^
+      " = " ^ expression_to_c detail ^ ";"
 
 and list_lit_to_c = function
     Elems(el, name) -> (* prefix_name *) name
