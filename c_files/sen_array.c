@@ -23,7 +23,7 @@ Sen_array *construct_array(int len) {
     ret->len = len;
     ret->classp = &Sen_array_class_;
     ret->bound = false;
-    ret->arr = malloc(sizeof(Sen_array *) * len);
+    ret->arr = malloc(sizeof(Sen_object *) * len);
     ret->print_sep=' ';
     return ret;
 }

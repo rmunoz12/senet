@@ -41,18 +41,19 @@ Sen_object * construct_object (void *);
 void destruct_object (Sen_object *);
 Sen_object * copy_object (Sen_object *);
 
-#define PRINT(self) {\
-    typeof(self) __temp__ = self;\
-    __temp__->classp->tablep->print(((Sen_object *)__temp__)); \
+#define PRINT(self) {                                               \
+        typeof(self) __temp__ = self;                               \
+        __temp__-> classp-> tablep-> print(((Sen_object *)__temp__));  \
 }
-#define DESTRUCT(self) ({\
-            __auto_type __temp__ = self;            \
+
+#define DESTRUCT(self) ({                                   \
+            __auto_type __temp__ = self;                    \
             __temp__->classp->tablep->destruct(__temp__);   \
         })
 
-#define COPY(self) ({                           \
-    typeof(self) __temp__ = self;\
-    (typeof (__temp__)) __temp__->classp->tablep->copy(__temp__); \
-    })
+#define COPY(self) ({                                                   \
+            typeof(self) __temp__ = self;                               \
+            (typeof (__temp__)) __temp__->classp->tablep->copy(__temp__); \
+        })
 
 #endif
