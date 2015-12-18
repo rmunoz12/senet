@@ -83,14 +83,14 @@ let rec printf var = match var with
   let arg =
     (match typ with
        Bool -> "\"%s\", " ^ el_string ^ " ? \"true\" : \"false\""
-     | Int -> "\"%d\", " ^ el_string
+     | Int -> el_string
      | Str -> "\"%s\", " ^ el_string
      | Group(x, _) ->
         prefix_name x ^ "_" ^ prefix_name "__repr__" ^
         "((struct " ^ prefix_name x  ^ "*) "  ^ "&" ^ el_string ^ ")"
     | Void -> "\"None\"")
   in
-  "printf(" ^ arg ^ ")"
+  "PRINT(" ^ arg ^ ")"
   | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr)
 
 (*
@@ -125,7 +125,7 @@ let rec var_decl_to_c v =
         " = " ^ expression_to_c detail) ^ ";"
 
 and expression_to_c = function
-    IntLiteral(i) -> string_of_int i
+    IntLiteral(i) -> "CONSTRUCT_INT(" ^ string_of_int i ^ ")"
 (* >>>>>>> de73297d967f518e7c463fb57cac4913f53340a8 *)
   | StrLiteral(s) -> Ast.escaped_string s
   (* | ListLiteral(ll) -> "" *)

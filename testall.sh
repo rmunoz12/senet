@@ -66,7 +66,7 @@ Check() {
 
     generatedfiles="$generatedfiles ${basename}.c.out output.c a.out" &&
     Run "$SENET" "-c" "<" $1 &&
-    Run "gcc output.c" &&
+    Run "gcc-5 -I ./c_files/headers output.c c_files/sen_array_int.c c_files/sen_array.c c_files/sen_basic_type.c c_files/sen_board_square.c c_files/sen_board.c c_files/sen_bool.c c_files/sen_int.c c_files/sen_object.c c_files/sen_string.c" &&
     Run "./a.out >" ${basename}.c.out &&
     Compare ${basename}.c.out ${reffile}.out ${basename}.c.diff
 
