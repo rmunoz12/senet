@@ -5,11 +5,14 @@
 func void begin() {
     # print([]); print("\n");
     int x = 1; int y = 2; int z = 3;
+    str s = "hello world!";
+
     print([x, y, z]); print("\n");
-
     print([3, 4, 5]); print("\n");
-
     print(["abc", "def"]); print("\n");
+    print([s, "123"]); print("\n");
+    print([True, False, True]); print("\n");
+
     end;
 }
 

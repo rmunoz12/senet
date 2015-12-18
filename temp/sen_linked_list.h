@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 // Heavily based on
 // http://pseudomuto.com/development/2013/05/02/implementing-a-generic-linked-list-in-c/
@@ -64,6 +65,10 @@ void printInt(void *n) {
 
 void printStr(void *n) {
    printf("%s", *(char **)n);
+}
+
+void printBool(void *b) {
+  printf("%s", *(bool *)b ? "true" : "false");
 }
 
 /* Function to print Sen_nodes in a given linked list. fpitr is used

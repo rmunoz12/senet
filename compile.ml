@@ -91,6 +91,7 @@ let rec printf (detail, typ) =
       let func = match l_typ with
           Int -> "printInt"
         | Str -> "printStr"
+        | Bool -> "printBool"
       in
       "printList(&" ^ prefix_name e_c_string ^ ", " ^ func ^ ")"
   (* in
