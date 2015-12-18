@@ -91,20 +91,28 @@ let rec printf (detail, typ) =
    | Str -> "printf(\"%s\", " ^ e_c_string  ^ ")"
    | Group(x, _) ->
       "printf(" ^ prefix_name x ^ "_" ^ prefix_name "__repr__" ^
-      "((struct " ^ prefix_name x  ^ "*) "  ^ "&" ^ e_c_string ^ ")" ^ ")"
+      "((struct " ^ prefix_name x  ^ "*) " ^ "&" ^ e_c_string ^ ")" ^ ")"
   | Void -> "printf(" ^"\"None\""  ^ ")"
   | List_t(l_typ) ->
-      let func = match l_typ with
-          Int -> "printInt"
-        | Str -> "printStr"
-        | Bool -> "printBool"
-        | Void -> "printEmptyList"
-      in
-      "printList(&" ^
-         (match detail with
-            Field(_) -> e_c_string
-          | _ -> prefix_name e_c_string) ^
-       ", " ^ func ^ ")"
+    let list_id = match detail with
+        Field(_) -> e_c_string
+      | _ -> prefix_name e_c_string
+    in
+    match l_typ with
+        Group(x, g) ->
+          (* let *)
+          "printGroupList(&" ^ list_id ^ ", " ^
+          prefix_name x ^ "_" ^ prefix_name "__repr__" ^ ")"
+      | _ ->
+        let func = match l_typ with
+            Int -> "printInt"
+          | Str -> "printStr"
+          | Bool -> "printBool"
+          | Void -> "printEmptyList"
+          | Group(s, g) ->
+              raise (SemError ("Internal error: printList call with Group"))
+        in
+        "printList(&" ^ list_id ^ ", " ^ func ^ ")"
 
 and formal_to_c v =
   id_type_to_c v.vtype ^ prefix_name v.vname

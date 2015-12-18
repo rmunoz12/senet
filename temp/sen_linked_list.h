@@ -2,6 +2,14 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+// http://stackoverflow.com/questions/10405436/anonymous-functions-using-gcc-statement-expressions
+#define lambda(return_type, function_body) \
+({ \
+      return_type __fn__ function_body \
+          __fn__; \
+})
+
+
 // Heavily based on
 // http://pseudomuto.com/development/2013/05/02/implementing-a-generic-linked-list-in-c/
 
@@ -73,6 +81,21 @@ void printBool(void *b) {
 
 void printEmptyList(void *el) {
   printf("[]");
+}
+
+void printGroupList(Sen_list *list, char *(*fptr)(void *)) {
+  int i = 0;
+  Sen_node *n = list->tail;
+  printf("[");
+    while (i < list->len) {
+    printf((*fptr)(n->data));
+    n = n->prev;
+    ++i;
+    if (i < list->len) {
+      printf(", ");
+    }
+  }
+  printf("]");
 }
 
 /* Function to print Sen_nodes in a given linked list. fpitr is used

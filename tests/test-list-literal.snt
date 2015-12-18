@@ -1,4 +1,17 @@
-@setup { int x = 1; int y = 2; int z = 3; }
+@setup {
+
+group A(Object) {
+    str s;
+    func group A __init__(str s) {
+        this.s = s;
+        return this;
+    }
+    func str __repr__() {
+        return this.s;
+    }
+};
+
+}
 
 @turns {
 
@@ -8,6 +21,10 @@ func void begin() {
     list[int] a = [1, 2, 3];
     list[str] b = ["x", "y", s];
 
+    group A obj1 = A("obj1");
+    group A obj2 = A("obj2");
+    group A obj3 = A("obj3");
+
     print([]); print("\n");
     print([x, y, z]); print("\n");
     print([3, 4, 5]); print("\n");
@@ -16,6 +33,9 @@ func void begin() {
     print([True, False, True]); print("\n");
     print(a); print("\n");
     print(b); print("\n");
+
+    print([obj1, obj2, obj3]); print("\n");
+
 
     end;
 }
