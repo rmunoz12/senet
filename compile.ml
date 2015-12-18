@@ -1,36 +1,25 @@
 open Types
 open Sast
 
-<<<<<<< HEAD
-let setup_to_c s =
-    "#include <stdbool.h>" ^ "\n" ^
-    "#include <stdio.h>" ^ "\n" ^
-    "#include <stdlib.h>" ^ "\n" ^
-       "\n" ^
-    "void (*CUR_TURN)();" ^ "\n" ^
-    "int PLAYER_ON_MOVE;" ^ "\n" ^
-    "" ^ "\n"
+(* <<<<<<< HEAD
 
 let id_type_to_c ft = match ft with
   |  Int -> "Sen_int *"
   |  Bool -> "Sen_bool *"
   |  Str -> "Sen_str *"
   |  _ -> "void"
-=======
+======= *)
 let prefix_name n =
   "snt_" ^ n
 
 let senet_header =
-  "#include <stdbool.h>" ^ "\n" ^
-  "#include <stdio.h>" ^ "\n" ^
-  "#include <stdlib.h>" ^ "\n" ^
-  "#include <string.h>\n" ^
+  "#include \"c_files/headers/all_headers.h\"" ^"\n" ^
      "\n" ^
   "struct SENET_NONE {\n" ^
   "  } SENET_NONE;\n" ^
      "\n" ^
   "char *SENET_STR_CONCAT(char* s1, char* s2) {\n" ^
-  "  char *temp = (char *) malloc(strlen(s1)+ strlen(s2) +1);\n" ^
+  "  char *temp = (char * ) malloc(strlen(s1)+ strlen(s2) +1);\n" ^
   "  strcpy(temp, s1);\n" ^
   "  strcat(temp, s2);\n" ^
   "  return temp;\n" ^
@@ -63,7 +52,7 @@ let id_type_to_c = function
   |  Void -> "void "
   (* | List_t(ft) -> *)
   | Group(s, _) -> "struct " ^ prefix_name s ^ " "
->>>>>>> de73297d967f518e7c463fb57cac4913f53340a8
+(* >>>>>>> de73297d967f518e7c463fb57cac4913f53340a8 *)
 
 let rec field_to_c = function
     Var(v) -> prefix_name v.vname
@@ -104,10 +93,21 @@ let rec printf var = match var with
   "printf(" ^ arg ^ ")"
   | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr)
 
-<<<<<<< HEAD
+(*
+  | [] -> ""
+  | [el_string, typ] ->
+  let arg =
+    | Void -> "printf(\"None\")"
+    | _ -> "PRINT(" ^ el_string ^ ")"
+  in
+  arg ^ ";\n"
+  | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr)
+*)
+
+(* <<<<<<< HEAD
 let rec expression_to_c = function
     IntLiteral(i) -> "CONSTRUCT_INT(" ^ string_of_int i ^ ")"
-=======
+======= *)
 let formal_to_c v =
   id_type_to_c v.vtype ^ prefix_name v.vname
 
@@ -126,7 +126,7 @@ let rec var_decl_to_c v =
 
 and expression_to_c = function
     IntLiteral(i) -> string_of_int i
->>>>>>> de73297d967f518e7c463fb57cac4913f53340a8
+(* >>>>>>> de73297d967f518e7c463fb57cac4913f53340a8 *)
   | StrLiteral(s) -> Ast.escaped_string s
   (* | ListLiteral(ll) -> "" *)
   | BoolLiteral(b) ->
