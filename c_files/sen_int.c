@@ -70,5 +70,3 @@ Sen_int_class Sen_int_class_ = {
     &Sen_int_vtable_,
     INT
 };
-
-

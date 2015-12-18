@@ -56,6 +56,7 @@ rule token = parse
 | "pass"   { PASS }
 | "@setup" { SETUP }
 | "@turns" { TURNS }
+| "this"   { THIS }
 | ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }
 | ['a'-'z' 'A'-'Z' '_']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }

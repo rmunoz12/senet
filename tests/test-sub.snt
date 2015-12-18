@@ -1,0 +1,10 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    print(2 - 3);
+    end;
+}
+
+}

@@ -1,0 +1,18 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    int a = 5;
+    while (a > 0) {
+        if (a % 2 == 1) {
+            a = a - 1;
+            continue;
+        }
+        print(a); print("\n");
+        a = a - 1;
+    }
+    end;
+}
+
+}

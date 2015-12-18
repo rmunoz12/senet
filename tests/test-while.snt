@@ -1,0 +1,14 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    int a = 5;
+    while (a > 0) {
+        print(a); print("\n");
+        a = a - 1;
+    }
+    end;
+}
+
+}

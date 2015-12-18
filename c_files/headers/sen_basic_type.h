@@ -41,6 +41,10 @@ void * get_val_basic_type (Sen_basic_type *);
 void * set_val_basic_type (Sen_basic_type *, void *);
 Sen_basic_type * add_basic_type (Sen_basic_type *, Sen_basic_type *);
 
-#define ADD_BASIC_TYPE(x,y) x->classp->tablep->add((Sen_basic_type *)x, (Sen_basic_type *)y)
+//#define ADD_BASIC_TYPE(x,y, target) x->classp->tablep->add((Sen_basic_type *)x, (Sen_basic_type *)y)
+#define ADD_BASIC_TYPE(x,y) ({                  \
+    __auto_type  __temp__ = x;\
+    __temp__->classp->tablep->add((Sen_basic_type *)__temp__, (Sen_basic_type *)y);\
+    })
 
 #endif

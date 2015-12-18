@@ -1,0 +1,19 @@
+@setup {
+
+func int test(int x) {
+    return x + 1;
+}
+
+}
+
+@turns {
+
+func void begin() {
+    int a = 5;
+    print(a); print("\n");
+    a = test(a);
+    print(a); print("\n");
+    end;
+}
+
+}

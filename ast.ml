@@ -26,6 +26,7 @@ type list_lit =
 
 type field_expr =
     Id of string
+  | This
   | FieldCall of field_expr * string
 
 type expr =
@@ -55,7 +56,7 @@ type stmt =
   | For of var_decl * expr list * stmt
   | While of expr * stmt
   | End
-  | Pass of field_expr * expr
+  | Pass of string * expr
 
 and init =
   | ExprInit of expr
@@ -127,6 +128,7 @@ let rec string_of_list_lit = function
 
 let rec string_of_field = function
     Id(s) -> s
+  | This -> "this"
   | FieldCall(f,s) -> string_of_field f ^ "." ^ s
 
 let rec string_of_expr = function
@@ -182,7 +184,7 @@ let rec string_of_stmt = function
             "{\n" ^ String.concat ", " (List.map string_of_expr elist) ^ "}\n" ^
           ") " ^ string_of_stmt s
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") {\n" ^ string_of_stmt s ^ "\n}\n"
-  | Pass(e, s) -> "pass (" ^ string_of_field e ^ ", " ^ string_of_expr s ^ ")\n"
+  | Pass(s, e) -> "pass (" ^ s ^ ", " ^ string_of_expr e ^ ")\n"
   | Break -> "break;\n"
   | Continue -> "continue;\n"
   | End -> "end();\n"
@@ -210,7 +212,11 @@ let string_of_fdecl = function
 let string_of_gdecl gdecl =
   "group " ^ gdecl.gname ^ "(" ^
       (match gdecl.extends with
-           Some(par) -> string_of_field par
+           Some(par) -> string_of_field par ^
+              (match gdecl.par_actuals with
+                  Some(acts) ->
+                    "(" ^ String.concat ", " (List.map string_of_expr acts) ^ ")"
+                | None -> "")
          | None -> "") ^ ")\n{\n" ^
   String.concat "" (List.map (fun v -> string_of_vdecl v ^ ";\n") gdecl.attributes) ^
   String.concat "" (List.map string_of_fdecl gdecl.methods) ^

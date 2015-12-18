@@ -21,6 +21,7 @@
 %token ASSERT
 %token REMOVE PLACE
 %token SETUP TURNS FUNC
+%token THIS
 
 /* %nonassoc NOELSE */
 /* %nonassoc ELSE */
@@ -45,7 +46,11 @@ program:
   twoparts EOF { $1 }
 
 twoparts:
-    SETUP LBRACE decls RBRACE TURNS LBRACE fdecl_list RBRACE {$3, $7}
+    SETUP LBRACE decls RBRACE TURNS LBRACE fdecl_list RBRACE
+      {(List.rev (fst_of_three $3),
+        List.rev (snd_of_three $3),
+        List.rev (trd_of_three $3)),
+        List.rev $7}
 
 decls:
    /* nothing */ { [], [], [] }
@@ -153,7 +158,7 @@ stmt:
   | BREAK SEMI    { Break}
   | CONTINUE SEMI { Continue }
   | END SEMI { End }
-  | PASS LPAREN field_expr COMMA expr RPAREN SEMI { Pass($3, $5) }
+  | PASS LPAREN ID COMMA expr RPAREN SEMI { Pass($3, $5) }
 
 
 expr:
@@ -179,14 +184,20 @@ expr:
   | field_expr ASSIGN expr   { Assign($1, $3) }
   | field_expr LPAREN actuals_opt RPAREN { Call($1, $3) }
   | expr LBRACKET expr RBRACKET { Element($1, $3) }
-  | LPAREN expr RPAREN { $2 }
+  | LPAREN expr_opt RPAREN { $2 }
   | MINUS expr %prec UMINUS { Uminus($2) }
   | NOT expr { Not($2) }
   | field_expr PLACE field_expr PLACE list_lit   { Place($1, $3, $5) }
   | field_expr REMOVE field_expr REMOVE list_lit { Remove($1, $3, $5) }
 
+expr_opt:
+    /* nothing */ { Noexpr }
+  | expr          { $1 }
+
+
 field_expr:
     ID                     { Id($1) }
+  | THIS DOT ID            { FieldCall(This, $3) }
   | field_expr DOT ID      { FieldCall($1, $3) }
 
 expr_list:
@@ -203,22 +214,22 @@ actuals_list:
 
 list_lit:
     LBRACKET RBRACKET                  { EmptyList }
-  | LBRACKET list_elems RBRACKET       { Elems(List.rev $2) }
+  | LBRACKET list_elem RBRACKET       { Elems(List.rev $2) }
   | LBRACKET list_of_list_lit RBRACKET { List(List.rev $2) }
 
 list_of_list_lit:
     list_lit                        { [$1] }
   | list_of_list_lit COMMA list_lit { $3 :: $1 }
 
-list_elems:
-    INTLITERAL                  { [IntElem($1)] }
-  | STRLITERAL                  { [StrElem($1)] }
-  | bool_lit                    { [BoolElem($1)] }
-  | ID                          { [IdElem($1)] }
-  | list_elems COMMA INTLITERAL { IntElem($3) :: $1 }
-  | list_elems COMMA STRLITERAL { StrElem($3) :: $1 }
-  | list_elems COMMA bool_lit   { BoolElem($3) :: $1 }
-  | list_elems COMMA ID         { IdElem($3) :: $1 }
+list_elem:
+    INTLITERAL                 { [IntElem($1)] }
+  | STRLITERAL                 { [StrElem($1)] }
+  | bool_lit                   { [BoolElem($1)] }
+  | ID                         { [IdElem($1)] }
+  | list_elem COMMA INTLITERAL { IntElem($3) :: $1 }
+  | list_elem COMMA STRLITERAL { StrElem($3) :: $1 }
+  | list_elem COMMA bool_lit   { BoolElem($3) :: $1 }
+  | list_elem COMMA ID         { IdElem($3) :: $1 }
 
 bool_lit:
     TRUE  { True }

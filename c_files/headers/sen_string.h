@@ -14,10 +14,11 @@ typedef struct Sen_string Sen_string;
 
 struct Sen_string_vtable {
     void (*print) (Sen_object *);
-    void *(*get_val) (Sen_basic_type *);
-    void *(*set_val) (Sen_basic_type *, void *);
     Sen_string *(*construct) (char *);
     void (*destruct) (Sen_string *);
+    Sen_string *(*copy) (Sen_string *);
+    void *(*get_val) (Sen_basic_type *);
+    void *(*set_val) (Sen_basic_type *, void *);
     Sen_basic_type *(*add) (Sen_basic_type *, Sen_basic_type *);
 };
 
@@ -39,8 +40,11 @@ extern Sen_string_vtable Sen_string_vtable_;
 
 void print_string (Sen_object *);
 Sen_string * construct_string (char *);
+void destruct (Sen_string *);
+Sen_string * copy_string  (Sen_string *);
 void *get_val_string (Sen_basic_type *);
 void *set_val_string (Sen_basic_type *, void *);
+
 
 #define CONSTRUCT_STRING(val) ((Sen_string*) construct_string(val))
 

@@ -1,0 +1,13 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    print(True and True); print("\n");
+    print(False and False); print("\n");
+    print(True and False); print("\n");
+    print(False and True); print("\n");
+    end;
+}
+
+}

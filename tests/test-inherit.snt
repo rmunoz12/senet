@@ -1,0 +1,58 @@
+@setup {
+
+group A() {
+    int x;
+
+    func void __init__() {
+        this.x = 1;
+    }
+};
+
+
+group B(A) {
+    int y;
+
+    func void __init__(int a, int b) {
+        this.x = a;
+        this.y = b;
+    }
+};
+
+group C(A()) {
+    int a;
+    int b;
+};
+
+group D(B(1, 2)) {
+    int a;
+};
+
+group B obj;
+group C obj2;
+group D obj3;
+group D obj4;
+group B obj5;
+
+}
+
+@turns {
+
+func void begin() {
+    obj.__init__(2, 3);
+    obj2.__init__();
+    obj3.__init__();
+    obj4.__init__();
+    obj5.__init__(5, 6);
+    print(obj.x); print("\n");
+    print(obj.y); print("\n");
+    print(obj2.x); print("\n");
+    print(obj3.x); print("\n");
+    print(obj3.y); print("\n");
+    print(obj4.x); print("\n");
+    print(obj4.y); print("\n");
+    print(obj5.x); print("\n");
+    print(obj5.y); print("\n");
+    end;
+}
+
+}
