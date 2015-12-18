@@ -12,4 +12,4 @@ main: $(SRC)
 	  $(CC) -o out $(CFLAGS) $(INC) $(SRC)
 
 clean:
-	  rm -f *.o
+	  rm -f *.o out

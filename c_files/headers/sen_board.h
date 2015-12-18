@@ -48,12 +48,11 @@ int board_index (Sen_array *);
 #define CONSTRUCT_BOARD(array) ({                                       \
             __auto_type input_arr = array;                              \
             __auto_type __temp_board__ = construct_board(input_arr->len); \
-            __temp_board__->len=input_arr->len;                             \
-            printf("OKAY \n");                                       \
+            __temp_board__->len=input_arr->len;                         \
+            printf("OKAY\n");\
             __temp_board__->data=COPY(input_arr);                       \
-                if (!input_arr->bound) {                                \
+            if (!input_arr->bound) {                                    \
                 DESTRUCT(input_arr);                                    \
-                printf("OKAY\n");                                       \
             }                                                           \
             __temp_board__;                                             \
         })

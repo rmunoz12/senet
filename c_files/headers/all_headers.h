@@ -13,4 +13,5 @@
 #include "sen_string.h"
 #include "sen_array.h"
 #include "sen_board.h"
+#include "sen_board_square.h"
 #endif

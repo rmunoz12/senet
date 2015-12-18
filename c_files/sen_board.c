@@ -20,10 +20,11 @@ Sen_board *construct_board(Sen_object *val[], int len) {
 
 Sen_board *construct_board(int len) {
     Sen_board *ret = malloc(sizeof(Sen_board));
-    ret->len = len;
+    ret->len   = len;
     ret->bound = false;
-    ret->data = construct_array(len);
-    ret->print_sep=' ';
+    ret->data  = construct_array(len);
+    ret->print_sep = ' ';
+    printf("hi\n");
     return ret;
 }
 

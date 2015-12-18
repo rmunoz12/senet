@@ -43,7 +43,7 @@ Sen_object * copy_object (Sen_object *);
 
 #define PRINT(self) {\
     typeof(self) __temp__ = self;\
-    __temp__->classp->tablep->print(((Sen_object *) __temp__)); \
+    __temp__->classp->tablep->print(((Sen_object *)__temp__)); \
 }
 #define DESTRUCT(self) ({\
             __auto_type __temp__ = self;            \

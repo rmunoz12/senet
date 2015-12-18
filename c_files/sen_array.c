@@ -21,6 +21,7 @@ Sen_array *construct_array(Sen_object *val[], int len) {
 Sen_array *construct_array(int len) {
     Sen_array *ret = malloc(sizeof(Sen_array));
     ret->len = len;
+    ret->classp = &Sen_array_class_;
     ret->bound = false;
     ret->arr = malloc(sizeof(Sen_array *) * len);
     ret->print_sep=' ';
@@ -35,12 +36,14 @@ void destruct_array(Sen_array *self) {
 }
 
 Sen_array *copy_array(Sen_array *other) {
-    Sen_array *ret = malloc(sizeof(Sen_array));
-    ret->len = other->len;
-    ret->arr = malloc(sizeof (Sen_array *) * ret->len);
+    Sen_array *ret = construct_array(other->len);
     for (int i=0; i<ret->len; i++) {
-        ret->arr[i] = COPY(other->arr[i]);
+        printf("%d %d\n", other->len, ((Sen_int *)(other->arr[i]))->val);
+        printf("OKAY1\n");
+        ret->arr[i] = COPY(((other->arr)[i]));
+        printf("OKAY2\n");
     }
+    printf("OKAY1\n");
     return ret;
 }
 
