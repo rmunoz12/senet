@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS= -Wall
+CFLAGS= -Wall -g
 
 INC= -I ./headers
 
@@ -12,4 +12,4 @@ main: $(SRC)
 	  $(CC) -o out $(CFLAGS) $(INC) $(SRC)
 
 clean:
-	  rm -f *.o
+	  rm -f *.o out

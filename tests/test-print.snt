@@ -1,6 +1,6 @@
 @setup {
 
-group A() {
+group A(Object) {
     func group A __init__() { return this; }
 };
 

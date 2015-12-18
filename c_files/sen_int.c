@@ -12,6 +12,11 @@ void destruct_int(Sen_int *self) {
     free(self);
 }
 
+Sen_int *copy_int(Sen_int *self) {
+    Sen_int *ret = construct_int(self->val);
+    return ret;
+}
+
 void print_int(Sen_object *self) {
     printf("%d", ((Sen_int *) self)->val);
     if (!((Sen_int *)self)->bound) {
@@ -55,6 +60,7 @@ Sen_int_vtable Sen_int_vtable_ = {
     set_val_int,
     construct_int,
     destruct_int,
+    copy_int,
     add_int
 };
 
@@ -64,5 +70,3 @@ Sen_int_class Sen_int_class_ = {
     &Sen_int_vtable_,
     INT
 };
-
-

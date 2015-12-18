@@ -1,6 +1,14 @@
 open Types
 open Sast
 
+(* <<<<<<< HEAD
+
+let id_type_to_c ft = match ft with
+  |  Int -> "Sen_int *"
+  |  Bool -> "Sen_bool *"
+  |  Str -> "Sen_str *"
+  |  _ -> "void"
+======= *)
 let prefix_name n =
   "snt_" ^ n
 
@@ -17,20 +25,20 @@ let senet_header =
   "struct Sen_list snt_SEN_EMPTY_LIST;\n" ^
     "\n" ^
   "char *SENET_STR_CONCAT(char* s1, char* s2) {\n" ^
-  "  char *temp = (char *) malloc(strlen(s1)+ strlen(s2) +1);\n" ^
+  "  char *temp = (char * ) malloc(strlen(s1)+ strlen(s2) +1);\n" ^
   "  strcpy(temp, s1);\n" ^
   "  strcat(temp, s2);\n" ^
   "  return temp;\n" ^
   "}\n" ^
     "\n" ^
   "void (*CUR_TURN)();" ^ "\n" ^
-  "int PLAYER_ON_MOVE;" ^ "\n" ^
+  "int snt_PLAYER_ON_MOVE;" ^ "\n" ^
     "\n"
 
 let senet_footer =
   "int main() {\n" ^
   "  CUR_TURN = &snt_begin;\n" ^
-  "  PLAYER_ON_MOVE = 0;\n" ^
+  "  snt_PLAYER_ON_MOVE = 0;\n" ^
   "  while (true) {\n" ^
   "    CUR_TURN();\n" ^
   "  }\n" ^
@@ -50,6 +58,7 @@ let id_type_to_c = function
   | Void -> "void "
   | List_t(typ) -> "struct Sen_list "
   | Group(s, _) -> "struct " ^ prefix_name s ^ " "
+(* >>>>>>> de73297d967f518e7c463fb57cac4913f53340a8 *)
 
 let rec field_to_c = function
     Var(v) -> prefix_name v.vname
@@ -264,7 +273,7 @@ let rec statement_to_c = function
   | End -> "exit(0);"
   | Pass(e,s) -> let detaill, _ = s in
                      "CUR_TURN = &" ^ prefix_name (function_call_to_c e) ^ ";\n" ^
-                     "PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";"
+                     "snt_PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";"
   | While(e, s) ->
       let detail, _ = e in
       "while (" ^ expression_to_c detail ^ ") {\n" ^

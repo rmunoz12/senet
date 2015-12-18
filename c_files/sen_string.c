@@ -1,17 +1,25 @@
 #include "headers/all_headers.h"
 
 Sen_string *construct_string(char *val) {
+    int l = strlen(val);
     Sen_string *ret = malloc(sizeof(Sen_string));
     ret->classp = &Sen_string_class_;
-    ret->val = (char *)malloc(strlen(val)+1);
-    strncpy(ret->val, val, strlen(val)+1);
+    ret->val = (char *)malloc(l+1);
+    strncpy(ret->val, val, l+1);
     ret->bound = false;
     return ret;
 }
 
 void destruct_string(Sen_string *self) {
     free(self->val);
+    self->val = NULL;
     free(self);
+    self=NULL;
+}
+
+
+Sen_string *copy_string(Sen_string *other) {
+    return construct_string(other->val);
 }
 
 void print_string(Sen_object *self) {
@@ -56,10 +64,11 @@ Sen_basic_type *add_string(Sen_basic_type *x, Sen_basic_type *y) {
 
 Sen_string_vtable Sen_string_vtable_ = {
     print_string,
-    get_val_string,
-    set_val_string,
     construct_string,
     destruct_string,
+    copy_string,
+    get_val_string,
+    set_val_string,
     add_string
 };
 
@@ -69,5 +78,3 @@ Sen_string_class Sen_string_class_ = {
     &Sen_string_vtable_,
     STR
 };
-
-

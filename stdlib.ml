@@ -25,3 +25,26 @@ let funcs =
   [BasicFunc(print_str); BasicFunc(print_bool); BasicFunc(print_int);
    BasicFunc(print_group)]
 
+let vars =
+  let init = IntLiteral(0) in
+  let v = { vname = "PLAYER_ON_MOVE" ; vinit = Some(init, Int) ; vtype = Int } in
+  [v]
+
+let grps =
+  let stmt = Return(Field(This), Group("Object", None)) in
+  let init =
+    { ftype = Group("Object", None);
+      fname = "__init__";
+      formals = [];
+      locals = [];
+      body = [stmt];
+      turns_func = false;
+      group_method = "Object";
+      f_is_built_in = true } in
+  let obj =
+    { gname = "Object";
+      extends = None;
+      par_actuals = None;
+      attributes = [];
+      methods = [BasicFunc(init)] } in
+  [obj]

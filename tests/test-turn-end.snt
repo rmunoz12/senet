@@ -1,0 +1,18 @@
+@setup { int x = 0; }
+
+@turns {
+
+func void begin() {
+    if (PLAYER_ON_MOVE == 1) {
+        end;
+    } else {
+        print("passing\n");
+        pass(ending, 1);
+    }
+}
+
+func void ending() {
+    pass (begin, 1);
+}
+
+}

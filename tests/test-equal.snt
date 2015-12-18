@@ -1,6 +1,6 @@
 @setup {
 
-group base() {
+group base(Object) {
     int x;
     int y;
     func group base __init__(int x, int y) {
