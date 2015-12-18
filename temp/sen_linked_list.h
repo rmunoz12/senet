@@ -71,6 +71,10 @@ void printBool(void *b) {
   printf("%s", *(bool *)b ? "true" : "false");
 }
 
+void printEmptyList(void *el) {
+  printf("[]");
+}
+
 /* Function to print Sen_nodes in a given linked list. fpitr is used
    to access the function to be used for printing current Sen_node data.
    Note that different data types need different specifier in printf() */
@@ -88,5 +92,3 @@ void printList(Sen_list *list, void (*fptr)(void *)) {
   }
   printf("]");
 }
-
-

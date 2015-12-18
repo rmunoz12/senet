@@ -14,6 +14,8 @@ let senet_header =
   "struct SENET_NONE {\n" ^
   "  } SENET_NONE;\n" ^
      "\n" ^
+  "struct Sen_list snt_SEN_EMPTY_LIST;\n" ^
+    "\n" ^
   "char *SENET_STR_CONCAT(char* s1, char* s2) {\n" ^
   "  char *temp = (char *) malloc(strlen(s1)+ strlen(s2) +1);\n" ^
   "  strcpy(temp, s1);\n" ^
@@ -83,20 +85,13 @@ let rec printf (detail, typ) =
       "((struct " ^ prefix_name x  ^ "*) "  ^ "&" ^ e_c_string ^ ")" ^ ")"
   | Void -> "printf(" ^"\"None\""  ^ ")"
   | List_t(l_typ) ->
-      (* (* "printf([); " ^
-      (* (match detail with
-          ListLit -> ) *)
-      "string_of_sen_int_list(" ^ expression_to_c detail ^ ", " ^ "3" ^ ")" ^
-      "printf(]); " *) *)
       let func = match l_typ with
           Int -> "printInt"
         | Str -> "printStr"
         | Bool -> "printBool"
+        | Void -> "printEmptyList"
       in
       "printList(&" ^ prefix_name e_c_string ^ ", " ^ func ^ ")"
-  (* in
-  "printf(" ^ arg ^ ")" *)
-  (* | car :: cdr -> (printf [car]) ^ ";\n" ^ (printf cdr) *)
 
 and formal_to_c v =
   id_type_to_c v.vtype ^ prefix_name v.vname
@@ -147,7 +142,7 @@ and var_decl_to_c v =
 and list_lit_to_c = function
     Elems(el, name) -> (* prefix_name *) name
   (* | List(ll_list, name) -> *)
-  (* | EmptyList -> "" *)
+  | EmptyList -> "SEN_EMPTY_LIST"
 
 and expression_to_c = function
     IntLiteral(i, name) -> string_of_int i
