@@ -44,6 +44,18 @@ let base_init name =
     group_method = name;
     f_is_built_in = true }
 
+let base_repr name =
+  let s = "<Group " ^ name ^ " instance>" in
+  let body = Return(StrLiteral(s, ""), Str) in
+  BasicFunc({ ftype = Str;
+              fname = "__repr__";
+              formals = [];
+              locals = [];
+              body = [body];
+              turns_func = false;
+              group_method = name;
+              f_is_built_in = true})
+
 let obj =
   let name = "Object" in
   { gname = name;
@@ -54,7 +66,8 @@ let obj =
 
 let board =
   let v =
-    { vname = "cells"; vtype = List_t(Int); vinit = None; vloop = false }
+    { vname = "cells"; vtype = List_t(Group("Piece", None));
+      vinit = None; vloop = false }
   in
   let attr = [v] in
   let v = { v with vname = "x"; vtype = Int } in
@@ -68,7 +81,8 @@ let board =
   let tol = { owns with ftype = List_t(Int); fname = "tol" } in
   let meth =
     [BasicFunc(remove); BasicFunc(owns); BasicFunc(owns);
-     BasicFunc(toi); BasicFunc(tol); BasicFunc(base_init "Board")]
+     BasicFunc(toi); BasicFunc(tol); BasicFunc(base_init "Board");
+     base_repr "Board"]
   in
   { obj with gname = "Board"; extends = Some(obj);
     attributes = attr; methods = meth }
@@ -83,10 +97,10 @@ let piece =
     { ftype = Bool; fname = "place"; formals = [b; x]; locals = []; body = [];
       turns_func = false; group_method = "Piece"; f_is_built_in = true }
   in
-
   { obj with gname = "Piece"; extends = Some(obj);
     attributes = [owner; fixed];
-    methods = [BasicFunc(place); BasicFunc(base_init "Piece")] }
+    methods = [BasicFunc(place); BasicFunc(base_init "Piece");
+               base_repr "Piece"]  }
 
 let boards_lib =
   let x = { vname = "x"; vtype = Int; vinit = None; vloop = false } in
@@ -95,16 +109,29 @@ let boards_lib =
     { vname = "this"; vtype = Group("Rect", None);
       vinit = None; vloop = false }
   in
+  let init_cells =
+    { ftype = Void;
+      fname = "INIT_CELLS";
+      formals = [this_dummy; x];
+      locals = [];
+      body = [];
+      turns_func = false;
+      group_method = "Board";
+      f_is_built_in = true }
+  in
   let stmts =
     [Expression(Assign(Attrib(this_dummy, x), (Field(Var(x)), Int)), Int);
      Expression(Assign(Attrib(this_dummy, y), (Field(Var(y)), Int)), Int);
+     Expression(Call(Some(this_dummy), BasicFunc(init_cells),
+                     [Binop((Field(Var(x)), Int), Mult,
+                            (Field(Var(y)), Int)), Int]), Void);
      Return(Field(This), Group("Rect", None))]
   in
   let init = base_init "Rect" in
   let init = { init with formals = [x; y]; body = stmts } in
   let rect =
     { board with gname = "Rect"; extends = Some(board); attributes = [x; y];
-      methods = [BasicFunc(init)] }
+      methods = [BasicFunc(init); base_repr "Rect"] }
   in
   let this_dummy =
     { vname = "this"; vtype = Group("Loop", None);
@@ -117,7 +144,8 @@ let boards_lib =
   let init = base_init "Loop" in
   let init = { init with formals = [x]; body = stmts } in
   let loop =
-    { rect with gname = "Loop"; attributes = [x]; methods = [BasicFunc(init)] }
+    { rect with gname = "Loop"; attributes = [x];
+      methods = [BasicFunc(init); base_repr "Loop"] }
   in
   let this_dummy =
     { vname = "this"; vtype = Group("Line", None);
@@ -129,7 +157,9 @@ let boards_lib =
      Return(Field(This), Group("Line", None))]
   in
   let init = { init with formals = [x]; body = stmts } in
-  let line = { loop with gname = "Line"; methods = [BasicFunc(init)] } in
+  let line =
+    { loop with gname = "Line"; methods = [BasicFunc(init); base_repr "Line"] }
+  in
   let this_dummy =
     { vname = "this"; vtype = Group("Hex", None);
       vinit = None; vloop = false }
@@ -140,7 +170,9 @@ let boards_lib =
   in
   let init = base_init "Hex" in
   let init = { init with formals = [x]; body = stmts } in
-  let hex = { loop with gname = "Hex"; methods = [BasicFunc(init)] } in
+  let hex =
+    { loop with gname = "Hex"; methods = [BasicFunc(init); base_repr "Hex"] }
+  in
   [rect; loop; line; hex]
 
 let grps =

@@ -1,0 +1,17 @@
+@setup {
+
+group table(Rect(3, 3)) { };
+
+}
+
+@turns {
+
+func void begin() {
+    group table a = table();
+
+    print(a.cells); print("\n");
+    print(a.cells[2]); print("\n");
+    end;
+}
+
+}

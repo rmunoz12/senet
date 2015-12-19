@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#ifndef SEN_LINKED_LIST
+#define SEN_LINKED_LIST
+
 // Heavily based on
 // http://pseudomuto.com/development/2013/05/02/implementing-a-generic-linked-list-in-c/
 
@@ -117,3 +120,5 @@ void *list_elem(Sen_list *list, int i) {
   }
   return n->data;
 }
+
+#endif

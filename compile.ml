@@ -10,6 +10,8 @@ let senet_header =
   "#include <stdlib.h>" ^ "\n" ^
   "#include <string.h>\n" ^
   "#include \"temp/sen_linked_list.h\"\n" ^
+  "#include \"temp/sen_print_base_grps.h\"\n" ^
+  "#include \"temp/sen_init_base_grps.h\"\n" ^
      "\n" ^
   "struct SENET_NONE {\n" ^
   "  } SENET_NONE;\n" ^
@@ -265,6 +267,8 @@ and expression_to_c = function
           let var_name =
             if v.vloop then
               "(" ^ prefix_name v.vname ^ " + __cnt__" ^ prefix_name v.vname ^ ")"
+            else if v.vname = "this" then
+              "this"
             else
               "&" ^ prefix_name v.vname
           in
