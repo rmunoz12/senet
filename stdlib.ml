@@ -33,23 +33,24 @@ let vars =
   in
   [v]
 
+let base_init name =
+  let stmt = Return(Field(This), Group(name, None)) in
+  { ftype = Group(name, None);
+    fname = "__init__";
+    formals = [];
+    locals = [];
+    body = [stmt];
+    turns_func = false;
+    group_method = name;
+    f_is_built_in = true }
+
 let obj =
-  let stmt = Return(Field(This), Group("Object", None)) in
-  let init =
-    { ftype = Group("Object", None);
-      fname = "__init__";
-      formals = [];
-      locals = [];
-      body = [stmt];
-      turns_func = false;
-      group_method = "Object";
-      f_is_built_in = true }
-  in
-  { gname = "Object";
+  let name = "Object" in
+  { gname = name;
     extends = None;
     par_actuals = None;
     attributes = [];
-    methods = [BasicFunc(init)] }
+    methods = [BasicFunc(base_init name)] }
 
 let board =
   let v =
@@ -67,7 +68,7 @@ let board =
   let tol = { owns with ftype = List_t(Int); fname = "tol" } in
   let meth =
     [BasicFunc(remove); BasicFunc(owns); BasicFunc(owns);
-     BasicFunc(toi); BasicFunc(tol)]
+     BasicFunc(toi); BasicFunc(tol); BasicFunc(base_init "Board")]
   in
   { obj with gname = "Board"; extends = Some(obj);
     attributes = attr; methods = meth }
@@ -82,18 +83,64 @@ let piece =
     { ftype = Bool; fname = "place"; formals = [b; x]; locals = []; body = [];
       turns_func = false; group_method = "Piece"; f_is_built_in = true }
   in
+
   { obj with gname = "Piece"; extends = Some(obj);
-    attributes = [owner; fixed]; methods = [BasicFunc(place)] }
+    attributes = [owner; fixed];
+    methods = [BasicFunc(place); BasicFunc(base_init "Piece")] }
 
 let boards_lib =
   let x = { vname = "x"; vtype = Int; vinit = None; vloop = false } in
   let y = { x with vname = "y" } in
-  let rect =
-    { board with gname = "Rect"; extends = Some(board); attributes = [x; y] }
+  let this_dummy =
+    { vname = "this"; vtype = Group("Rect", None);
+      vinit = None; vloop = false }
   in
-  let loop = { rect with gname = "Loop"; attributes = [x] } in
-  let line = { loop with gname = "Line" } in
-  let hex = { loop with gname = "Hex" } in
+  let stmts =
+    [Expression(Assign(Attrib(this_dummy, x), (Field(Var(x)), Int)), Int);
+     Expression(Assign(Attrib(this_dummy, y), (Field(Var(y)), Int)), Int);
+     Return(Field(This), Group("Rect", None))]
+  in
+  let init = base_init "Rect" in
+  let init = { init with formals = [x; y]; body = stmts } in
+  let rect =
+    { board with gname = "Rect"; extends = Some(board); attributes = [x; y];
+      methods = [BasicFunc(init)] }
+  in
+  let this_dummy =
+    { vname = "this"; vtype = Group("Loop", None);
+      vinit = None; vloop = false }
+  in
+  let stmts =
+    [Expression(Assign(Attrib(this_dummy, x), (Field(Var(x)), Int)), Int);
+     Return(Field(This), Group("Loop", None))]
+  in
+  let init = base_init "Loop" in
+  let init = { init with formals = [x]; body = stmts } in
+  let loop =
+    { rect with gname = "Loop"; attributes = [x]; methods = [BasicFunc(init)] }
+  in
+  let this_dummy =
+    { vname = "this"; vtype = Group("Line", None);
+      vinit = None; vloop = false }
+  in
+  let init = base_init "Line" in
+  let stmts =
+    [Expression(Assign(Attrib(this_dummy, x), (Field(Var(x)), Int)), Int);
+     Return(Field(This), Group("Line", None))]
+  in
+  let init = { init with formals = [x]; body = stmts } in
+  let line = { loop with gname = "Line"; methods = [BasicFunc(init)] } in
+  let this_dummy =
+    { vname = "this"; vtype = Group("Hex", None);
+      vinit = None; vloop = false }
+  in
+  let stmts =
+    [Expression(Assign(Attrib(this_dummy, x), (Field(Var(x)), Int)), Int);
+     Return(Field(This), Group("Hex", None))]
+  in
+  let init = base_init "Hex" in
+  let init = { init with formals = [x]; body = stmts } in
+  let hex = { loop with gname = "Hex"; methods = [BasicFunc(init)] } in
   [rect; loop; line; hex]
 
 let grps =

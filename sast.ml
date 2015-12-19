@@ -1066,7 +1066,13 @@ let add_parent_init parent par_actuals name methods = function
     (match parent with
         None -> raise (SemError "No parent but using parent __init__")
       | Some(par) ->
-        let par_init = find_init_func par.methods in
+        let par_init =
+          try
+            find_init_func par.methods
+          with Not_found ->
+            raise (SemError ("Parent __init__ function not found for child: " ^
+                             name))
+        in
         let child_init =
           (match par_actuals with
             Some(el) ->

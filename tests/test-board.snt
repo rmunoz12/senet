@@ -1,0 +1,30 @@
+@setup {
+
+group rect(Rect(3, 3)) { };
+group line(Line(5)) { };
+group loop(Loop(10)) { };
+group hex(Hex(20)) { };
+
+group rect r;
+group line li;
+group loop lo;
+group hex h;
+
+}
+
+@turns {
+
+func void begin() {
+    r = rect();
+    li = line();
+    lo = loop();
+    h = hex();
+
+    print(r.x); print(" "); print(r.y); print("\n");
+    print(li.x); print("\n");
+    print(lo.x); print("\n");
+    print(h.x); print("\n");
+    end;
+}
+
+}
