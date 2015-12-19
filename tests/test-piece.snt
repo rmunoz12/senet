@@ -1,0 +1,33 @@
+@setup {
+
+group mark(Piece) {
+    str symbol;
+    func group mark __init__(str s) {
+        this.fixed = True;
+        this.symbol = s;
+        return this;
+    }
+
+    func str __repr__() {
+        return this.symbol;
+    }
+};
+
+group mark x;
+group mark o;
+
+}
+
+@turns {
+
+func void begin() {
+    x = mark("x");
+    o = mark("o");
+
+    print(x); print("\n");
+    print(o); print("\n");
+
+    end;
+}
+
+}
