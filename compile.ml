@@ -99,8 +99,10 @@ let rec printf (detail, typ) =
           | Str -> "printStr"
           | Bool -> "printBool"
           | Void -> "printEmptyList"
-          | Group(s, g) ->
+          | Group(_, _) ->
               raise (SemError ("Internal error: printList call with Group"))
+          | List_t(_) ->
+              raise (SemError ("Internal error: printList call with List_t"))
         in
         "printList(&" ^ list_id ^ ", " ^ func ^ ")"
 

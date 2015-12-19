@@ -320,63 +320,6 @@ let create_elem_name scope =
   scope.elem_count <- scope.elem_count + 1;
   "__elem__" ^ string_of_int scope.elem_count
 
-let rec check_single_elem env = function
-    Ast.IntElem(i) ->
-      let name = create_elem_name env.scope in
-      IntLiteral(i, name), Int
-  | Ast.StrElem(s) ->
-      let name = create_elem_name env.scope in
-      StrLiteral(s, name), Str
-  | Ast.IdElem(s) ->
-      let vdecl = try
-        find_variable env.scope s
-      with Not_found ->
-        raise (SemError("Undeclared identifier: " ^ s))
-      in
-      let typ = vdecl.vtype in
-      Field(Var(vdecl)), typ
-  | Ast.BoolElem(b) ->
-      let name = create_elem_name env.scope in
-      (match b with
-          Ast.True -> BoolLiteral(True, name), Bool
-        | Ast.False -> BoolLiteral(False, name), Bool)
-
-let rec check_elems_list env = function
-    [] -> []
-  | hd :: rest ->
-      let exp = check_single_elem env hd in
-      exp :: (check_elems_list env rest)
-
-let rec verify_elems_list_type env typ = function
-    [] -> typ
-  | (a, b) :: rest ->
-      if b = typ then
-        verify_elems_list_type env typ rest
-      else
-        raise (SemError ("List elements are not all of same type: " ^
-                         string_of_t typ))
-
-let rec verify_list_of_list_type env typ = function
-    [] -> typ
-  | (Elems(expr_list, name), b) :: rest ->
-      if b = typ then
-        verify_list_of_list_type env typ rest
-      else
-        raise (SemError ("List elements are not all of same type: " ^
-                         string_of_t typ))
-  | (EmptyList, b) :: rest ->
-      verify_list_of_list_type env typ rest
-
-let rec check_listlit env = function
-    Ast.Elems(elems_list) ->
-      let el = check_elems_list env elems_list in
-      let e, typ = List.hd el in
-      let typ = verify_elems_list_type env typ el in
-      let name = create_ll_name env.scope in
-      Elems(el,name), List_t(typ)
-  | Ast.EmptyList ->
-      EmptyList, List_t(Void)
-
 let ast_op_to_sast_op = function
     Ast.Add -> Add
   | Ast.Sub -> Sub
@@ -469,7 +412,85 @@ let verify_args fdcl formals actuals =
   else
     verify_args_helper f_typ a_typ true
 
-let rec check_expr env = function
+let rec verify_elems_list_type env typ = function
+    [] -> typ
+  | (a, b) :: rest ->
+      if b = typ then
+        verify_elems_list_type env typ rest
+      else
+        raise (SemError ("List elements are not all of same type: " ^
+                         string_of_t typ))
+
+(* let verify_list_expr el = *)
+(* check that correct type of expr in list *)
+    (* IntLiteral(i) ->
+  | StrLiteral(s) ->
+  | ListLiteral(ll) ->
+  | BoolLiteral(bl) ->
+  | VoidLiteral ->
+  | Field(fe) ->
+  | Binop(e1, op, e2) ->
+  | Assign(fe, e) ->
+  | Call(fe, el) ->
+  | Element(e1, e2) ->
+  | Uminus(e) ->
+  | Not(e) ->
+  | Noexpr ->
+  | Remove(fe1, fe2, ll) ->
+  | Place(fe1, fe2, ll) -> *)
+
+let rec check_single_elem env (detail, typ) = match detail with
+    IntLiteral(i, _) ->
+      let name = create_elem_name env.scope in
+      IntLiteral(i, name), typ
+  | StrLiteral(s, _) ->
+      let name = create_elem_name env.scope in
+      StrLiteral(s, name), typ
+  | ListLiteral(ll) ->
+      raise (SemError ("A list literal cannot be a list element."))
+  | BoolLiteral(bl, _) ->
+      let name = create_elem_name env.scope in
+      (match bl with
+          True -> BoolLiteral(True, name), typ
+        | False -> BoolLiteral(False, name), typ)
+  | Field(fe) ->
+      (match fe with
+          Var(_) -> detail, typ
+        | Attrib(_, _) -> detail, typ
+        | Method (_, _) -> detail, typ
+        | _ ->
+          raise (SemError ("A list element is not a variable, " ^
+                           "attribute, or method")))
+  | Binop(e1, op, e2) ->
+      raise (SemError ("A list element cannot be binary expression."))
+  | Assign(fe, e) ->
+      raise (SemError ("A list element cannot be assign expression."))
+  | Call(vd_opt, fd, el) ->
+      raise (SemError ("A list element cannot be call expression."))
+  | Uminus(e) ->
+      raise (SemError ("A list element cannot be unary minus expression."))
+  | Not(e) ->
+      raise (SemError ("A list element cannot be not expression."))
+  | Noexpr ->
+      raise (SemError ("A list element cannot be an empty expression."))
+  | Remove(_, _, _) ->
+      raise (SemError ("A list element cannot be a remove expression."))
+  | Place(_, _, _) ->
+      raise (SemError ("A list element cannot be a place expression."))
+  | _ -> detail, typ
+
+and check_listlit env = function
+    Ast.Elems(elems_list) ->
+      let el = List.map (check_expr env) elems_list in
+      let el = List.map (check_single_elem env) el in
+      let e, typ = List.hd el in
+      let typ = verify_elems_list_type env typ el in
+      let name = create_ll_name env.scope in
+      Elems(el,name), List_t(typ)
+  | Ast.EmptyList ->
+      EmptyList, List_t(Void)
+
+and check_expr env = function
     Ast.IntLiteral(i) -> IntLiteral(i, ""), Int
   | Ast.StrLiteral(s) -> StrLiteral(s, ""), Str
   | Ast.ListLiteral(ll) ->

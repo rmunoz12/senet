@@ -13,23 +13,16 @@ type bool_lit =
     True
   | False
 
-type list_elem =
-    IntElem of int
-  | StrElem of string
-  | IdElem of string
-  | BoolElem of bool_lit
-
-type list_lit =
-    Elems of list_elem list
-  | List of list_lit list
-  | EmptyList
-
 type field_expr =
     Id of string
   | This
   | FieldCall of field_expr * string
 
-type expr =
+type list_lit =
+    Elems of expr list
+  | EmptyList
+
+and expr =
     IntLiteral of int
   | StrLiteral of string
   | ListLiteral of list_lit
@@ -113,25 +106,17 @@ let rec string_of_vtype = function
       "list[" ^ string_of_vtype vt ^ "]"
   | Group(s) -> s
 
-let rec string_of_list_elems = function
-    IntElem(i) -> string_of_int i
-  | StrElem(s) -> escaped_string s
-  | BoolElem(b) -> (match b with True -> "True" | False -> "False")
-  | IdElem(s) -> s
-
-let rec string_of_list_lit = function
-    EmptyList -> "[]"
-  | Elems(e) ->
-        "[" ^ String.concat ", " (List.map string_of_list_elems e) ^ "]"
-  | List(l) ->
-        "[" ^ String.concat ", " (List.map string_of_list_lit l) ^ "]"
-
 let rec string_of_field = function
     Id(s) -> s
   | This -> "this"
   | FieldCall(f,s) -> string_of_field f ^ "." ^ s
 
-let rec string_of_expr = function
+let rec string_of_list_lit = function
+    EmptyList -> "[]"
+  | Elems(e) ->
+        "[" ^ String.concat ", " (List.map string_of_expr e) ^ "]"
+
+and string_of_expr = function
     IntLiteral(l) -> string_of_int l (*[?  |  ?]*)
   | Field(f) -> string_of_field f
   | Binop(e1, o, e2) ->

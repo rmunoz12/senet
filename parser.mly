@@ -217,18 +217,8 @@ actuals_list:
   | actuals_list COMMA expr { $3 :: $1 }
 
 list_lit:
-    LBRACKET RBRACKET                  { EmptyList }
-  | LBRACKET list_elem RBRACKET        { Elems(List.rev $2) }
-
-list_elem:
-    INTLITERAL                 { [IntElem($1)] }
-  | STRLITERAL                 { [StrElem($1)] }
-  | bool_lit                   { [BoolElem($1)] }
-  | ID                         { [IdElem($1)] }
-  | list_elem COMMA INTLITERAL { IntElem($3) :: $1 }
-  | list_elem COMMA STRLITERAL { StrElem($3) :: $1 }
-  | list_elem COMMA bool_lit   { BoolElem($3) :: $1 }
-  | list_elem COMMA ID         { IdElem($3) :: $1 }
+    LBRACKET RBRACKET            { EmptyList }
+  | LBRACKET expr_list RBRACKET  { Elems(List.rev $2) }
 
 bool_lit:
     TRUE  { True }
