@@ -46,5 +46,10 @@ bool snt_Board_snt_full(struct snt_Board *b) {
     return true;
 }
 
+bool snt_Board_snt_remove(struct snt_Board *b, int x) {
+    bool *elem = (bool *) list_elem(&(b->occupied), x);
+    *elem = false;
+}
+
 
 #endif

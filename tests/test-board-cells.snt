@@ -14,6 +14,7 @@ func void begin() {
     print(a.occupied[5]); print("\n");
     print(a.owns(2)); print("\n");
     print(a.full()); print("\n");
+    a.remove(6);
 
     end;
 }
