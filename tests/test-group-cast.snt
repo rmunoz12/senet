@@ -7,6 +7,10 @@ group A(Object) {
         this.x = x; this.y = y;
         return this;
     }
+
+    func int test() {
+        return this.x + this.y;
+    }
 };
 
 group B(A) {
@@ -15,6 +19,11 @@ group B(A) {
         this.x = x; this.y = y; this.z = z;
         return this;
     }
+
+    func int test() {
+        return this.x + this.y + this.z;
+    }
+
 };
 
 }
@@ -23,8 +32,11 @@ group B(A) {
 
 func void begin() {
     group A a = B(1, 2, 3);
+    # group B b = A(1, 2);
 
     print(a.y); print("\n");
+    print(a.test()); print("\n");
+    # print(b.test()); print("\n");
     end;
 }
 

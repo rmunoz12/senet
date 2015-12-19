@@ -625,6 +625,19 @@ let rec verify_expr_list_type env typ = function
         raise (SemError ("List of expressions are not all of same type: " ^
                          string_of_t typ))
 
+(* let verify_group_cast env to_name from_name =
+  let rec helper gdcl =
+    if gdcl.gname = to_name then
+      ()
+    else
+      (match gdcl.extends with
+          Some(g) -> helper g
+        | None -> raise (SemError ("Invalid group cast: " ^ to_name ^
+                         " is not an ancestor of " ^ from_name)))
+  in
+  let from_grp = find_group env.scope from_name in
+  helper from_grp *)
+
 let check_init env v_name v_typ = function
     Ast.ExprInit(e) ->
       let e = check_expr env e in
@@ -633,7 +646,8 @@ let check_init env v_name v_typ = function
         Some(e)
       else
         (match v_typ, typ with
-          Group(_, _), Group(_, _) ->
+          Group(to_, _), Group(from, _) ->
+            (* verify_group_cast env to_ from; *)
             Some(e)
          | _, _ ->
             raise (SemError ("Variable initiation type for identifer " ^ v_name ^
