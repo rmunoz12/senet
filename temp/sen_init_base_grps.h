@@ -35,4 +35,16 @@ int snt_Board_snt_owns(struct snt_Board *b, int i) {
     return p->snt_owner;
 }
 
+bool snet_Board_snt_full(struct snt_Board *b) {
+    int i = 0;
+    while (i < b->occupied.len) {
+        bool elem = *((bool *) list_elem(&(b->occupied), i));
+        if (elem == false) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 #endif
