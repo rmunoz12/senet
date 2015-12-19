@@ -585,7 +585,7 @@ and check_expr env = function
       let e1 = check_expr env e1
       and e2 = check_expr env e2 in
       let _, t1 = e1 in
-      require_integer_list e2 "List of integers expected";
+      require_int e2 "Integer expected for element number";
       (match t1 with
           List_t(typ) -> Element(e1, e2), typ
         | _ -> raise (SemError ("Expression not subscriptable")))

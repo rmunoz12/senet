@@ -123,7 +123,7 @@ and push_ll_to_new_list list_id = function
     Elems(el, _) ->
       let push_elem_to_new_list (detail, typ) =
         "push(&" ^ prefix_name list_id ^
-        ", (void *) &" ^ ll_elem_to_c detail ^ ")"
+        ", (void *) &(" ^ ll_elem_to_c detail ^ "))"
       in
       String.concat ";\n" (List.map push_elem_to_new_list el)
   | EmptyList -> ""
@@ -233,8 +233,6 @@ and expression_to_c = function
       if fname = "print" then
         (* print takes one argument, discard remainder *)
         let e = List.hd el in
-        (* let e_c_string = expression_to_c e in *)
-        (* printf e e_c_string *)
         printf e
       else
       let class_prefix = function_group fd in
@@ -255,7 +253,11 @@ and expression_to_c = function
       class_prefix ^
       field_to_c (Fun(fd)) ^ "(" ^ instance_addr ^
       String.concat ", " (List.map expression_to_c e) ^ ")"
-  (* | Element(e1, e2) -> "" *)
+  | Element(e1, e2) ->
+      let d1, typ = e1 in
+      let d2, _ = e2 in
+      "*( (" ^ id_type_to_c typ ^ "*) " ^
+      "list_elem(&" ^ expression_to_c d1 ^ ", " ^ expression_to_c d2 ^ ") )"
   | Uminus(e) -> let detail, _ = e in "-(" ^ expression_to_c detail ^ ")"
   | Not(e) -> let detail, _ = e in "!(" ^ expression_to_c detail ^ ")"
   | Noexpr -> ""
