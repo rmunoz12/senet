@@ -1,6 +1,12 @@
 open Types
 open Sast
 
+type counter = {
+  mutable i : int
+}
+
+let count = { i = 0 }
+
 let prefix_name n =
   "snt_" ^ n
 
@@ -96,12 +102,19 @@ let rec printf (detail, typ) =
       "((struct " ^ prefix_name x  ^ "*) " ^ "&" ^ e_c_string ^ ")" ^ ")"
   | Void -> "printf(" ^"\"None\""  ^ ")"
   | List_t(l_typ) ->
-    let list_id = match detail with
-        Field(_) -> e_c_string
-      | _ -> prefix_name e_c_string
+    let tmp_var, list_id = match detail with
+        Field(_) -> "", e_c_string
+      | Call(vd_opt, fd, _) ->
+          let tmp_name =
+            count.i <- count.i + 1;
+            "__tp__" ^ string_of_int count.i
+          in
+          id_type_to_c typ ^ tmp_name ^ " = " ^ e_c_string,
+          tmp_name
+      | _ -> "", prefix_name e_c_string
     in
     match l_typ with
-        Group(x, g) ->
+      | Group(x, g) ->
           "printGroupList(&" ^ list_id ^ ", " ^
           prefix_name x ^ "_" ^ prefix_name "__repr__" ^ ")"
       | _ ->
@@ -115,6 +128,7 @@ let rec printf (detail, typ) =
           | List_t(_) ->
               raise (SemError ("Internal error: printList call with List_t"))
         in
+        tmp_var ^ ";\n" ^
         "printList(&" ^ list_id ^ ", " ^ func ^ ")"
 
 and formal_to_c v =

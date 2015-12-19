@@ -82,5 +82,25 @@ int snt_Rect_snt_toi(struct snt_Rect *b, Sen_list *list) {
     return (b->y) * y + x;
 }
 
+Sen_list snt_Board_snt_tol(struct snt_Board *b, int i) {
+    Sen_list list;
+    new_Sen_list(&list, sizeof(int));
+    return list; // must be overwritten in child classes
+}
+
+Sen_list snt_Rect_snt_tol(struct snt_Rect *b, int i) {
+    int max_x = b->x;
+    Sen_list list;
+    new_Sen_list(&list, sizeof(int));
+
+    int y = i / 3;
+    int x = i - (max_x * y);
+
+    push(&list, &x);
+    push(&list, &y);
+
+    return list;
+}
+
 
 #endif

@@ -1,0 +1,25 @@
+@setup {
+
+group table(Rect(3, 3)) { };
+
+}
+
+@turns {
+
+func void begin() {
+    group table a = table();
+
+    print(a.tol(0)); print("\n");
+    print(a.tol(1)); print("\n");
+    print(a.tol(2)); print("\n");
+    print(a.tol(3)); print("\n");
+    print(a.tol(4)); print("\n");
+    print(a.tol(5)); print("\n");
+    print(a.tol(6)); print("\n");
+    print(a.tol(7)); print("\n");
+    print(a.tol(8)); print("\n");
+
+    end;
+}
+
+}
