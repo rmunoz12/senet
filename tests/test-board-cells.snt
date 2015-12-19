@@ -11,6 +11,8 @@ func void begin() {
 
     print(a.cells); print("\n");
     print(a.cells[2]); print("\n");
+
+    print(a.occupied[5]); print("\n");
     end;
 }
 

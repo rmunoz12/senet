@@ -69,7 +69,8 @@ let board =
     { vname = "cells"; vtype = List_t(Group("Piece", None));
       vinit = None; vloop = false }
   in
-  let attr = [v] in
+  let occupied = { v with vname ="occupied"; vtype = List_t(Bool) } in
+  let attr = [v; occupied] in
   let v = { v with vname = "x"; vtype = Int } in
   let remove =
     { ftype = Void; fname = "remove"; formals = [v]; locals = []; body = [];
