@@ -80,10 +80,11 @@ let board =
   let v = { v with vname = "l"; vtype = List_t(Int) } in
   let toi = { owns with fname = "toi"; formals = [v] } in
   let tol = { owns with ftype = List_t(Int); fname = "tol" } in
+  let full = { owns with ftype = Bool; fname = "full"; formals = [] } in
   let meth =
     [BasicFunc(remove); BasicFunc(owns); BasicFunc(owns);
      BasicFunc(toi); BasicFunc(tol); BasicFunc(base_init "Board");
-     base_repr "Board"]
+     base_repr "Board"; BasicFunc(full)]
   in
   { obj with gname = "Board"; extends = Some(obj);
     attributes = attr; methods = meth }
