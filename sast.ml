@@ -632,8 +632,12 @@ let check_init env v_name v_typ = function
       if v_typ = typ then
         Some(e)
       else
-        raise (SemError ("Variable initiation type for identifer " ^ v_name ^
-                         " does not match, expected: " ^ string_of_t v_typ))
+        (match v_typ, typ with
+          Group(_, _), Group(_, _) ->
+            Some(e)
+         | _, _ ->
+            raise (SemError ("Variable initiation type for identifer " ^ v_name ^
+                             " does not match, expected: " ^ string_of_t v_typ)))
   | Ast.NoInit -> None
 
 let rec find_turn_name (scope : symbol_table) name =

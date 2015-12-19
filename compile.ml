@@ -161,9 +161,17 @@ and var_decl_to_c v = match v.vtype, v.vinit with
         " = " ^ prefix_name name ^ ";")
   | _, Some(e) ->
       let detail, typ = e in
-      id_type_to_c v.vtype ^
-      prefix_name v.vname ^
-      " = " ^ expression_to_c detail ^ ";"
+      (match typ with
+          Group(_, _) ->
+            id_type_to_c typ ^ "__tmp__" ^ prefix_name v.vname ^
+            " = " ^ expression_to_c detail ^ ";\n" ^
+            id_type_to_c v.vtype ^ prefix_name v.vname ^
+            " = " ^ "*((" ^ id_type_to_c v.vtype ^ "*) &"
+            ^ "__tmp__" ^ prefix_name v.vname ^ ");"
+        | _ ->
+      id_type_to_c v.vtype ^ prefix_name v.vname ^
+      " = " ^ expression_to_c detail ^ ";")
+
 
 and list_lit_to_c = function
     Elems(el, name) -> name
