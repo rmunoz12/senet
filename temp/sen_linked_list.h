@@ -119,9 +119,12 @@ void printList(Sen_list *list, void (*fptr)(void *)) {
 void *list_elem(Sen_list *list, int i) {
   int x = 0;
   Sen_node *n = list->tail;
-  while (x < list->len && x != i) {
-    n = n-> prev;
-    ++x;
+  while (x < list->len) {
+    if (x == i) {
+      return n->data;
+    } else {
+      n = n->prev;
+      ++x;
+    }
   }
-  return n->data;
 }

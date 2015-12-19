@@ -81,7 +81,7 @@ let rec printf (detail, typ) =
    | Int -> "printf(\"%d\", " ^ e_c_string  ^ ")"
    | Str -> "printf(\"%s\", " ^ e_c_string  ^ ")"
    | Group(x, _) ->
-      "printf(" ^ prefix_name x ^ "_" ^ prefix_name "__repr__" ^
+      "printf(\"%s\", " ^ prefix_name x ^ "_" ^ prefix_name "__repr__" ^
       "((struct " ^ prefix_name x  ^ "*) " ^ "&" ^ e_c_string ^ ")" ^ ")"
   | Void -> "printf(" ^"\"None\""  ^ ")"
   | List_t(l_typ) ->
@@ -256,7 +256,11 @@ and expression_to_c = function
   | Element(e1, e2) ->
       let d1, typ = e1 in
       let d2, _ = e2 in
-      "*( (" ^ id_type_to_c typ ^ "*) " ^
+      let c_typ = match typ with
+          List_t(x) -> x
+        | _ as x -> x
+      in
+      "*( (" ^ id_type_to_c c_typ ^ "*) " ^
       "list_elem(&" ^ expression_to_c d1 ^ ", " ^ expression_to_c d2 ^ ") )"
   | Uminus(e) -> let detail, _ = e in "-(" ^ expression_to_c detail ^ ")"
   | Not(e) -> let detail, _ = e in "!(" ^ expression_to_c detail ^ ")"

@@ -1,5 +1,13 @@
 @setup {
 
+group A(Object) {
+    int x;
+    func group A __init__(int x) {
+        this.x = x;
+        return this;
+    }
+};
+
 }
 
 @turns {
@@ -8,6 +16,23 @@ func void begin() {
     list[int] x = [0, 1, 2, 3, 4, 5];
 
     print(x[1]); print("\n");
+
+    pass(test_groups, 0);
+}
+
+func void test_groups() {
+    group A obj1 = A(100);
+    group A obj2 = A(200);
+    group A obj3 = A(300);
+    group A obj4 = A(400);
+    list[group A] x = [obj1, obj2, obj3, obj4];
+    group A y;
+
+    print(obj4.x); print("\n");
+    print(x[3]); print("\n");
+
+    y = x[3];
+    print(y.x); print("\n");
 
     end;
 }
