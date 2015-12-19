@@ -1,0 +1,59 @@
+@setup {
+
+group A(Object) {
+    int x;
+    int y;
+    func group A __init__(int x, int y) {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+
+    func int test() {
+        return this.x + this.y;
+    }
+};
+
+}
+
+@turns {
+
+func void begin() {
+    for (int x in {1, 2, 3}) {
+        print(x); print("\n");
+    }
+    pass(test_str, 0);
+}
+
+func void test_str() {
+    for (str s in {"abc", "def", "ghi", "jkl"}) {
+        print(s); print("\n");
+    }
+    pass(test_grp, 0);
+}
+
+func void test_grp() {
+    group A a1 = A(1, 2);
+    group A a2 = A(3, 4);
+    group A a3 = A(5, 6);
+    for (group A x in {a1, a2, a3}) {
+        print(x.y); print(" ");
+        print(x.test()); print("\n");
+    }
+    pass(test_list, 0);
+}
+
+func void test_list() {
+    list[int] a = [1, 2, 3];
+    list[int] b = [4, 5];
+    list[int] c = [6, 7];
+    int y;
+    for (list[int] x in {a, b, c}) {
+        y = x[0];
+        print(y); print("\n");
+        print(x); print("\n");
+    }
+    end;
+}
+
+}

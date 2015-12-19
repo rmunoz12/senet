@@ -175,7 +175,7 @@ let rec get_ll_type = function
 let fix_ll_lit_expr vars e =
   let detail, typ = e in
   let v_base =
-    { vname = ""; vtype = typ; vinit = Some(e) }
+    { vname = ""; vtype = typ; vinit = Some(e); vloop = false }
   in
   match detail with
     IntLiteral(i, name) -> { v_base with vname = name } :: vars
@@ -194,7 +194,8 @@ let rec fix_ll vars = function
       let vdcl =
         { vname = name;
           vtype = typ;
-          vinit = Some(ListLiteral(Elems(el, name)), typ) }
+          vinit = Some(ListLiteral(Elems(el, name)), typ);
+          vloop = false }
       in
       vdcl :: vars
   | EmptyList -> vars

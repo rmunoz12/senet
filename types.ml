@@ -20,7 +20,8 @@ and list_lit =
 and var_decl = {
     vname : string;
     vtype : t;
-    vinit : expression option
+    vinit : expression option;
+    vloop : bool
 }
 
 and expr_detail =

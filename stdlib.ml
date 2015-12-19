@@ -4,7 +4,8 @@ let funcs =
   let s =
     { vname = "print_arg";
       vtype = Str;
-      vinit = None}
+      vinit = None;
+      vloop = false }
   in
   let b = { s with vtype = Bool } in
   let i = { s with vtype = Int } in
@@ -27,7 +28,9 @@ let funcs =
 
 let vars =
   let init = IntLiteral(0, "") in
-  let v = { vname = "PLAYER_ON_MOVE" ; vinit = Some(init, Int) ; vtype = Int } in
+  let v = { vname = "PLAYER_ON_MOVE" ; vinit = Some(init, Int) ;
+            vtype = Int; vloop = false }
+  in
   [v]
 
 let grps =

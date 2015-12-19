@@ -171,9 +171,8 @@ let find_this_child env actuals name =
        None -> (raise (SemError "'this' field call outside of group definition"))
      | Some(info) -> info) in
   let this_dummy =
-    { vname = "this";
-      vtype = Group(info.group_name, None);
-      vinit = None } in
+    { vname = "this"; vtype = Group(info.group_name, None);
+      vinit = None; vloop = false } in
   let scope = info.symbols in
   if List.exists (fun v -> v.vname = name) scope.variables then
     let vdcl = List.find (fun v -> v.vname = name) scope.variables in
@@ -558,7 +557,8 @@ and check_expr env = function
          | Attrib(v1, v2) -> raise (SemError ("Not callable: " ^ v1.vname ^ "." ^ v2.vname))
          | Grp(g) ->
             let par =
-              { vname = g.gname ; vtype = Group(g.gname, None); vinit = None }
+              { vname = g.gname ; vtype = Group(g.gname, None);
+                vinit = None; vloop = false }
             in
             let init =
               List.find (fun f -> match f with
@@ -707,7 +707,8 @@ let rec check_stmt env = function
       let decl =
       { vname = name;
         vtype = t_vd;
-        vinit = check_init env name t_vd vd.Ast.vinit}
+        vinit = check_init env name t_vd vd.Ast.vinit;
+        vloop = true }
       and el = List.map (check_expr env) el in
       let _, t_el = List.hd el in
       let t_el = verify_expr_list_type env t_el el in
@@ -799,7 +800,8 @@ let check_vdcl_helper env v init_ok =
   let decl =
     { vname = name;
       vtype = t_vd;
-      vinit = init }
+      vinit = init;
+      vloop = false }
   in
   verify_not_redeclaring env.scope v.Ast.vname;
   require_non_void decl;

@@ -52,7 +52,11 @@ let id_type_to_c = function
   | Group(s, _) -> "struct " ^ prefix_name s ^ " "
 
 let rec field_to_c = function
-    Var(v) -> prefix_name v.vname
+    Var(v) ->
+      if v.vloop then
+        "*(" ^ prefix_name v.vname ^ " + __cnt__" ^ prefix_name v.vname ^ ")"
+      else
+        prefix_name v.vname
   | Fun(f) -> prefix_name
       (match f with
          BasicFunc(x) -> x.fname
@@ -60,8 +64,13 @@ let rec field_to_c = function
   | Grp(g) -> prefix_name g.gname
   | Attrib(par, child) ->
     let par_name, deref_op =
-      if par.vname = "this" then "(*this)", "."
-      else prefix_name par.vname, "." in
+      if par.vname = "this" then
+        "(*this)", "."
+      else if par.vloop then
+        "(" ^ prefix_name par.vname ^ " + __cnt__" ^ prefix_name par.vname ^ ")", "->"
+      else
+        prefix_name par.vname, "."
+    in
     par_name ^ deref_op ^ prefix_name child.vname
   | Method(v, f) -> raise (SemError ("Internal error: Method matched in field_to_c(), use Call instead"))
   | This -> "(*this)"
@@ -242,13 +251,18 @@ and expression_to_c = function
         else
           ""
       in
-      let instance_addr =
-        (match vopt with
-            None -> ""
-          | Some(v) ->
-              "(struct " ^ prefix_name gname ^ " *) " ^
-              "&" ^ prefix_name v.vname ^
-              (if argc > 0 then ", " else ""))
+      let instance_addr = match vopt with
+          None -> ""
+        | Some(v) ->
+          let var_name =
+            if v.vloop then
+              "(" ^ prefix_name v.vname ^ " + __cnt__" ^ prefix_name v.vname ^ ")"
+            else
+              "&" ^ prefix_name v.vname
+          in
+          "(struct " ^ prefix_name gname ^ " *) " ^
+          var_name ^
+          (if argc > 0 then ", " else "")
        in
       class_prefix ^
       field_to_c (Fun(fd)) ^ "(" ^ instance_addr ^
@@ -282,7 +296,16 @@ let rec statement_to_c = function
       "if (" ^ expression_to_c e ^ " ) {\n" ^
       statement_to_c s1 ^ "\n} " ^
       "else {\n" ^ statement_to_c s2 ^ "}\n"
-  (* | For(vd, elist, s) -> *)
+  | For(vd, elist, s) ->
+      let n = List.length elist in
+      let counter = "__cnt__" ^ prefix_name vd.vname in
+      "int " ^ counter ^ " = 0;\n" ^
+      id_type_to_c vd.vtype ^ prefix_name vd.vname ^ "[] = " ^
+      "{" ^ String.concat ", "
+          (List.map (fun (det, typ) -> expression_to_c det) elist) ^ "};\n" ^
+      "for ( ; " ^ counter ^ " < " ^ string_of_int n ^ "; ++" ^ counter ^ ") {\n" ^
+      statement_to_c s ^ "\n" ^
+      "}\n"
   | End -> "exit(0);"
   | Pass(e,s) -> let detaill, _ = s in
                      "CUR_TURN = &" ^ prefix_name (function_call_to_c e) ^ ";\n" ^
