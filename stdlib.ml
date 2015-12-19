@@ -33,7 +33,7 @@ let vars =
   in
   [v]
 
-let grps =
+let obj =
   let stmt = Return(Field(This), Group("Object", None)) in
   let init =
     { ftype = Group("Object", None);
@@ -43,11 +43,58 @@ let grps =
       body = [stmt];
       turns_func = false;
       group_method = "Object";
-      f_is_built_in = true } in
-  let obj =
-    { gname = "Object";
-      extends = None;
-      par_actuals = None;
-      attributes = [];
-      methods = [BasicFunc(init)] } in
-  [obj]
+      f_is_built_in = true }
+  in
+  { gname = "Object";
+    extends = None;
+    par_actuals = None;
+    attributes = [];
+    methods = [BasicFunc(init)] }
+
+let board =
+  let v =
+    { vname = "cells"; vtype = List_t(Int); vinit = None; vloop = false }
+  in
+  let attr = [v] in
+  let v = { v with vname = "x"; vtype = Int } in
+  let remove =
+    { ftype = Void; fname = "remove"; formals = [v]; locals = []; body = [];
+      turns_func = false; group_method = "Board"; f_is_built_in = true }
+  in
+  let owns = { remove with ftype = Int; fname = "owns" } in
+  let v = { v with vname = "l"; vtype = List_t(Int) } in
+  let toi = { owns with fname = "toi"; formals = [v] } in
+  let tol = { owns with ftype = List_t(Int); fname = "tol" } in
+  let meth =
+    [BasicFunc(remove); BasicFunc(owns); BasicFunc(owns);
+     BasicFunc(toi); BasicFunc(tol)]
+  in
+  { obj with gname = "Board"; extends = Some(obj);
+    attributes = attr; methods = meth }
+
+let piece =
+  let v = { vname = ""; vtype = Void; vinit = None; vloop = false } in
+  let owner = { v with vname = "owner"; vtype = Int } in
+  let fixed = { v with vname = "fixed"; vtype = Bool } in
+  let b = { v with vname = "b"; vtype = Group("Board", None) } in
+  let x = { v with vname = "x"; vtype = Int } in
+  let place =
+    { ftype = Bool; fname = "place"; formals = [b; x]; locals = []; body = [];
+      turns_func = false; group_method = "Piece"; f_is_built_in = true }
+  in
+  { obj with gname = "Piece"; extends = Some(obj);
+    attributes = [owner; fixed]; methods = [BasicFunc(place)] }
+
+let boards_lib =
+  let x = { vname = "x"; vtype = Int; vinit = None; vloop = false } in
+  let y = { x with vname = "y" } in
+  let rect =
+    { board with gname = "Rect"; extends = Some(board); attributes = [x; y] }
+  in
+  let loop = { rect with gname = "Loop"; attributes = [x] } in
+  let line = { loop with gname = "Line" } in
+  let hex = { loop with gname = "Hex" } in
+  [rect; loop; line; hex]
+
+let grps =
+  [obj; board; piece] @ boards_lib
