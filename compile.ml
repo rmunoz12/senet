@@ -174,10 +174,18 @@ and var_decl_to_c v = match v.vtype, v.vinit with
       id_type_to_c v.vtype ^ prefix_name v.vname ^
       " = " ^ expression_to_c detail ^ ";")
 
-
 and list_lit_to_c = function
     Elems(el, name) -> name
   | EmptyList -> "SEN_EMPTY_LIST"
+
+and actual_to_c (detail, typ) =
+  let e_c_string = expression_to_c detail in
+  match typ with
+      List_t(l_typ) ->
+        (match detail with
+            Field(_) -> "&" ^ e_c_string
+          | _ -> "&" ^ prefix_name e_c_string)
+    | _ ->  e_c_string
 
 and expression_to_c = function
     IntLiteral(i, name) -> string_of_int i
@@ -245,7 +253,7 @@ and expression_to_c = function
       and detail, _ = e in
       fd ^ " = " ^ expression_to_c detail
   | Call(vopt, fd, el) ->
-      let e = List.map (fun (detail, _) -> detail) el in
+      (* let e = List.map (fun (detail, _) -> detail) el in *)
       let argc = List.length el in
       let fname = function_call_to_c fd in
       let gname = function_group_method fd in
@@ -278,7 +286,7 @@ and expression_to_c = function
        in
       class_prefix ^
       field_to_c (Fun(fd)) ^ "(" ^ instance_addr ^
-      String.concat ", " (List.map expression_to_c e) ^ ")"
+      String.concat ", " (List.map actual_to_c el) ^ ")"
   | Element(e1, e2) ->
       let d1, typ = e1 in
       let d2, _ = e2 in

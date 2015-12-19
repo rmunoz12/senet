@@ -1,0 +1,25 @@
+@setup {
+
+group table(Rect(3, 3)) { };
+
+}
+
+@turns {
+
+func void begin() {
+    group table a = table();
+
+    print(a.toi([0, 0])); print("\n");
+    print(a.toi([1, 0])); print("\n");
+    print(a.toi([2, 0])); print("\n");
+    print(a.toi([0, 1])); print("\n");
+    print(a.toi([1, 1])); print("\n");
+    print(a.toi([2, 1])); print("\n");
+    print(a.toi([0, 2])); print("\n");
+    print(a.toi([1, 2])); print("\n");
+    print(a.toi([2, 2])); print("\n");
+
+    end;
+}
+
+}

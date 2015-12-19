@@ -131,9 +131,13 @@ let boards_lib =
   in
   let init = base_init "Rect" in
   let init = { init with formals = [x; y]; body = stmts } in
+  let coord = { x with vname = "coord"; vtype = List_t(Int) } in
+  let toi =
+    {init with ftype = Int; fname = "toi"; formals = [coord]; body = [] }
+  in
   let rect =
     { board with gname = "Rect"; extends = Some(board); attributes = [x; y];
-      methods = [BasicFunc(init); base_repr "Rect"] }
+      methods = [BasicFunc(init); base_repr "Rect"; BasicFunc(toi)] }
   in
   let this_dummy =
     { vname = "this"; vtype = Group("Loop", None);

@@ -3,12 +3,8 @@
 #include <stdbool.h>
 #include "sen_init_base_grps.h"
 
-struct snt_Piece;
-struct snt_Board;
-struct snt_Line;
-struct snt_Loop;
-struct snt_Hex;
-struct snt_Rect;
+#ifndef SEN_PRINT_BASE_GRPS
+#define SEN_PRINT_BASE_GRPS
 
 char*  snt_Piece_snt___repr__(struct snt_Piece *this) {
   return "<Group Piece instance>";
@@ -33,3 +29,5 @@ char*  snt_Hex_snt___repr__(struct snt_Hex *this) {
 char*  snt_Rect_snt___repr__(struct snt_Rect *this) {
   return "<Group Rect instance>";
 }
+
+#endif
