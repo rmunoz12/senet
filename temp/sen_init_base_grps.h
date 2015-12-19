@@ -30,4 +30,9 @@ void snt_Board_snt_INIT_CELLS(struct snt_Board *b, int n) {
     }
 }
 
+int snt_Board_snt_owns(struct snt_Board *b, int i) {
+    struct snt_Piece *p = (struct snt_Piece *) list_elem(&(b->cells), i);
+    return p->snt_owner;
+}
+
 #endif
