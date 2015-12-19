@@ -199,6 +199,7 @@ and actual_to_c (detail, typ) =
         (match detail with
             Field(_) -> "&" ^ e_c_string
           | _ -> "&" ^ prefix_name e_c_string)
+    | Group(name, gdcl) -> "&" ^ e_c_string
     | _ ->  e_c_string
 
 and expression_to_c = function

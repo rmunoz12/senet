@@ -1,0 +1,22 @@
+@setup {
+
+group table(Rect(3, 3)) { };
+group mark(Piece) {
+    func group mark __init__(str s) { this.s = s; return this; }
+};
+
+}
+
+@turns {
+
+func void begin() {
+    group table t = table();
+    group mark m = mark("M");
+
+    t.place(m, 3);
+    print(t.cells[3]); print("\n");
+
+    end;
+}
+
+}

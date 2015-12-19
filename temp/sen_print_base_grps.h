@@ -7,7 +7,7 @@
 #define SEN_PRINT_BASE_GRPS
 
 char*  snt_Piece_snt___repr__(struct snt_Piece *this) {
-  return "<Group Piece instance>";
+  return this->snt_s;
 }
 
 char*  snt_Board_snt___repr__(struct snt_Board *this) {

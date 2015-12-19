@@ -54,7 +54,13 @@ let verify_args_signature fdcl formals actuals =
       if tf = ta || not check_types then
         helper check_types frest arest
       else
-        false
+        (match tf, ta with
+           Group(form_name, _), Group(act_name, _) ->
+            (* if form_name = act_name then *)
+              helper check_types frest arest
+            (* else
+              false *)
+          | _, _ -> false)
     | _ :: _, [] -> false
     | [], _ :: _ -> false
   in
@@ -381,8 +387,11 @@ let rec verify_args_helper f_typ a_typ check_types = match f_typ, a_typ with
       else if not check_types then
         ()
       else
-        raise (SemError ("Formal type " ^ string_of_t f_hd ^ " " ^
-                         "does not match actual type " ^ string_of_t a_hd))
+        (match f_hd, a_hd with
+            Group(_, _), Group(_, _) -> ()
+          | _, _ ->
+            raise (SemError ("Formal type " ^ string_of_t f_hd ^ " " ^
+                             "does not match actual type " ^ string_of_t a_hd)))
   | _, [] ->
       raise (SemError ("Formal and actual argument lengths do not match"))
   | [], _ ->

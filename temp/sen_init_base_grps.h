@@ -17,6 +17,7 @@ struct snt_Board {
 struct snt_Piece {
     int snt_owner;
     int snt_fixed;
+    char *snt_s;
 } p;
 
 struct snt_Rect{
@@ -42,10 +43,19 @@ struct snt_Hex{
 };
 
 
+
 void snt_Board_snt_INIT_CELLS(struct snt_Board *b, int n) {
     int i = 0;
+
+    struct snt_Piece *dummy_piece = malloc(sizeof(struct snt_Piece));
+    dummy_piece->snt_owner = 0;
+    dummy_piece->snt_fixed = 0;
+    dummy_piece->snt_s = "<No Piece Repr>";
+
+    new_Sen_list(&(b->cells), sizeof(struct snt_Piece));
+    new_Sen_list(&(b->occupied), sizeof(bool));
     while (i < n) {
-        push(&(b->cells), &p);
+        push(&(b->cells), dummy_piece);
         push(&(b->occupied), &NOT_OCCUPIED);
         ++i;
     }
@@ -70,6 +80,12 @@ bool snt_Board_snt_full(struct snt_Board *b) {
 void snt_Board_snt_remove(struct snt_Board *b, int x) {
     bool *elem = (bool *) list_elem(&(b->occupied), x);
     *elem = false;
+}
+
+void snt_Board_snt_place(struct snt_Board *b, struct snt_Piece *p, int x) {
+    bool *occ_elem = (bool *) list_elem(&(b->occupied), x);
+    *occ_elem = true;
+    replace(&(b->cells), p, x);
 }
 
 int snt_Board_snt_toi(struct snt_Board *b, Sen_list *list) {
@@ -101,6 +117,5 @@ Sen_list snt_Rect_snt_tol(struct snt_Rect *b, int i) {
 
     return list;
 }
-
 
 #endif

@@ -36,7 +36,7 @@ void push(Sen_list *head_ref, void *new_data) {
   Sen_node* new_Sen_node = malloc(sizeof(Sen_node));
 
   new_Sen_node->data  = malloc(head_ref->data_size);
-//  memccpy(new_Sen_node->data, new_data, head_ref->data_size);
+//  memcpy(new_Sen_node->data, new_data, head_ref->data_size);
 
 
   new_Sen_node->next = head_ref->head;
@@ -119,6 +119,43 @@ void *list_elem(Sen_list *list, int i) {
     ++x;
   }
   return n->data;
+}
+
+void replace(Sen_list *list, void *new_data, int i) {
+  Sen_node *new_node = malloc(sizeof(Sen_node));
+  new_node->data = malloc(list->data_size);
+  memcpy(new_node->data, new_data, list->data_size);
+
+  int x = 0;
+  Sen_node *tmp;
+  Sen_node *n = list->tail;
+  while (x < list->len) {
+    if (x == i - 1) {
+      tmp = n->prev;
+      n->prev = new_node;
+      n = tmp;
+    } else if (x == i) {
+      new_node->prev = n->prev;
+      new_node->next = n->next;
+      n = n->prev;
+    } else if (x == i + 1) {
+      tmp = n->prev;
+      n->next = new_node;
+      n = tmp;
+    } else {
+      n = n->prev;
+    }
+    ++x;
+  }
+
+  if (list->len > 0) {
+    if (i == 0) {
+      list->tail = new_node;
+    }
+    if (i == list->len - 1) {
+      list->head = new_node;
+    }
+  }
 }
 
 #endif

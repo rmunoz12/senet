@@ -81,10 +81,16 @@ let board =
   let toi = { owns with fname = "toi"; formals = [v] } in
   let tol = { owns with ftype = List_t(Int); fname = "tol" } in
   let full = { owns with ftype = Bool; fname = "full"; formals = [] } in
+  let x = { v with vname = "x"; vtype = Int } in
+  let p = { v with vname = "p"; vtype = Group("Piece", None) } in
+  let place =
+    { ftype = Void; fname = "place"; formals = [p; x]; locals = []; body = [];
+      turns_func = false; group_method = "Board"; f_is_built_in = true }
+  in
   let meth =
     [BasicFunc(remove); BasicFunc(owns); BasicFunc(owns);
      BasicFunc(toi); BasicFunc(tol); BasicFunc(base_init "Board");
-     base_repr "Board"; BasicFunc(full)]
+     base_repr "Board"; BasicFunc(full); BasicFunc(place)]
   in
   { obj with gname = "Board"; extends = Some(obj);
     attributes = attr; methods = meth }
@@ -93,16 +99,29 @@ let piece =
   let v = { vname = ""; vtype = Void; vinit = None; vloop = false } in
   let owner = { v with vname = "owner"; vtype = Int } in
   let fixed = { v with vname = "fixed"; vtype = Bool } in
-  let b = { v with vname = "b"; vtype = Group("Board", None) } in
-  let x = { v with vname = "x"; vtype = Int } in
-  let place =
-    { ftype = Bool; fname = "place"; formals = [b; x]; locals = []; body = [];
-      turns_func = false; group_method = "Piece"; f_is_built_in = true }
+  let s = { v with vname = "s"; vtype = Str } in
+  let this_dummy =
+    { vname = "this"; vtype = Group("Loop", None);
+      vinit = None; vloop = false }
+  in
+  let stmts =
+    [Expression(Assign(Attrib(this_dummy, s), (Field(Var(s)), Int)), Int);
+     Return(Field(This), Group("Piece", None))]
+  in
+  let init = base_init "Piece" in
+  let init = { init with body = stmts; formals = [s] } in
+  let stmts =
+    [Return(Field(Attrib(this_dummy, s)), Str)]
+  in
+  let repr = base_repr "Piece" in
+  let repr =
+    match repr with
+      BasicFunc(f) -> { f with body = stmts }
+    | _ -> raise (Failure ("__repr__ for piece matched to non-basicfunc"))
   in
   { obj with gname = "Piece"; extends = Some(obj);
-    attributes = [owner; fixed];
-    methods = [BasicFunc(place); BasicFunc(base_init "Piece");
-               base_repr "Piece"]  }
+    attributes = [owner; fixed; s];
+    methods = [BasicFunc(base_init "Piece"); BasicFunc(init); BasicFunc(repr)] }
 
 let boards_lib =
   let x = { vname = "x"; vtype = Int; vinit = None; vloop = false } in
