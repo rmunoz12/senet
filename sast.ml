@@ -1148,6 +1148,14 @@ let rec find_repr gdcl =
         Some(par) -> find_repr par
       | None -> raise Not_found
 
+let rec instance_of name gdcl =
+  if gdcl.gname = name then
+    true
+  else
+    match gdcl.extends with
+      None -> false
+    | Some(par) -> instance_of name par
+
 let check_for_repr env gdcl =
   try
     (* search locally first *)
@@ -1162,8 +1170,9 @@ let check_for_repr env gdcl =
         BasicFunc(f) -> f.f_is_built_in
       | AssertFunc(f) -> raise (SemError ("Group " ^ gdcl.gname ^ " __repr__() cannot be an assert function"))
     in
+    let not_a_piece = not (instance_of "Piece" gdcl) in
     let repr =
-      if built_in then
+      if built_in && not_a_piece then
         let s = "<Group " ^ gdcl.gname ^ " instance>" in
         let body = Return(StrLiteral(s, ""), Str) in
         BasicFunc({ ftype = Str;
