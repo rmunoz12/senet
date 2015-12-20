@@ -36,7 +36,7 @@ and expr =
   | Uminus of expr
   | Not of expr
   | Noexpr
-  | Remove of field_expr * field_expr * list_lit
+  | Remove of field_expr * list_lit
   | Place of field_expr * field_expr * list_lit
 
 type stmt =
@@ -144,8 +144,8 @@ and string_of_expr = function
   | Place(f1, f2, l) ->
       string_of_field f1 ^ " >> " ^ string_of_field f2 ^ " >> " ^
         string_of_list_lit l
-  | Remove(f1, f2, l) ->
-      string_of_field f1 ^ " << " ^ string_of_field f2 ^ " << " ^
+  | Remove(f1, l) ->
+      string_of_field f1 ^ " << " ^
         string_of_list_lit l
 
 let rec string_of_vinit = function

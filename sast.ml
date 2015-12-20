@@ -602,8 +602,8 @@ and check_expr env = function
       Not(e), Bool
   | Ast.Noexpr ->
       Noexpr, Void
-  | Ast.Remove(fd1, fd2, ll) ->
-      let board_name = match fd2 with
+  | Ast.Remove(fd1, ll) ->
+      let board_name = match fd1 with
           Ast.Id(s) -> s
         | _ -> raise (SemError "Not implemented")
       in
@@ -614,11 +614,9 @@ and check_expr env = function
                               [toi_call])
       in
       let rmv_call = check_expr env rmv_call in
-      let fd1, _ = check_field env [] fd1
-      and fd2, _ = check_field env [] fd2 in
+      let fd1, _ = check_field env [] fd1 in
       let checked_ll, ll_typ = check_listlit env ll in
-      require_parent env "Piece" fd1 "Piece (sub)group expected";
-      require_parent env "Board" fd2 "Board (sub)group expected";
+      require_parent env "Board" fd1 "Board (sub)group expected";
       require_integer_list (checked_ll, ll_typ) "List of integers expected";
       Remove(rmv_call), Bool
   | Ast.Place(fd1, fd2, ll) ->

@@ -192,7 +192,7 @@ expr:
   | MINUS expr %prec UMINUS { Uminus($2) }
   | NOT expr { Not($2) }
   | field_expr PLACE field_expr PLACE list_lit   { Place($1, $3, $5) }
-  | field_expr REMOVE field_expr REMOVE list_lit { Remove($1, $3, $5) }
+  | field_expr REMOVE list_lit { Remove($1, $3) }
 
 expr_opt:
     /* nothing */ { Noexpr }

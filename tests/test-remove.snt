@@ -23,8 +23,8 @@ func void begin() {
     brd.place(m, brd.toi([0, 1]));
 
     # print(brd.toi([1, 1])); print("\n");
-    print(m << brd << [1, 1]); print("\n");
-    print(m << brd << [0, 1]); print("\n");
+    print(brd << [1, 1]); print("\n");
+    print(brd << [0, 1]); print("\n");
 
     end;
 }
