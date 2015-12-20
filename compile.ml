@@ -18,6 +18,7 @@ let senet_header =
   "#include \"temp/sen_linked_list.h\"\n" ^
   "#include \"temp/sen_print_base_grps.h\"\n" ^
   "#include \"temp/sen_init_base_grps.h\"\n" ^
+  "#include \"temp/sen_read.h\"\n" ^
      "\n" ^
   "struct SENET_NONE {\n" ^
   "  } SENET_NONE;\n" ^
@@ -276,6 +277,9 @@ and expression_to_c = function
         (* print takes one argument, discard remainder *)
         let e = List.hd el in
         printf e
+      else if fname = "read" then
+        let detail, _ = List.hd el in
+        "_snt_read(" ^ expression_to_c detail ^ ")"
       else
       let class_prefix = function_group fd in
       let class_prefix =
