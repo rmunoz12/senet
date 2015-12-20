@@ -1,0 +1,13 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    int x = stoi("12345");
+
+    print(x); print("\n");
+
+    end;
+}
+
+}

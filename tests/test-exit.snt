@@ -1,0 +1,12 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    print("test\n");
+    exit();
+    print("did not exit\n");
+    end;
+}
+
+}

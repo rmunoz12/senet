@@ -23,9 +23,11 @@ let funcs =
   let print_bool = { print_str with formals = [b] } in
   let print_int = { print_str with formals = [i] } in
   let print_group = { print_str with formals = [g] } in
-  let read = {print_str with fname = "read"; ftype = Str; formals = [i] } in
+  let read = { print_str with fname = "read"; ftype = Str; formals = [i] } in
+  let stoi = { print_str with fname = "stoi"; ftype = Int; formals = [s] } in
+  let exit = { print_str with fname = "exit"; ftype = Void; formals = [] } in
   [BasicFunc(print_str); BasicFunc(print_bool); BasicFunc(print_int);
-   BasicFunc(print_group); BasicFunc(read)]
+   BasicFunc(print_group); BasicFunc(read); BasicFunc(stoi); BasicFunc(exit)]
 
 let vars =
   let init = IntLiteral(0, "") in

@@ -92,6 +92,10 @@ let function_group_method = function
     BasicFunc(f) -> f.group_method
   | AssertFunc(f) -> f.a_group_method
 
+let is_built_in_func = function
+    BasicFunc(f) -> f.f_is_built_in
+  | AssertFunc(f) -> f.a_is_built_in
+
 let rec printf (detail, typ) =
   let e_c_string = expression_to_c detail in
   match typ with
@@ -273,13 +277,18 @@ and expression_to_c = function
       let argc = List.length el in
       let fname = function_call_to_c fd in
       let gname = function_group_method fd in
-      if fname = "print" then
-        (* print takes one argument, discard remainder *)
+      (* print, read, stoi all take one argument, discard remainder *)
+      if fname = "print" && is_built_in_func fd then
         let e = List.hd el in
         printf e
-      else if fname = "read" then
+      else if fname = "read" && is_built_in_func fd then
         let detail, _ = List.hd el in
         "_snt_read(" ^ expression_to_c detail ^ ")"
+      else if fname = "stoi" && is_built_in_func fd then
+        let detail, _ = List.hd el in
+        "atoi(" ^ expression_to_c detail ^ ")"
+      else if fname = "exit" && is_built_in_func fd then
+        "exit(0)"
       else
       let class_prefix = function_group fd in
       let class_prefix =
