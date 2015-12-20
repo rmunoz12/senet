@@ -33,7 +33,7 @@ let senet_header =
   "}\n" ^
     "\n" ^
   "void (*CUR_TURN)();" ^ "\n" ^
-  "int snt_PLAYER_ON_MOVE;" ^ "\n" ^
+  "int snt_PLAYER_ON_MOVE = 0;" ^ "\n" ^
     "\n"
 
 let senet_footer =
@@ -334,23 +334,52 @@ and expression_to_c = function
       let detail, _ = e in
       expression_to_c detail
 
+let reinitalize_and_push (detail, typ) = match detail with
+    ListLiteral(ll) -> (match ll with
+        EmptyList -> ""
+      | Elems(el, name) ->
+          let e = detail, typ in
+          "new_Sen_list(&" ^ prefix_name name ^
+            ", sizeof(" ^ id_type_to_c typ ^ "));\n" ^
+            push_to_new_list name e ^ ";\n")
+  | _ -> raise (SemError ("non-list passed to reinitalize_and_push"))
+
+let rec update_ll_expr (detail, typ) = match detail with
+    ListLiteral(ll) -> reinitalize_and_push (detail, typ)
+  (* | Field(fe) -> *)
+  | Binop(e1, op, e2) -> update_ll_expr e1 ^ update_ll_expr e2
+  | Assign(fe, e) -> update_ll_expr e
+  | Call(vd_opt, fd, el) -> String.concat "" (List.map update_ll_expr el)
+  (* | Element(e1, e2) -> *)
+  (* | Uminus(e) of expression *)
+  | Not(e) -> update_ll_expr e
+  | Remove(e) -> update_ll_expr e
+  | Place(e) -> update_ll_expr e
+  | _ -> ""
+
 let rec statement_to_c = function
     Block(scope, slist) ->
       "  " ^ String.concat "\n  " (List.map statement_to_c slist)
   | Expression(e) ->
       let detail, _ = e in
+      update_ll_expr e ^
       expression_to_c(detail) ^ ";"
-  | Return(e) -> let detail, _ = e in "return " ^ expression_to_c detail ^ ";"
+  | Return(e) ->
+      let detail, _ = e in
+      update_ll_expr e ^
+      "return " ^ expression_to_c detail ^ ";"
   | Break -> "break;"
   | Continue -> "continue;"
   | If(e, s1, s2) ->
-      let e, _  = e in
-      "if (" ^ expression_to_c e ^ " ) {\n" ^
+      let det, _  = e in
+      update_ll_expr e ^
+      "if (" ^ expression_to_c det ^ " ) {\n" ^
       statement_to_c s1 ^ "\n} " ^
       "else {\n" ^ statement_to_c s2 ^ "}\n"
   | For(vd, elist, s) ->
       let n = List.length elist in
       let counter = "__cnt__" ^ prefix_name vd.vname in
+      String.concat "" (List.map update_ll_expr elist) ^
       "int " ^ counter ^ " = 0;\n" ^
       id_type_to_c vd.vtype ^ prefix_name vd.vname ^ "[] = " ^
       "{" ^ String.concat ", "
