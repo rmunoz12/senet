@@ -89,11 +89,9 @@ and tag_groups_expr g e =
           Element(e1, e2)
       | Uminus(e) -> Uminus(tag_groups_expr g e)
       | Not(e) -> Not(tag_groups_expr g e)
-      | Remove(fe1, fe2, ll) ->
-          let fe1 = tag_groups_field g fe1 in
-          let fe2 = tag_groups_field g fe2 in
-          let ll = tag_groups_listlit g ll in
-          Remove(fe1, fe2, ll)
+      | Remove(e) ->
+          let e = tag_groups_expr g e in
+          Remove(e)
       | Place(fe1, fe2, ll) ->
           let fe1 = tag_groups_field g fe1 in
           let fe2 = tag_groups_field g fe2 in
@@ -212,7 +210,8 @@ and fix_ll_expr vars (expr_detail, expr_typ) = match expr_detail with
       let vars = fix_ll_expr vars e1 in
       let vars = fix_ll_expr vars e2 in
       vars
-  | Remove(fe1, fe2, ll) -> fix_ll vars ll
+  | Remove(e) ->
+      fix_ll_expr vars e
   | Place(fe1, fe2, ll) -> fix_ll vars ll
   | Uminus(e) -> fix_ll_expr vars e
   | Not(e) -> fix_ll_expr vars e
@@ -353,9 +352,8 @@ and string_of_expr_detail = function
   | Place(f1, f2, l) ->
       string_of_field f1 ^ " >> " ^ string_of_field f2 ^ " >> " ^
         string_of_list_lit l
-  | Remove(f1, f2, l) ->
-      string_of_field f1 ^ " << " ^ string_of_field f2 ^ " << " ^
-        string_of_list_lit l
+  | Remove(e) ->
+      string_of_expression e
 
 and string_of_expression e =
   let detail, _ = e in

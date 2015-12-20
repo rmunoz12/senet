@@ -327,8 +327,12 @@ and expression_to_c = function
   | Uminus(e) -> let detail, _ = e in "-(" ^ expression_to_c detail ^ ")"
   | Not(e) -> let detail, _ = e in "!(" ^ expression_to_c detail ^ ")"
   | Noexpr -> ""
-  (* | Remove(fd1, fd2, ll) -> ""
-  | Place(fd1, fd2, ll) -> "" *)
+  | Remove(e) ->
+      let detail, _ = e in
+      expression_to_c detail
+
+
+  (* | Place(fd1, fd2, ll) -> "" *)
 
 let rec statement_to_c = function
     Block(scope, slist) ->

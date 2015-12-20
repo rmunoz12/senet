@@ -77,15 +77,24 @@ bool snt_Board_snt_full(struct snt_Board *b) {
     return true;
 }
 
-void snt_Board_snt_remove(struct snt_Board *b, int x) {
+bool snt_Board_snt_remove(struct snt_Board *b, int x) {
     bool *elem = (bool *) list_elem(&(b->occupied), x);
-    *elem = false;
+    if (*elem) {
+        *elem = false;
+        return true;
+    } else {
+        return false;
+    }
 }
 
-void snt_Board_snt_place(struct snt_Board *b, struct snt_Piece *p, int x) {
+bool snt_Board_snt_place(struct snt_Board *b, struct snt_Piece *p, int x) {
     bool *occ_elem = (bool *) list_elem(&(b->occupied), x);
+    if (*occ_elem) {
+        return false;
+    }
     *occ_elem = true;
     replace(&(b->cells), p, x);
+    return true;
 }
 
 int snt_Board_snt_toi(struct snt_Board *b, Sen_list *list) {

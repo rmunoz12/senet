@@ -38,7 +38,7 @@ and expr_detail =
   | Uminus of expression
   | Not of expression
   | Noexpr
-  | Remove of field_expr * field_expr * list_lit
+  | Remove of expression
   | Place of field_expr * field_expr * list_lit
 
 and expression =

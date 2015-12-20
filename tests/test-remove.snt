@@ -1,0 +1,32 @@
+@setup {
+
+group B(Rect(2, 2)) { };
+group Mark(Piece) {
+    func group Mark __init__(str s) {
+        this.s = s;
+        return this;
+    }
+};
+
+group B brd;
+
+
+
+}
+
+@turns {
+
+func void begin() {
+    group Mark m = Mark("M");
+    brd = B();
+
+    brd.place(m, brd.toi([0, 1]));
+
+    # print(brd.toi([1, 1])); print("\n");
+    print(m << brd << [1, 1]); print("\n");
+    print(m << brd << [0, 1]); print("\n");
+
+    end;
+}
+
+}

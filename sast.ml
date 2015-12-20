@@ -2,6 +2,12 @@ open Types
 
 exception SemError of string
 
+type counter = {
+  mutable i : int
+}
+
+let count = { i = 0 }
+
 let rec string_of_t = function
     Int -> "int"
   | Bool -> "bool"
@@ -164,7 +170,8 @@ let rec find_child env (par_instance : var_decl) actuals name =
     try
       find_child_in_group_def env parent actuals name
     with Not_found ->
-        raise (SemError ("Child not found: " ^ name))
+        raise (SemError ("Child of " ^ parent.gname ^ " not found: " ^ name ^
+                         ";\nActual types: " ^ String.concat ", " (List.map (fun (_, typ) -> string_of_t typ) actuals)))
   in
   (match child with
       Var(v) -> Attrib(par_instance, v), child_typ
@@ -374,7 +381,12 @@ let rec require_parent env pname fe msg = match fe with
     Var(v) ->
       (match v.vtype with
           Group(s, _) ->
-            let gdcl = find_group env.scope s in
+            let gdcl =
+              try
+                find_group env.scope s
+              with Not_found ->
+                raise (SemError ("require_parent did not find group: " ^ pname))
+            in
             require_parent_helper pname gdcl msg
         | _ -> raise (SemError ("Variable is not a group: " ^ v.vname)))
   | _ -> raise (SemError ("Field expr. is not a variable"))
@@ -429,24 +441,6 @@ let rec verify_elems_list_type env typ = function
         raise (SemError ("List elements are not all of same type: " ^
                          string_of_t typ))
 
-(* let verify_list_expr el = *)
-(* check that correct type of expr in list *)
-    (* IntLiteral(i) ->
-  | StrLiteral(s) ->
-  | ListLiteral(ll) ->
-  | BoolLiteral(bl) ->
-  | VoidLiteral ->
-  | Field(fe) ->
-  | Binop(e1, op, e2) ->
-  | Assign(fe, e) ->
-  | Call(fe, el) ->
-  | Element(e1, e2) ->
-  | Uminus(e) ->
-  | Not(e) ->
-  | Noexpr ->
-  | Remove(fe1, fe2, ll) ->
-  | Place(fe1, fe2, ll) -> *)
-
 let rec check_single_elem env (detail, typ) = match detail with
     IntLiteral(i, _) ->
       let name = create_elem_name env.scope in
@@ -481,7 +475,7 @@ let rec check_single_elem env (detail, typ) = match detail with
       raise (SemError ("A list element cannot be not expression."))
   | Noexpr ->
       raise (SemError ("A list element cannot be an empty expression."))
-  | Remove(_, _, _) ->
+  | Remove(_) ->
       raise (SemError ("A list element cannot be a remove expression."))
   | Place(_, _, _) ->
       raise (SemError ("A list element cannot be a place expression."))
@@ -609,13 +603,24 @@ and check_expr env = function
   | Ast.Noexpr ->
       Noexpr, Void
   | Ast.Remove(fd1, fd2, ll) ->
+      let board_name = match fd2 with
+          Ast.Id(s) -> s
+        | _ -> raise (SemError "Not implemented")
+      in
+      let toi_call = Ast.Call(Ast.FieldCall(Ast.Id(board_name), "toi"),
+                              [Ast.ListLiteral(ll)])
+      in
+      let rmv_call = Ast.Call(Ast.FieldCall(Ast.Id(board_name), "remove"),
+                              [toi_call])
+      in
+      let rmv_call = check_expr env rmv_call in
       let fd1, _ = check_field env [] fd1
-      and fd2, _ = check_field env [] fd2
-      and ll, ll_typ = check_listlit env ll in
-      require_parent env "Board" fd1 "Board (sub)group expected";
-      require_parent env "Piece" fd2 "Piece (sub)group expected";
-      require_integer_list (ll, ll_typ) "List of integers expected";
-      Remove(fd1, fd2, ll), Bool
+      and fd2, _ = check_field env [] fd2 in
+      let checked_ll, ll_typ = check_listlit env ll in
+      require_parent env "Piece" fd1 "Piece (sub)group expected";
+      require_parent env "Board" fd2 "Board (sub)group expected";
+      require_integer_list (checked_ll, ll_typ) "List of integers expected";
+      Remove(rmv_call), Bool
   | Ast.Place(fd1, fd2, ll) ->
       let fd1, _ = check_field env [] fd1
       and fd2, _ = check_field env [] fd2
@@ -623,7 +628,7 @@ and check_expr env = function
       require_parent env "Piece" fd1 "Piece (sub)group expected";
       require_parent env "Board" fd2 "Board (sub)group expected";
       require_integer_list (ll, ll_typ) "List of integers expected";
-      Remove(fd1, fd2, ll), Bool
+      Place(fd1, fd2, ll), Bool
 
 let rec verify_expr_list_type env typ = function
     [] -> typ

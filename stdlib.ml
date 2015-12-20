@@ -76,7 +76,7 @@ let board =
   let attr = [v; occupied] in
   let v = { v with vname = "x"; vtype = Int } in
   let remove =
-    { ftype = Void; fname = "remove"; formals = [v]; locals = []; body = [];
+    { ftype = Bool; fname = "remove"; formals = [v]; locals = []; body = [];
       turns_func = false; group_method = "Board"; f_is_built_in = true }
   in
   let owns = { remove with ftype = Int; fname = "owns" } in
@@ -87,7 +87,7 @@ let board =
   let x = { v with vname = "x"; vtype = Int } in
   let p = { v with vname = "p"; vtype = Group("Piece", None) } in
   let place =
-    { ftype = Void; fname = "place"; formals = [p; x]; locals = []; body = [];
+    { ftype = Bool; fname = "place"; formals = [p; x]; locals = []; body = [];
       turns_func = false; group_method = "Board"; f_is_built_in = true }
   in
   let meth =

@@ -12,9 +12,17 @@ group mark(Piece) {
 func void begin() {
     group table t = table();
     group mark m = mark("M");
+    group mark x = mark("X");
 
     t.place(m, 3);
+    t.place(x, 3);  # doesn't place X since it is occupied
     print(t.cells[3]); print("\n");
+
+    if (t.remove(2)) {
+        print("remove error\n");
+    } else {
+        print("did not remove\n");
+    }
 
     end;
 }
