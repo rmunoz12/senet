@@ -477,7 +477,7 @@ let rec check_single_elem env (detail, typ) = match detail with
       raise (SemError ("A list element cannot be an empty expression."))
   | Remove(_) ->
       raise (SemError ("A list element cannot be a remove expression."))
-  | Place(_, _, _) ->
+  | Place(_) ->
       raise (SemError ("A list element cannot be a place expression."))
   | _ -> detail, typ
 
@@ -620,13 +620,24 @@ and check_expr env = function
       require_integer_list (checked_ll, ll_typ) "List of integers expected";
       Remove(rmv_call), Bool
   | Ast.Place(fd1, fd2, ll) ->
+      let board_name = match fd2 with
+          Ast.Id(s) -> s
+        | _ -> raise (SemError "Not implemented")
+      in
+      let toi_call = Ast.Call(Ast.FieldCall(Ast.Id(board_name), "toi"),
+                              [Ast.ListLiteral(ll)])
+      in
+      let plc_call = Ast.Call(Ast.FieldCall(Ast.Id(board_name), "place"),
+                              [Ast.Field(fd1); toi_call])
+      in
+      let plc_call = check_expr env plc_call in
       let fd1, _ = check_field env [] fd1
       and fd2, _ = check_field env [] fd2
       and ll, ll_typ = check_listlit env ll in
       require_parent env "Piece" fd1 "Piece (sub)group expected";
       require_parent env "Board" fd2 "Board (sub)group expected";
       require_integer_list (ll, ll_typ) "List of integers expected";
-      Place(fd1, fd2, ll), Bool
+      Place(plc_call), Bool
 
 let rec verify_expr_list_type env typ = function
     [] -> typ

@@ -330,9 +330,9 @@ and expression_to_c = function
   | Remove(e) ->
       let detail, _ = e in
       expression_to_c detail
-
-
-  (* | Place(fd1, fd2, ll) -> "" *)
+  | Place(e) ->
+      let detail, _ = e in
+      expression_to_c detail
 
 let rec statement_to_c = function
     Block(scope, slist) ->

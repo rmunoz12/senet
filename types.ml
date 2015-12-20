@@ -39,7 +39,7 @@ and expr_detail =
   | Not of expression
   | Noexpr
   | Remove of expression
-  | Place of field_expr * field_expr * list_lit
+  | Place of expression
 
 and expression =
     expr_detail * t

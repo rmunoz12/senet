@@ -92,11 +92,9 @@ and tag_groups_expr g e =
       | Remove(e) ->
           let e = tag_groups_expr g e in
           Remove(e)
-      | Place(fe1, fe2, ll) ->
-          let fe1 = tag_groups_field g fe1 in
-          let fe2 = tag_groups_field g fe2 in
-          let ll = tag_groups_listlit g ll in
-          Place(fe1, fe2, ll)
+      | Place(e) ->
+          let e = tag_groups_expr g e in
+          Place(e)
       | _ as x -> x
   in
   detail, typ
@@ -210,9 +208,8 @@ and fix_ll_expr vars (expr_detail, expr_typ) = match expr_detail with
       let vars = fix_ll_expr vars e1 in
       let vars = fix_ll_expr vars e2 in
       vars
-  | Remove(e) ->
-      fix_ll_expr vars e
-  | Place(fe1, fe2, ll) -> fix_ll vars ll
+  | Remove(e) -> fix_ll_expr vars e
+  | Place(e) -> fix_ll_expr vars e
   | Uminus(e) -> fix_ll_expr vars e
   | Not(e) -> fix_ll_expr vars e
   | _ -> vars
@@ -349,11 +346,8 @@ and string_of_expr_detail = function
   | ListLiteral(l) -> string_of_list_lit l
   | BoolLiteral(b, name) -> (match b with True -> "True" | False -> "False")
   | VoidLiteral -> "None"
-  | Place(f1, f2, l) ->
-      string_of_field f1 ^ " >> " ^ string_of_field f2 ^ " >> " ^
-        string_of_list_lit l
-  | Remove(e) ->
-      string_of_expression e
+  | Place(e) -> string_of_expression e
+  | Remove(e) -> string_of_expression e
 
 and string_of_expression e =
   let detail, _ = e in
