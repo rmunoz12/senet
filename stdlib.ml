@@ -188,7 +188,7 @@ let boards_lib =
   in
   let loop =
     { rect with gname = "Loop"; attributes = [x];
-      methods = [BasicFunc(init); base_repr "Loop"] }
+      methods = [BasicFunc(init); base_repr "Loop"; BasicFunc(toi); BasicFunc(tol)] }
   in
   let this_dummy =
     { vname = "this"; vtype = Group("Line", None);
@@ -210,7 +210,8 @@ let boards_lib =
     {init with ftype = List_t(Int); fname = "tol"; formals = [x]; body = [] }
   in
   let line =
-    { loop with gname = "Line"; methods = [BasicFunc(init); base_repr "Line"] }
+    { loop with gname = "Line";
+      methods = [BasicFunc(init); base_repr "Loop"; BasicFunc(toi); BasicFunc(tol)] }
   in
   let this_dummy =
     { vname = "this"; vtype = Group("Hex", None);
@@ -232,7 +233,8 @@ let boards_lib =
     {init with ftype = List_t(Int); fname = "tol"; formals = [x]; body = [] }
   in
   let hex =
-    { loop with gname = "Hex"; methods = [BasicFunc(init); base_repr "Hex"] }
+    { loop with gname = "Hex";
+      methods = [BasicFunc(init); base_repr "Loop"; BasicFunc(toi); BasicFunc(tol)] }
   in
   [rect; loop; line; hex]
 

@@ -4,8 +4,6 @@ group table(Rect(3, 3)) { };
 
 group myloop(Loop(5)) { };
 
-int x = -1;
-list[int] l = [x];
 }
 
 @turns {
@@ -13,6 +11,8 @@ list[int] l = [x];
 func void begin() {
     group table a = table();
     group myloop b = myloop();
+    int x = -1;
+    list[int] l = [x];
 
     print(a.toi([0, 0])); print("\n");
     print(a.toi([1, 0])); print("\n");
@@ -24,9 +24,10 @@ func void begin() {
     print(a.toi([1, 2])); print("\n");
     print(a.toi([2, 2])); print("\n");
 
-    #print(b.toi([x])); print("\n");
-    #print(b.toi([0])); print("\n");
-    #print(b.toi([1])); print("\n");
+
+    print(b.toi([x])); print("\n");
+    print(b.toi([0])); print("\n");
+    print(b.toi([1])); print("\n");
 
     end;
 }
