@@ -177,6 +177,13 @@ let boards_lib =
   in
   let init = base_init "Loop" in
   let init = { init with formals = [x]; body = stmts } in
+  let coord = { x with vname = "coord"; vtype = List_t(Int) } in
+  let toi =
+    {init with ftype = Int; fname = "toi"; formals = [coord]; body = [] }
+  in
+  let tol =
+    {init with ftype = List_t(Int); fname = "tol"; formals = [x]; body = [] }
+  in
   let loop =
     { rect with gname = "Loop"; attributes = [x];
       methods = [BasicFunc(init); base_repr "Loop"] }
@@ -191,6 +198,13 @@ let boards_lib =
      Return(Field(This), Group("Line", None))]
   in
   let init = { init with formals = [x]; body = stmts } in
+  let coord = { x with vname = "coord"; vtype = List_t(Int) } in
+  let toi =
+    {init with ftype = Int; fname = "toi"; formals = [coord]; body = [] }
+  in
+  let tol =
+    {init with ftype = List_t(Int); fname = "tol"; formals = [x]; body = [] }
+  in
   let line =
     { loop with gname = "Line"; methods = [BasicFunc(init); base_repr "Line"] }
   in
@@ -204,6 +218,13 @@ let boards_lib =
   in
   let init = base_init "Hex" in
   let init = { init with formals = [x]; body = stmts } in
+  let coord = { x with vname = "coord"; vtype = List_t(Int) } in
+  let toi =
+    {init with ftype = Int; fname = "toi"; formals = [coord]; body = [] }
+  in
+  let tol =
+    {init with ftype = List_t(Int); fname = "tol"; formals = [x]; body = [] }
+  in
   let hex =
     { loop with gname = "Hex"; methods = [BasicFunc(init); base_repr "Hex"] }
   in
