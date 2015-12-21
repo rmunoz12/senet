@@ -1,0 +1,210 @@
+@setup
+{
+group b (Boards.Rect(3,3)) {
+
+
+
+ bool checkWin(int player) {
+
+  int other_player=0;
+	if(player==0)
+	{
+	  other_player=1;
+	}
+	int i=1;
+	while(i<64)
+	{
+	  if(this.owns(i))==other_player)
+		{ 
+		  return false;
+		}
+	  i=i+1;
+	}
+
+  return true;
+}
+
+              }
+# owns checks the owner of a piece at an index,
+                   # and returns -1 if the space is empty
+                   }
+            return False;
+        }
+
+	void init_board()
+	{ Mark mark_red_1 = mark("Red_1");
+	  Mark mark_red_2 = mark("Red_2");
+          Mark mark_red_3 = mark("Red_3");
+	  Mark mark_red_4 = mark("Red_4");
+          Mark mark_red_5 = mark("Red_5");
+	  Mark mark_red_6 = mark("Red_6");
+          Mark mark_red_7 = mark("Red_7");
+	  Mark mark_red_8 = mark("Red_8");
+          Mark mark_red_9 = mark("Red_10");
+          Mark mark_red_11 = mark("Red_11");
+	  Mark mark_red_12 = mark("Red_12");
+
+	  Mark mark_black_1 = mark("Black_1");
+	  Mark mark_black_2 = mark("Black_2");
+          Mark mark_black_3 = mark("Black_3");
+	  Mark mark_black_4 = mark("Black_4");
+          Mark mark_black_5 = mark("Black_5");
+	  Mark mark_black_6 = mark("Black_6");
+          Mark mark_black_7 = mark("Black_7");
+	  Mark mark_black_8 = mark("Black_8");
+          Mark mark_black_9 = mark("Black_9");
+	  Mark mark_black_10 = mark("Black_10");
+          Mark mark_black_11 = mark("Black_11");
+	  Mark mark_black_12 = mark("Black_12");
+          
+	  this.place(mark_red_1,2);
+	  this.place(mark_red_2,4);
+ 	  this.place(mark_red_3,6);
+	  this.place(mark_red_4,8);
+          this.place(mark_red_5,9);
+	  this.place(mark_red_6,11);
+ 	  this.place(mark_red_7,13);
+	  this.place(mark_red_8,15);
+          this.place(mark_red_9,18);
+	  this.place(mark_red_10,20);
+ 	  this.place(mark_red_11,22);
+	  this.place(mark_red_12,24);
+
+          this.place(mark_black_1,41);
+	  this.place(mark_black_2,43);
+ 	  this.place(mark_black_3,45);
+	  this.place(mark_black_4,47);
+          this.place(mark_black_5,50);
+	  this.place(mark_black_6,52);
+ 	  this.place(mark_black_7,54);
+	  this.place(mark_black_8,56);
+          this.place(mark_black_9,57);
+	  this.place(mark_black_10,59);
+ 	  this.place(mark_black_11,61);
+	  this.place(mark_black_12,63);
+
+}
+
+      bool validatePiece(int c1, int c2,int player)
+	{
+	bool valid=false;
+	int index=toi([c1,c2]);
+	{
+	if(this.owns(index)==player)
+       {valid=true;
+                   }
+    }
+    return valid;
+    }
+  (
+      bool validateCell(int p1,int p2,cur_p1,cur_p2,int player)
+      {int index=toi([c1,c2]);
+        int otherplayer=0;
+
+        if(player==0)
+        {
+          otherplayer=1;
+        if(p1<cur_p1+1)
+          return false;
+        else if(p2<cur_p2+1)
+          return false;
+        else if(this.owns(index)==player || this.owns(index==otherplayer))
+           {return false;}
+       }
+        else
+        {
+        if(p1>cur_p1-1)
+          return false;
+        else if(p2>cur_p2-1)
+          return false;
+        else if(this.owns(index)==player || this.owns(index==otherplayer))
+           {return false;}
+
+        }
+        this.remove(index);
+        return true;
+
+
+    }
+
+
+
+           bool won (int player) { # checks if the player won
+                   if three_in_a_row(player)
+                return True;
+                   return False;
+           }
+        
+        bool draw() {
+            if this.full() {
+                return True;
+            }
+            return False;
+        }
+
+        assert draw() {
+            this.full();
+        }
+       };
+
+    
+
+group Mark (Piece) {  # inherits from Piece
+    
+bool isKing;
+
+
+        func group Mark __init__(str s) {
+	this.s=s;{
+        this.fixed = false;
+	isKing = false;
+        return this;
+}
+
+    }
+};
+
+
+          N_PLAYERS = 2; # number of players, this default of 1
+    
+          int gamestep=0;
+
+
+@turns
+{
+begin () {
+gamestep=gamestep+1;
+bool validpiece=false;
+bool validcell=false;
+int current_player=gamestep % 2; 
+# this is basically just "while True" with only 1 phase
+       # players input moves by typing coordinates, e.g. "11" or "02"
+while(validPiece==false)
+{
+print(“Input coordinates of the piece to you want to use for the turn”)
+print(“in i.e. \”22\” or \”10\”.\n”); # prompts the players
+       int p1 = stoi(read(1)); # reads one character and converts it to an int
+       int p2 = stoi(read(1));
+validpiece=b.validatePiece(p1,p2,current_player);
+}
+
+while(validcell==false)
+{
+print(“Input coordinates of the cell you want your piece to move to”)
+print(“in i.e. \”22\” or \”10\”.\n”); # prompts the players
+       int c1 = stoi(read(1)); # reads one character and converts it to an int
+       int c2 = stoi(read(1));
+       validcell=b.validateCell(c1,c2,p1,p2,current_player);
+     }
+
+
+       if (Mark >> b [a,c]) {
+              if (b.won(current_player)) { 
+                  print("Player " + itos(current_player) + " wins.\n");
+                  print("Congratulations!");
+           }
+    }
+           # if the move was legal, went through successfully,
+           # and the game is not over, pass the turn to the next player
+       }
+}
