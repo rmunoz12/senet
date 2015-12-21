@@ -1278,9 +1278,10 @@ let rec check_group env g =
 
 let check_setup env setup_section =
   let vars, funcs, groups = setup_section in
-  List.map (check_vdcl env) vars,
-  List.map (check_function env false) funcs,
-  List.map (check_group env) groups
+  let v = List.map (check_vdcl env) vars in
+  let g = List.map (check_group env) groups in
+  let f = List.map (check_function env false) funcs in
+  v, f, g
 
 let rec gather_turn_names env = function
     [] -> ()

@@ -1,0 +1,29 @@
+@setup {
+
+group Mark(Piece) {
+    func group Mark __init__(str s) {
+        this.s = s;
+        return this;
+    }
+};
+
+func str test(group Mark m) {
+    return m.s;
+}
+
+assert check(group Mark m) {
+    m.s == "M";
+}
+
+}
+
+@turns {
+
+func void begin() {
+    group Mark x = Mark("X");
+    print(test(x)); print("\n");
+    print(check(x)); print("\n");
+    end;
+}
+
+}

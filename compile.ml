@@ -7,6 +7,8 @@ type counter = {
 
 let count = { i = 0 }
 
+let tmp_formal_prefix = "__tmp_form__"
+
 let prefix_name n =
   "snt_" ^ n
 
@@ -136,8 +138,13 @@ let rec printf (detail, typ) =
         tmp_var ^ ";\n" ^
         "printList(&" ^ list_id ^ ", " ^ func ^ ")"
 
-and formal_to_c v =
-  id_type_to_c v.vtype ^ prefix_name v.vname
+and formal_to_c is_built_in_func v = match is_built_in_func, v.vtype with
+    false, Group(gname, _) ->
+      id_type_to_c v.vtype ^ "* " ^ tmp_formal_prefix ^ prefix_name v.vname
+  | _, List_t(typ) ->
+      id_type_to_c v.vtype ^ "* " ^ tmp_formal_prefix ^ prefix_name v.vname
+  | _, _ ->
+      id_type_to_c v.vtype ^ prefix_name v.vname
 
 and function_group = function
     BasicFunc(f) -> f.group_method
@@ -221,7 +228,7 @@ and expression_to_c = function
       (match t1, t2 with
           Int, Int
         | Bool, Bool ->
-            d1 ^ " " ^ binop_to_c op ^ " " ^ d2
+            "(" ^ d1 ^ " " ^ binop_to_c op ^ " " ^ d2 ^ ")"
         | Str, Str ->
           let eval = match op with
               Equal -> "? 0 : 1"
@@ -270,8 +277,11 @@ and expression_to_c = function
                            d1 ^ " " ^ binop_to_c op ^ " " ^ d2)))
   | Assign(fd, e) ->
       let fd = field_to_c fd
-      and detail, _ = e in
-      fd ^ " = " ^ expression_to_c detail
+      and detail, typ = e in
+      fd ^ " = " ^
+      (match detail with
+          ListLiteral(_) -> prefix_name (expression_to_c detail)
+        | _ -> expression_to_c detail)
   | Call(vopt, fd, el) ->
       (* let e = List.map (fun (detail, _) -> detail) el in *)
       let argc = List.length el in
@@ -284,6 +294,8 @@ and expression_to_c = function
       else if fname = "read" && is_built_in_func fd then
         let detail, _ = List.hd el in
         "_snt_read(" ^ expression_to_c detail ^ ")"
+      else if fname = "clear_input" && is_built_in_func fd then
+        "_snt_clear_input()"
       else if fname = "stoi" && is_built_in_func fd then
         let detail, _ = List.hd el in
         "atoi(" ^ expression_to_c detail ^ ")"
@@ -390,7 +402,8 @@ let rec statement_to_c = function
   | End -> "exit(0);"
   | Pass(e,s) -> let detaill, _ = s in
                      "CUR_TURN = &" ^ prefix_name (function_call_to_c e) ^ ";\n" ^
-                     "snt_PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";"
+                     "snt_PLAYER_ON_MOVE = " ^ expression_to_c detaill ^ ";\n" ^
+                     "return;\n"
   | While(e, s) ->
       let detail, _ = e in
       "while (" ^ expression_to_c detail ^ ") {\n" ^
@@ -414,6 +427,15 @@ let rec assert_stmt_to_c = function
       assert_stmt_to_c s ^ "\n" ^ "}\n"
   | _ as s -> statement_to_c s
 
+let deref_formal v = match v.vtype with
+    Group(gname, _) ->
+      id_type_to_c v.vtype ^ prefix_name v.vname ^
+      " = *(" ^ tmp_formal_prefix ^ prefix_name v.vname ^ ");"
+  | List_t(typ) ->
+      id_type_to_c v.vtype ^ prefix_name v.vname ^
+      " = *(" ^ tmp_formal_prefix ^ prefix_name v.vname ^ ");"
+  | _ -> ""
+
 let basic_func_to_c gprefix f =
     let self_arg =
       if f.group_method <> "" then
@@ -427,7 +449,8 @@ let basic_func_to_c gprefix f =
     (id_type_to_c f.ftype) ^ " " ^ gprefix ^ prefix_name f.fname ^ "(" ^
     self_arg ^
     (if self_arg <> "" && List.length f.formals > 0 then ", " else "") ^
-    String.concat ", " (List.map formal_to_c f.formals) ^ ") {\n" ^
+    String.concat ", " (List.map (formal_to_c f.f_is_built_in) f.formals) ^ ") {\n" ^
+    String.concat "\n" (List.map deref_formal f.formals) ^ "\n" ^
     String.concat "\n" (List.map var_decl_to_c f.locals) ^ "\n" ^
     String.concat "\n" (List.map statement_to_c f.body) ^ "\n" ^
     "}\n"
@@ -445,7 +468,8 @@ let assert_func_to_c gprefix f =
     (id_type_to_c Bool) ^ " " ^ gprefix ^ prefix_name f.aname ^ "(" ^
     self_arg ^
     (if self_arg <> "" && List.length f.aformals > 0 then ", " else "") ^
-    String.concat ", " (List.map formal_to_c f.aformals) ^ ") {\n" ^
+    String.concat ", " (List.map (formal_to_c f.a_is_built_in) f.aformals) ^ ") {\n" ^
+    String.concat "\n" (List.map deref_formal f.aformals) ^ "\n" ^
     String.concat "\n" (List.map var_decl_to_c f.alocals) ^ "\n" ^
     String.concat "\n" (List.map assert_stmt_to_c f.abody) ^ "\n" ^
     "}\n"
@@ -464,8 +488,8 @@ let group_decl_to_c g =
 let setup_to_c s =
   let v, f, g = s in
   String.concat "\n" (List.map var_decl_to_c v) ^ "\n\n" ^
-  String.concat "\n" (List.map (func_decl_to_c "") f) ^ "\n" ^
-  String.concat "\n" (List.map group_decl_to_c g)
+  String.concat "\n" (List.map group_decl_to_c g) ^ "\n" ^
+  String.concat "\n" (List.map (func_decl_to_c "") f)
 
 let declare_turn = function
     BasicFunc(f) ->

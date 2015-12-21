@@ -14,4 +14,9 @@ char *_snt_read(int x) {
   return s;
 }
 
+void _snt_clear_input() {
+    int c;
+    while ( (c = getchar()) != '\n' && c != EOF ) ;
+}
+
 #endif

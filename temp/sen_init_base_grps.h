@@ -26,6 +26,7 @@ struct snt_Rect{
     int x;
     int y;
 };
+
 struct snt_Line{
     Sen_list cells;
     Sen_list occupied;
@@ -48,9 +49,9 @@ void snt_Board_snt_INIT_CELLS(struct snt_Board *b, int n) {
     int i = 0;
 
     struct snt_Piece *dummy_piece = malloc(sizeof(struct snt_Piece));
-    dummy_piece->snt_owner = 0;
+    dummy_piece->snt_owner = -1;
     dummy_piece->snt_fixed = 0;
-    dummy_piece->snt_s = "<No Piece Repr>";
+    dummy_piece->snt_s = " ";
 
     new_Sen_list(&(b->cells), sizeof(struct snt_Piece));
     new_Sen_list(&(b->occupied), sizeof(bool));
@@ -73,6 +74,7 @@ bool snt_Board_snt_full(struct snt_Board *b) {
         if (elem == false) {
             return false;
         }
+        ++i;
     }
     return true;
 }
@@ -102,8 +104,17 @@ int snt_Board_snt_toi(struct snt_Board *b, Sen_list *list) {
 }
 
 int snt_Rect_snt_toi(struct snt_Rect *b, Sen_list *list) {
+    // printf("DEBUG: snt_Rect_snt_toi\n");
+    // printf("DEBUG: converting: "); printList(list, printInt); printf("\n");
+
     int x = *((int *) list_elem(list, 0));
     int y = *((int *) list_elem(list, 1));
+
+    // printf("DEBUG: x: %d\n", x);
+    // printf("DEBUG: y: %d\n", y);
+    // printf("DEBUG: b->y: %d\n", b->y);
+    // printf("DEBUG: output: %d\n", (b->y) * y + x);
+
     return (b->y) * y + x;
 }
 
