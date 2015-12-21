@@ -174,7 +174,7 @@ let boards_lib =
   let stmts =
     [Expression(Assign(Attrib(this_dummy, x), (Field(Var(x)), Int)), Int);
      Expression(Call(Some(this_dummy), BasicFunc(init_cells),
-                     [Field(Var(x))], Void));
+                     [(Field(Var(x)), Int)]), Void);
      Return(Field(This), Group("Loop", None))]
   in
   let init = base_init "Loop" in
@@ -198,7 +198,7 @@ let boards_lib =
   let stmts =
     [Expression(Assign(Attrib(this_dummy, x), (Field(Var(x)), Int)), Int);
      Expression(Call(Some(this_dummy), BasicFunc(init_cells),
-                     [Field(Var(x))], Void));
+                     [(Field(Var(x)), Int)]), Void);
      Return(Field(This), Group("Line", None))]
   in
   let init = { init with formals = [x]; body = stmts } in
@@ -219,7 +219,7 @@ let boards_lib =
   let stmts =
     [Expression(Assign(Attrib(this_dummy, x), (Field(Var(x)), Int)), Int);
      Expression(Call(Some(this_dummy), BasicFunc(init_cells),
-                     [Field(Var(x))], Void));
+                     [(Field(Var(x)), Int)]), Void);
      Return(Field(This), Group("Hex", None))]
   in
   let init = base_init "Hex" in

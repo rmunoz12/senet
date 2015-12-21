@@ -24,7 +24,7 @@ func void begin() {
 
     print(b.toi([-1])); print("\n");
     print(b.toi([0])); print("\n");
-    print(b.toi([1])); print("\n");
+    print(b.toi([1     ])); print("\n");
 
     end;
 }

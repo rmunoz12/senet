@@ -124,7 +124,7 @@ int snt_Line_snt_toi(struct snt_Rect *b, Sen_list *list) {
 
 int snt_Loop_snt_toi(struct snt_Rect *b, Sen_list *list) {
     int x = *((int *) list_elem(list, 0));
-    return *((int *) list_elem(list, 0) % (b->x));
+    return *((int *) list_elem(list, 0)) % (b->x);
 }
 
 Sen_list snt_Board_snt_tol(struct snt_Board *b, int i) {
