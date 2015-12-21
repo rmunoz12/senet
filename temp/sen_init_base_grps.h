@@ -118,6 +118,15 @@ int snt_Rect_snt_toi(struct snt_Rect *b, Sen_list *list) {
     return (b->y) * y + x;
 }
 
+int snt_Line_snt_toi(struct snt_Rect *b, Sen_list *list) {
+    return *((int *) list_elem(list, 0));
+}
+
+int snt_Loop_snt_toi(struct snt_Rect *b, Sen_list *list) {
+    int x = *((int *) list_elem(list, 0));
+    return *((int *) list_elem(list, 0) % (b->x));
+}
+
 Sen_list snt_Board_snt_tol(struct snt_Board *b, int i) {
     Sen_list list;
     new_Sen_list(&list, sizeof(int));
@@ -135,6 +144,22 @@ Sen_list snt_Rect_snt_tol(struct snt_Rect *b, int i) {
     push(&list, &x);
     push(&list, &y);
 
+    return list;
+}
+
+Sen_list snt_Line_snt_tol(struct snt_Rect *b, int i) {
+    Sen_list list;
+    new_Sen_list(&list, sizeof(int));
+    int x = i;
+    push(&list, &x);
+    return list;
+}
+
+Sen_list snt_Loop_snt_tol(struct snt_Rect *b, int i) {
+    Sen_list list;
+    new_Sen_list(&list, sizeof(int));
+    int x = i;
+    push(&list, &x);
     return list;
 }
 
