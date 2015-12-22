@@ -301,6 +301,8 @@ and expression_to_c = function
         "atoi(" ^ expression_to_c detail ^ ")"
       else if fname = "exit" && is_built_in_func fd then
         "exit(0)"
+      else if fname = "rand" && is_built_in_func fd then
+        "rand()"
       else
       let class_prefix = function_group fd in
       let class_prefix =

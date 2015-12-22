@@ -1,0 +1,11 @@
+@setup { }
+
+@turns {
+
+func void begin() {
+    int x = rand();
+    print("success calling rand\n");
+    end;
+}
+
+}

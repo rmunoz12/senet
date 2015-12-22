@@ -27,9 +27,10 @@ let funcs =
   let clear = { print_str with fname = "clear_input"; ftype = Void; formals = [] } in
   let stoi = { print_str with fname = "stoi"; ftype = Int; formals = [s] } in
   let exit = { print_str with fname = "exit"; ftype = Void; formals = [] } in
+  let rand = { print_str with fname = "rand"; ftype = Int; formals = [] } in
   [BasicFunc(print_str); BasicFunc(print_bool); BasicFunc(print_int);
    BasicFunc(print_group); BasicFunc(read); BasicFunc(stoi); BasicFunc(exit);
-   BasicFunc(clear)]
+   BasicFunc(clear); BasicFunc(rand)]
 
 let vars =
   let init = IntLiteral(0, "") in
