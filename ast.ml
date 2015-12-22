@@ -45,7 +45,7 @@ type stmt =
   | Return of expr
   | Break
   | Continue
-  | If of expr * stmt * stmt
+  | If of expr * stmt * expr option * stmt
   | For of var_decl * expr list * stmt
   | While of expr * stmt
   | End
@@ -161,9 +161,14 @@ let rec string_of_stmt = function
       "{\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
   | Expr(expr) -> string_of_expr expr ^ ";\n";
   | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n";
-  | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
-  | If(e, s1, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
-      string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
+  | If(e, s, None, Block([])) ->
+      "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
+  | If(e, s1, e2, s2) ->  "if (" ^ string_of_expr e ^ ")\n" ^
+      string_of_stmt s1 ^
+      (match e2 with
+        None -> "else\n"
+      | Some(expr) -> string_of_expr e) ^
+      string_of_stmt s2
   | For(vd, elist, s) ->
       "for (" ^ string_of_vdecl vd  ^ " in " ^
             "{\n" ^ String.concat ", " (List.map string_of_expr elist) ^ "}\n" ^

@@ -739,10 +739,14 @@ let rec check_stmt env = function
       else
         Continue
   | Ast.End -> End
-  | Ast.If(e, s1, s2) ->
+  | Ast.If(e, s1, e_opt, s2) ->
       let e = check_expr env e in
+      let e_opt = match e_opt with
+          None -> None
+        | Some(expr) -> Some(check_expr env expr)
+      in
       require_bool e "Predicate of if must be boolean";
-      If(e, check_stmt env s1, check_stmt env s2)
+      If(e, check_stmt env s1, e_opt, check_stmt env s2)
   | Ast.For(vd, el, s) ->
       let name, t_vd = vd.Ast.vname, id_type_to_t vd.Ast.vtype in
       let decl =
@@ -872,7 +876,7 @@ let rec verify_implicit_return_basic_fun name ftyp body=
       () (* Last statement is not an implicit return *)
   | Block(scope, sl) ->
       verify_implicit_return_basic_fun name ftyp sl
-  | If(e, s1, s2) ->
+  | If(e, s1, e_opt, s2) ->
       verify_implicit_return_basic_fun name ftyp [s1];
       verify_implicit_return_basic_fun name ftyp [s2]
   | For(vd, el, s) ->
@@ -904,7 +908,7 @@ let rec verify_return_pass_end_turn_fun name body =
     | End -> ()
     | Block(scope, sl) ->
         verify_return_pass_end_turn_fun name sl
-    | If(e, s1, s2) ->
+    | If(e, s1, e_opt, s2) ->
         verify_return_pass_end_turn_fun name [s1];
         verify_return_pass_end_turn_fun name [s2]
     | For(vd, el, s) ->
@@ -966,7 +970,7 @@ let rec verify_assert_func_stmt stmt =
     | Continue -> ()
     | End -> raise (SemError (msg_stmt ^ "end."))
     | Pass(_, _) -> raise (SemError (msg_stmt ^ "pass."))
-    | If(e, s1, s2) ->
+    | If(e, s1, e_opt, s2) ->
         verify_assert_func_stmt s1;
         verify_assert_func_stmt s2
     | For(vd, el, s) -> verify_assert_func_stmt s
@@ -1281,6 +1285,7 @@ let check_setup env setup_section =
   let v = List.map (check_vdcl env) vars in
   let g = List.map (check_group env) groups in
   let f = List.map (check_function env false) funcs in
+  (* require_no_init_list_groups v; *)
   v, f, g
 
 let rec gather_turn_names env = function

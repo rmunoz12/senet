@@ -146,11 +146,11 @@ stmt:
   | RETURN expr SEMI { Return($2) }
   | LBRACE stmt_list RBRACE { Block(List.rev $2) }
   | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE /* %prec NOELSE */
-     { If($3, Block(List.rev $6), Block([])) }
-  | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE ELIF LBRACE stmt_list_req RBRACE
-     { If($3, Block(List.rev $6), Block(List.rev $10)) }
+     { If($3, Block(List.rev $6), None, Block([])) }
+  | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE ELIF expr LBRACE stmt_list_req RBRACE
+     { If($3, Block(List.rev $6), Some($9), Block(List.rev $11)) }
   | IF LPAREN expr RPAREN LBRACE stmt_list_req RBRACE ELSE LBRACE stmt_list_req RBRACE
-     { If($3, Block(List.rev $6), Block(List.rev $10)) }
+     { If($3, Block(List.rev $6), None, Block(List.rev $10)) }
   | FOR LPAREN type_id ID IN LBRACE expr_list RBRACE RPAREN LBRACE stmt_list_req RBRACE
      { For({ vtype = $3;
              vname = $4;

@@ -110,11 +110,15 @@ and tag_groups_stmt g = function
       let fdcl = tag_groups_func g fdcl in
       let e = tag_groups_expr g e in
       Pass(fdcl, e)
-  | If(e, s1, s2) ->
+  | If(e, s1, e_opt, s2) ->
       let e = tag_groups_expr g e in
+      let e_opt = match e_opt with
+          None -> None
+        | Some(expr) -> Some(tag_groups_expr g expr)
+      in
       let s1 = tag_groups_stmt g s1 in
       let s2 = tag_groups_stmt g s2 in
-      If(e, s1, s2)
+      If(e, s1, e_opt, s2)
   | For(vd, el, s) ->
       let vd = tag_groups_vdcl g vd in
       let el = List.map (tag_groups_expr g) el in
@@ -219,9 +223,12 @@ let rec fix_ll_stmt vars = function
   | Expression(e) -> fix_ll_expr vars e
   | Return(e) -> fix_ll_expr vars e
   | Pass(fd, e) -> fix_ll_expr vars e
-  | If(e, s1, s2) ->
+  | If(e, s1, e_opt, s2) ->
       let vars = fix_ll_expr vars e in
       let vars = fix_ll_stmt vars s1 in
+      let vars = match e_opt with
+          None -> vars
+        | Some(expr) -> fix_ll_expr vars expr in
       let vars = fix_ll_stmt vars s2 in
       vars
   | For(vd, el, s) ->
@@ -369,8 +376,12 @@ let rec string_of_stmt = function
       "{\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
   | Expression(e) -> string_of_expression e ^ ";\n";
   | Return(e) -> "return " ^ string_of_expression e ^ ";\n";
-  | If(e, s1, s2) ->  "if (" ^ string_of_expression e ^ ")\n" ^
-      string_of_stmt s1 ^ "else\n" ^ string_of_stmt s2
+  | If(e, s1, e_opt, s2) ->  "if (" ^ string_of_expression e ^ ")\n" ^
+      string_of_stmt s1 ^
+      (match e_opt with
+        None -> "else\n"
+      | Some(expr) -> string_of_expression e) ^
+      string_of_stmt s2
   | For(vd, elist, s) ->
       "for (" ^ string_of_vdecl vd  ^ " in " ^
             "{\n" ^ String.concat ", " (List.map string_of_expression elist) ^ "}\n" ^

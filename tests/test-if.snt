@@ -1,0 +1,25 @@
+@setup {
+
+}
+
+@turns {
+
+func void begin() {
+    if (5 > 0) {
+        print("if ok"); print("\n");
+    }
+    if (2 < 0) {
+        print("if error"); print("\n");
+    } else {
+        print("if else ok"); print("\n");
+    }
+    if (2 < 0) {
+        print("if error"); print("\n");
+    } elif (3 > 0) {
+        print("if elif ok"); print("\n");
+    }
+
+    end;
+}
+
+}

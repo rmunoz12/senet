@@ -60,7 +60,7 @@ and statement =
   | Continue
   | End
   | Pass of func_decl * expression
-  | If of expression * statement * statement
+  | If of expression * statement * expression option * statement
   | For of var_decl * expression list * statement
   | While of expression * statement
 

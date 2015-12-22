@@ -384,12 +384,15 @@ let rec statement_to_c = function
       "return " ^ expression_to_c detail ^ ";"
   | Break -> "break;"
   | Continue -> "continue;"
-  | If(e, s1, s2) ->
+  | If(e, s1, e_opt, s2) ->
       let det, _  = e in
       update_ll_expr e ^
       "if (" ^ expression_to_c det ^ " ) {\n" ^
       statement_to_c s1 ^ "\n} " ^
-      "else {\n" ^ statement_to_c s2 ^ "}\n"
+      (match e_opt with
+          None -> "else {\n"
+        | Some((detail, _)) -> "else if (" ^ expression_to_c detail ^  ") {\n") ^
+       statement_to_c s2 ^ "}\n"
   | For(vd, elist, s) ->
       let n = List.length elist in
       let counter = "__cnt__" ^ prefix_name vd.vname in
@@ -417,11 +420,16 @@ let rec assert_stmt_to_c = function
   | Expression(e) ->
       let detail, _ = e in
       "if (!(" ^ expression_to_c detail ^ ")) { return false; }\n"
-  | If(e, s1, s2) ->
+  | If(e, s1, e_opt, s2) ->
       let e, _  = e in
       "if (" ^ expression_to_c e ^ " ) {\n" ^
       assert_stmt_to_c s1 ^ "\n} " ^
-      "else {\n" ^ assert_stmt_to_c s2 ^ "}\n"
+      (match e_opt with
+          None -> "else {\n"
+        | Some(expr) ->
+            let det, _ = expr in
+            "else if (" ^ expression_to_c det ^  ") {\n") ^
+        assert_stmt_to_c s2 ^ "}\n"
   (* | For(vd, el, s) -> *)
   | While(e, s) ->
       let detail, _ = e in
