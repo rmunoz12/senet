@@ -29,14 +29,14 @@ group D inherited_repr_built_in;
 
 func void begin() {
 
-    print(1); print("\n");
-    print("abc"); print("\n");
-    print(True); print(" "); print(False); print("\n");
-    print(no_repr); print("\n");
-    print(no_repr.__repr__()); print("\n");
-    print(yes_repr); print("\n");
-    print(inherited_repr); print("\n");
-    print(inherited_repr_built_in); print("\n");
+    print(1, "\n");
+    print("abc\n");
+    print(True, " ", False, "\n");
+    print(no_repr, "\n");
+    print(no_repr.__repr__(), "\n");
+    print(yes_repr, "\n");
+    print(inherited_repr, "\n");
+    print(inherited_repr_built_in, "\n");
 
     end;
 }

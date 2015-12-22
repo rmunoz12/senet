@@ -287,10 +287,9 @@ and expression_to_c = function
       let argc = List.length el in
       let fname = function_call_to_c fd in
       let gname = function_group_method fd in
-      (* print, read, stoi all take one argument, discard remainder *)
+      (* read and stoi take one argument, discard remainder *)
       if fname = "print" && is_built_in_func fd then
-        let e = List.hd el in
-        printf e
+        String.concat ";\n" (List.map printf el)
       else if fname = "read" && is_built_in_func fd then
         let detail, _ = List.hd el in
         "_snt_read(" ^ expression_to_c detail ^ ")"

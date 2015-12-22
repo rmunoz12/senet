@@ -115,12 +115,14 @@ let search_func_in_scope scope actuals name =
       [] -> raise (SemError ("Function name " ^ name ^ " exists in group scope " ^
                              "but actuals signature not matched"))
     | f :: rest ->
-        let fname, formals =
+        let fname, formals, built_in =
           (match f with
-              BasicFunc(x) -> x.fname, x.formals
-            | AssertFunc(x) -> x.aname, x.aformals)
+              BasicFunc(x) -> x.fname, x.formals, x.f_is_built_in
+            | AssertFunc(x) -> x.aname, x.aformals, x.a_is_built_in)
         in
-        if name = fname &&
+        if name = "print" && name = fname && built_in then
+          f
+        else if name = fname &&
           List.length formals = List.length actuals then
           if verify_args_signature f formals actuals then
             f
@@ -259,15 +261,17 @@ let rec search_field_local_first scope actuals name =
               | None -> raise (SemError ("Function name " ^ name ^ " exists in scope " ^
                                "but actuals signature not matched")))
       | f :: rest ->
-        let n, formals =
+        let n, formals, built_in =
           (match f with
-             BasicFunc(x) -> x.fname, x.formals
-           | AssertFunc(x) -> x.aname, x.aformals)
+             BasicFunc(x) -> x.fname, x.formals, x.f_is_built_in
+           | AssertFunc(x) -> x.aname, x.aformals, x.a_is_built_in)
         in
-        if n = name &&
-           List.length formals = List.length actuals &&
-           verify_args_signature f formals actuals then
-            f
+        if n = name && n = "print" && built_in then
+          f
+        else if n = name &&
+         List.length formals = List.length actuals &&
+         verify_args_signature f formals actuals then
+          f
         else
           helper rest
     in
@@ -418,17 +422,9 @@ let verify_args fdcl formals actuals =
       | AssertFunc(f) -> f.aname, f.a_is_built_in)
   in
   if fname = "print" && is_built_in then
-    let formal_type =
-      (match fdcl with
-          BasicFunc(f) -> List.hd f.formals
-        | _ -> raise (SemError ("Internal error: built-in print function cannot be an assert function")))
-    in
-    let check_formal_types =
-      (match formal_type.vtype with
-          Group("", _) -> false
-        | _ -> true)
-    in
-    verify_args_helper f_typ a_typ check_formal_types
+    match fdcl with
+        BasicFunc(f) -> ()
+      | _ -> raise (SemError ("Internal error: built-in print function cannot be an assert function"))
   else
     verify_args_helper f_typ a_typ true
 
