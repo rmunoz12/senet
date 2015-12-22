@@ -1280,12 +1280,19 @@ let rec check_group env g =
   env.scope.groups <- gdecl :: env.scope.groups;
   gdecl
 
+let require_no_init_list_groups v = match v.vtype, v.vinit with
+    Group(_, _), Some(_) ->
+      raise(SemError ("Cannot initialize groups in @setup"))
+  | List_t(_), Some(_) ->
+      raise(SemError ("Cannot initialize lists in @setup"))
+  | _, _ -> ()
+
 let check_setup env setup_section =
   let vars, funcs, groups = setup_section in
   let v = List.map (check_vdcl env) vars in
   let g = List.map (check_group env) groups in
   let f = List.map (check_function env false) funcs in
-  (* require_no_init_list_groups v; *)
+  ignore(List.map require_no_init_list_groups v);
   v, f, g
 
 let rec gather_turn_names env = function
