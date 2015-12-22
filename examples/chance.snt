@@ -1,0 +1,115 @@
+@setup
+{
+int left = 0;
+int right = 39;
+group myline(Line(40)) {
+    func bool won(int player) {
+        if (this.owns((1-player)*39) == player) {
+            return True;
+        }
+        return False;
+    }
+
+    func str __repr__() {
+        str ret = "|\n";
+        int i = 39;
+        group Piece temp;
+        while (i>=0) {
+              temp = this.cells[i];
+              ret = "|" + temp.__repr__() + ret;
+        }
+        return ret;
+    }
+};
+
+group Mark(Piece) {
+    func group Mark __init__(str s, int player) {
+        this.s = s;
+        this.owner = player;
+        return this;
+    }
+};
+
+
+int N_PLAYERS = 2;
+
+group myline ml;
+
+}
+
+
+@turns
+{
+
+func void begin() {
+     group Mark m0 = Mark("X", 0);
+     group Mark m1 = Mark("O", 1);
+     m0 >> ml >> [0];
+     m1 >> ml >> [39];
+     pass(prompt, 0);
+}
+
+func void prompt() {
+    int a;
+    int c;
+    int next;
+    group Mark m;
+    int i;
+
+    group Mark m0 = Mark("X", 0);
+    group Mark m1 = Mark("O", 1);
+
+    if (PLAYER_ON_MOVE % 2 == 0) {
+        m = Mark("X", PLAYER_ON_MOVE);
+    } else {
+        m = Mark("O", PLAYER_ON_MOVE);
+    }
+
+    print("\n"); print(ml); print("\n");
+
+    # players input moves by guessing even or odd
+    print("PLAYER "); print(PLAYER_ON_MOVE); print(": ");
+    print("Even (0) or odd (1)?\n");
+    a = stoi(read(1));
+    c = rand();
+    clear_input();
+    if (c % 2 == a % 2) {
+      if (PLAYER_ON_MOVE == 0) {
+          next = (left + (rand() % 6 ));
+          if (next > 39) {next = 39;}
+          left = next;
+      } else {
+          next = (right - (rand() % 6 ));
+          if (next < 0) {next = 0;}
+          right = next;
+      }
+    if ((next == 39 and PLAYER_ON_MOVE == 0) or (next == 0 and PLAYER_ON_MOVE == 1)) {
+
+      pass(winner, PLAYER_ON_MOVE);
+    } else {
+        if (ml.owns(next) == 1-PLAYER_ON_MOVE) {
+           if (PLAYER_ON_MOVE == 0) {
+              ml << [left];
+              left = left -1;
+              m0 >> ml >> [left];
+           } else {
+              ml << [right];
+              right = right + 1;
+              m1 >> ml >> [right];
+           }
+        }
+        m >> ml >> [next];
+    }
+    }
+    pass(prompt, (PLAYER_ON_MOVE + 1) % N_PLAYERS);
+
+}
+
+func void winner() {
+    print("\n"); print(ml); print("\n");
+    print("Player "); print(PLAYER_ON_MOVE); print(" wins.\n");
+    print("Congratulations!\n");
+    end;
+}
+
+}
