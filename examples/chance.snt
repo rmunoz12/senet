@@ -80,18 +80,16 @@ func void prompt() {
       if (PLAYER_ON_MOVE == 0) {
           next = (left + (rand() % 6 ));
           if (next > 39) {next = 39;}
-          left = next;
       } else {
           next = (right - (rand() % 6 ));
           if (next < 0) {next = 0;}
-          right = next;
       }
     if ((next == 39 and PLAYER_ON_MOVE == 0) or (next == 0 and PLAYER_ON_MOVE == 1)) {
 
       pass(winner, PLAYER_ON_MOVE);
     } else {
         if (ml.owns(next) == 1-PLAYER_ON_MOVE) {
-           if (PLAYER_ON_MOVE == 0) {
+           if (PLAYER_ON_MOVE == 1) {
               ml << [left];
               left = left -1;
               m0 >> ml >> [left];
@@ -101,7 +99,16 @@ func void prompt() {
               m1 >> ml >> [right];
            }
         }
-        m >> ml >> [next];
+           if (PLAYER_ON_MOVE == 0) {
+              ml << [left];
+              left = next;
+              m >> ml >> [next];
+           } else {
+              ml << [right];
+              right = next;
+              m >> ml >> [right];
+           }
+
     }
     } else {
       print("\n Too bad, you guessed wrong, better luck next time!!\n");
