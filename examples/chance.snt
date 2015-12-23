@@ -17,6 +17,7 @@ group myline(Line(40)) {
         while (i>=0) {
               temp = this.cells[i];
               ret = "|" + temp.__repr__() + ret;
+              i = i - 1;
         }
         return ret;
     }
@@ -44,6 +45,7 @@ group myline ml;
 func void begin() {
      group Mark m0 = Mark("X", 0);
      group Mark m1 = Mark("O", 1);
+     ml = myline();
      m0 >> ml >> [0];
      m1 >> ml >> [39];
      pass(prompt, 0);
