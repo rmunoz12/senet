@@ -74,6 +74,7 @@ func void prompt() {
     c = rand();
     clear_input();
     if (c % 2 == a % 2) {
+      print("\n Well guessed!! You are truly skilled!! \n");
       if (PLAYER_ON_MOVE == 0) {
           next = (left + (rand() % 6 ));
           if (next > 39) {next = 39;}
@@ -100,6 +101,8 @@ func void prompt() {
         }
         m >> ml >> [next];
     }
+    } else {
+      print("\n Too bad, you guessed wrong, better luck next time!!\n");
     }
     pass(prompt, (PLAYER_ON_MOVE + 1) % N_PLAYERS);
 
