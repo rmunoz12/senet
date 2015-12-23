@@ -87,6 +87,11 @@ bool snt_Board_snt_remove(struct snt_Board *b, int x) {
     } else {
         return false;
     }
+    struct snt_Piece *dummy_piece = malloc(sizeof(struct snt_Piece));
+    dummy_piece->snt_owner = -1;
+    dummy_piece->snt_fixed = 0;
+    dummy_piece->snt_s = " ";
+    replace(&(b->cells), dummy_piece, x);
 }
 
 bool snt_Board_snt_place(struct snt_Board *b, struct snt_Piece *p, int x) {
