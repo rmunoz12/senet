@@ -329,12 +329,12 @@ let rec check_field env actuals = function
             raise (SemError("Parent is either a function or variable, not a group")))
 
 let create_ll_name scope =
-  scope.ll_count <- scope.ll_count + 1;
-  "__ll__" ^ string_of_int scope.ll_count
+  count.i <- count.i + 1;
+  "__ll__" ^ string_of_int count.i
 
 let create_elem_name scope =
-  scope.elem_count <- scope.elem_count + 1;
-  "__elem__" ^ string_of_int scope.elem_count
+  count.i <- count.i + 1;
+  "__elem__" ^ string_of_int count.i
 
 let ast_op_to_sast_op = function
     Ast.Add -> Add
