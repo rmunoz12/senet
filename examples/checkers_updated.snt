@@ -1,0 +1,399 @@
+@setup
+{
+
+list[group line] victory_conds;
+
+group line(Object) {
+    list[int] loci;
+
+    func group line __init__(list[int] l) {
+        this.loci = l;
+        return this;
+    }
+};
+
+group Mark(Piece) {
+    func group Mark __init__(str s, int player) {
+        this.s = s;
+        this.owner = player;
+        return this;
+    }
+};
+
+group ttb(Rect(8, 8)) 
+{
+
+    # NOTE: Need to add a way to call INIT_CELLS since this segfaults
+    # func group ttb __init__(list[group line] vc) {
+    #     group Piece x = Piece();
+    #     bool NO = false;
+    #     this.x = 3; this.y = 3;
+    #     this.victory_conds = vc;
+    #     this.cells = [x, x, x, x, x, x, x, x, x];
+    #     this.occupied = [NO, NO, NO, NO, NO, NO, NO, NO, NO];
+    #     return this;
+    # }
+
+    assert owner_of_cell(int index, int player) {
+        this.owns(index) == player;
+
+    }
+
+    func bool three_in_a_row(int player) {
+        int i = 0;
+        int other_player=0;
+        bool valid=False;
+        if(player == 0)
+       {
+          other_player=1;
+        }
+
+        while (i < 64) {
+             print("DEBUG: three_in_a_row, i = "); print(i); print("\n");
+            valid= False;
+         if (this.owner_of_cell(i, other_player)) {
+                return False;
+            }
+            i = i + 1;
+        }
+        return True;
+        }
+
+    func bool won(int player) {
+        bool win=False;
+        if (this.three_in_a_row(player)) {
+            return True;
+        }
+        return False;
+    }
+
+        func void draw()
+    {
+        print ("Drawn");
+    }
+
+    func str __str_of_row(int row) {
+        group Piece p1; group Piece p2; group Piece p3; group Piece p4; group Piece p5; group Piece p6; group Piece p7; group Piece p8;
+        str ret;
+        # print("DEUBG: start of __str_of_row with row = "); print(row); print("\n");
+        # print("DEBUG: print [0, row] = "); print([0, row]); print("\n");
+        p1 = this.cells[this.toi([0, row])];
+        # print("DEBUG: l = this.cells call ok\n");
+        p2 = this.cells[this.toi([1, row])];
+        p3 = this.cells[this.toi([2, row])];
+        p4 = this.cells[this.toi([3, row])];
+        p5 = this.cells[this.toi([4, row])];
+        p6 = this.cells[this.toi([5, row])];
+        p7 = this.cells[this.toi([6, row])];
+        p8 = this.cells[this.toi([7, row])];
+        ret = "[" + p1.__repr__() + ", " + p2.__repr__() + ", " + p3.__repr__() + ", " + p4.__repr__() + ", " + p5.__repr__() + ", " + p6.__repr__() + ", " + p7.__repr__() + ", " + p8.__repr__() + "]\n";
+        return ret;
+    }
+
+    func str __repr__() {
+        return this.__str_of_row(0) + this.__str_of_row(1) + this.__str_of_row(2)+this.__str_of_row(3)+this.__str_of_row(4)+this.__str_of_row(5)+this.__str_of_row(6)+this.__str_of_row(7);
+    }
+
+         func bool validatePiece(int index,int player)
+    {
+    bool valid=False;
+  print("index");
+    {
+    if(this.owns(index)==player)
+       {valid=True;
+                   }
+    }
+    return valid;
+    }
+
+    func bool validateCell(int p1, int p2, int cur_p1, int cur_p2, int player)
+      {int index=this.toi([p1,p2]);
+        int otherplayer=0;
+        int temp1;
+        int temp2;
+        int tempindex;
+        if(player==0)
+        {
+          otherplayer=1;
+        if(p1-cur_p1 != p2-cur_p2)
+        {
+            return False;
+        }
+        if(p1<cur_p1+1)
+         
+         { 
+          return False;
+         }
+        
+        if(p2<cur_p2+1)
+          
+          {return False;
+          }
+        if(this.owns(index)==player or this.owns(index)==otherplayer)
+           {return False;}
+        if(p1-cur_p1>1)
+        {temp1=cur_p1+1;
+         temp2=cur_p2+1;
+          while(temp1<p1)
+        {   tempindex=this.toi([temp1,temp2]);
+            if(this.owns(tempindex)==otherplayer)
+            {   temp1=temp1+1;
+                temp2=temp2+1;
+                continue;
+            }
+            else
+            {
+                return False;
+            }
+            
+        }
+        }
+
+       }
+        else
+        {
+         if(cur_p1-p1 != cur_p2-p2)
+        {
+            return False;
+        }
+        if(p1>cur_p1-1)
+          {return False;}
+        if(p2>cur_p2-1)
+          {return False;}
+        if(this.owns(index) == player or this.owns(index)==otherplayer)
+           {return False;}
+        if(cur_p1-p1>1)
+       {temp1=cur_p1-1;
+        temp2=cur_p2-1;
+        while(temp1>p1)
+        {   tempindex=this.toi([temp1,temp2]);
+            if(this.owns(tempindex)==otherplayer)
+            {   temp1=temp1-1;
+                temp2=temp2-1;
+                continue;
+            }
+            else
+            {
+                return False;
+            }
+            
+        }
+        
+
+       }
+
+        }
+        this.remove(index);
+        return True;
+
+
+    }
+
+func void removePieces(int p1,int p2, int cur_p1,int cur_p2)
+{int temp1;
+    int temp2;
+    int tempindex;
+if(cur_p1-p1>1)
+
+    {temp1=cur_p1-1;
+        temp2=cur_p2-1;
+        while(temp1>p1)
+        {   tempindex=this.toi([temp1,temp2]);
+            this.remove(tempindex);
+            
+        }
+        
+
+       }
+       if(p1-cur_p1>1)
+        {temp1=cur_p1+1;
+         temp2=cur_p2+1;
+          while(temp1<p1)
+        {   tempindex=this.toi([temp1,temp2]);
+           
+            this.remove(tempindex);
+        }
+        }
+}
+
+    func void init_board()
+    {int player=0;
+        int otherplayer=1;
+
+    group Mark mark_red_1 = Mark("R",player);
+      group Mark mark_red_2 = Mark("R",player);
+          group Mark mark_red_3 = Mark("R",player);
+      group Mark mark_red_4 = Mark("R",player);
+         group Mark mark_red_5 = Mark("R",player);
+      group Mark mark_red_6 = Mark("R",player);
+    group Mark mark_red_7 = Mark("R",player);
+      group Mark mark_red_8 = Mark("R",player);
+         group Mark mark_red_9 = Mark("R",player);
+         group Mark mark_red_10 = Mark("R",player);
+
+          group Mark mark_red_11 = Mark("R",player);
+     group Mark mark_red_12 = Mark("R",player);
+
+   group Mark mark_black_1 = Mark("B",otherplayer);
+     group Mark mark_black_2 = Mark("B",otherplayer);
+    group Mark mark_black_3 = Mark("B",otherplayer);
+      group Mark mark_black_4 = Mark("B",otherplayer);
+         group Mark mark_black_5 = Mark("B",otherplayer);
+     group Mark mark_black_6 = Mark("B",otherplayer);
+          group Mark mark_black_7 = Mark("B",otherplayer);
+      group Mark mark_black_8 = Mark("B",otherplayer);
+         group Mark mark_black_9 = Mark("B",otherplayer);
+      group Mark mark_black_10 = Mark("B",otherplayer);
+         group Mark mark_black_11 = Mark("B",otherplayer);
+     group Mark mark_black_12 = Mark("B",otherplayer);
+          
+      this.place(mark_red_1,2);
+      this.place(mark_red_2,4);
+      this.place(mark_red_3,6);
+      this.place(mark_red_4,8);
+          this.place(mark_red_5,9);
+      this.place(mark_red_6,11);
+      this.place(mark_red_7,13);
+      this.place(mark_red_8,15);
+          this.place(mark_red_9,18);
+      this.place(mark_red_10,20);
+      this.place(mark_red_11,22);
+      this.place(mark_red_12,24);
+
+          this.place(mark_black_1,41);
+      this.place(mark_black_2,43);
+      this.place(mark_black_3,45);
+      this.place(mark_black_4,47);
+          this.place(mark_black_5,50);
+      this.place(mark_black_6,52);
+      this.place(mark_black_7,54);
+      this.place(mark_black_8,56);
+          this.place(mark_black_9,57);
+      this.place(mark_black_10,59);
+      this.place(mark_black_11,61);
+      this.place(mark_black_12,63);
+
+}
+
+
+            };
+
+
+
+
+
+
+int N_PLAYERS = 2;
+
+group ttb b;
+
+
+
+}
+
+
+@turns
+{
+
+func void begin() {
+
+    # list[group line] victory_conds;
+
+    b = ttb();
+    b.init_board();
+
+    # print("DEBUG: v7 ok\n");
+
+
+    # print("DEBUG: built victory_conds\n");
+
+    # b = ttb();
+
+    # print("DEBUG: built b\n");
+
+    pass(prompt, 0);
+}
+
+func void prompt() {
+    int a;
+    int c;
+    int x;
+    int y;
+    int index;
+    bool valid_piece=False;
+    bool valid_cell=False;
+    group Mark m;
+    int i;
+
+    if (PLAYER_ON_MOVE % 2 == 0) {
+        m = Mark("R", PLAYER_ON_MOVE);
+    } else {
+        m = Mark("B", PLAYER_ON_MOVE);
+    }
+
+    # print("DEBUG: start of prompt()\n");
+
+    print("\n"); print(b); print("\n");
+
+    # print("DEBUG: printed b\n");
+
+    # players input moves by typing coordinates, e.g. "11" or "02"
+    
+    print("PLAYER "); print(PLAYER_ON_MOVE); print(": ");
+    while(not valid_piece)
+    {
+    print("Input coordinates of the piece to be moved ");
+    print("in i.e. \"22\" or \"10\".\n");
+    a = stoi(read(1));
+    c = stoi(read(1));
+    index=b.toi([a,c]);
+    valid_piece=b.validatePiece(index,PLAYER_ON_MOVE);
+    }
+
+    while(not valid_cell)
+    {
+    print("Input coordinates of the piece to be moved ");
+    print("in i.e. \"22\" or \"10\".\n");
+    x= stoi(read(1));
+    y = stoi(read(1));
+    index=b.toi([x,y]);
+    valid_cell=b.validateCell(x,y,a,c,PLAYER_ON_MOVE);
+    }
+    
+    clear_input();
+    # print("index of input: ["); print(a); print(", "); print(c); print("] -> ");
+    # print(b.toi([a, c])); print("\n");
+
+    if (m >> b >> [x, y]) {
+        b.removePieces(x,y,a,c);
+        # PLAYER_ON_MOVE is the index of the player
+        if (b.won(PLAYER_ON_MOVE)) {
+            pass(winner, PLAYER_ON_MOVE);
+        }
+    } 
+    else {
+        # A piece is already at [a, c]
+        print("Cannot place a mark there, try again.\n\n");
+        pass(prompt, PLAYER_ON_MOVE);
+    }
+    # if the move was legal, went through successfully,
+    # and the game is not over, pass the turn to the next player
+    pass(prompt, (PLAYER_ON_MOVE + 1) % N_PLAYERS);
+}
+
+func void winner() {
+        
+    print("\n"); print(b); print("\n");
+    print("Player "); print(PLAYER_ON_MOVE); print(" wins.\n");
+    print("Congratulations!\n");
+    end;
+}
+
+func void nowinner() {
+    print("\n"); print(b); print("\n");
+    print("Game ends in a draw.\n");
+    end;
+}
+
+}
+
